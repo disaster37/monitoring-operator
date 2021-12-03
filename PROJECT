@@ -1,0 +1,41 @@
+domain: monitoring.k8s.webcenter.fr
+layout:
+- go.kubebuilder.io/v3
+plugins:
+  manifests.sdk.operatorframework.io/v2: {}
+  scorecard.sdk.operatorframework.io/v2: {}
+projectName: monitoring-operator
+repo: github.com/disaster37/monitoring-operator
+resources:
+- api:
+    crdVersion: v1
+    namespaced: true
+  controller: true
+  domain: monitoring.k8s.webcenter.fr
+  group: monitor
+  kind: Service
+  path: github.com/disaster37/monitoring-operator/api/v1alpha1
+  version: v1alpha1
+- api:
+    crdVersion: v1
+    namespaced: true
+  controller: true
+  domain: monitoring.k8s.webcenter.fr
+  group: monitor
+  kind: CentreonService
+  path: github.com/disaster37/monitoring-operator/api/v1alpha1
+  version: v1alpha1
+- api:
+    crdVersion: v1
+    namespaced: true
+  domain: monitoring.k8s.webcenter.fr
+  group: monitor
+  kind: Centreon
+  path: github.com/disaster37/monitoring-operator/api/v1alpha1
+  version: v1alpha1
+- controller: true
+  domain: monitoring.k8s.webcenter.fr
+  group: networking.k8s.io
+  kind: Ingress
+  version: v1
+version: "3"
