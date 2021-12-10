@@ -1,6 +1,6 @@
 ## Append samples you want in your CSV to this file as resources ##
 resources:
-- monitor_v1alpha1_centreon.yaml
-- monitor_v1alpha1_centreonservice.yaml
-- networking.k8s.io_v1_ingress.yaml
+  - monitor_v1alpha1_centreon.yaml
+  - monitor_v1alpha1_centreonservice.yaml
+#- networking.k8s.io_v1_ingress.yaml
 #+kubebuilder:scaffold:manifestskustomizesamples

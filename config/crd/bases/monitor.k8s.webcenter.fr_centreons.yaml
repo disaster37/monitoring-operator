@@ -79,31 +79,17 @@ spec:
                       from endpoint
                     type: string
                 required:
-                - defaultHost
                 - discoverEndpoint
-                - nameTemplate
-                - template
                 type: object
-              password:
-                description: The password to connect on API
-                type: string
-              selfSignedCertificate:
-                description: Don't check certificat validy
-                type: boolean
-              url:
-                description: The target Rest API
-                type: string
-              username:
-                description: The username to connect on API
-                type: string
             required:
             - endpoint
-            - password
-            - url
-            - username
             type: object
           status:
             description: CentreonStatus defines the observed state of Centreon
+            properties:
+              updatedAt:
+                description: The date when item is handle by operator
+                type: string
             type: object
         type: object
     served: true

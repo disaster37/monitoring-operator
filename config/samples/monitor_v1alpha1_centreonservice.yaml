@@ -3,4 +3,7 @@ kind: CentreonService
 metadata:
   name: centreonservice-sample
 spec:
-  # Add fields here
+  host: localhost
+  name: test-ping
+  checkCommand: "ping"
+  activate: true

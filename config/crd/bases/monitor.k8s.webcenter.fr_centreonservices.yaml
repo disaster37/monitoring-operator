@@ -96,8 +96,9 @@ spec:
               id:
                 description: The service ID on Centreon
                 type: string
-            required:
-            - id
+              updatedAt:
+                description: The date when service is modified on Centreon by operator
+                type: string
             type: object
         type: object
     served: true

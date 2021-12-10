@@ -3,4 +3,5 @@ kind: Centreon
 metadata:
   name: centreon-sample
 spec:
-  # Add fields here
+  endpoint:
+    discoverEndpoint: false

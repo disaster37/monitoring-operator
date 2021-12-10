@@ -19,6 +19,7 @@ package main
 import (
 	"flag"
 	"os"
+	"sync/atomic"
 
 	// Import all Kubernetes client auth plugins (e.g. Azure, GCP, OIDC, etc.)
 	// to ensure that exec-entrypoint and run can make use of them.
@@ -31,9 +32,16 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/healthz"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 
+	"github.com/disaster37/go-centreon-rest/v21"
 	monitorv1alpha1 "github.com/disaster37/monitoring-operator/api/v1alpha1"
 	"github.com/disaster37/monitoring-operator/controllers"
+	"github.com/pkg/errors"
+	"github.com/sirupsen/logrus"
 	//+kubebuilder:scaffold:imports
+)
+
+const (
+	MONITORING_CENTREON = "centreon"
 )
 
 var (
@@ -59,11 +67,22 @@ func main() {
 			"Enabling this will ensure there is only one active controller manager.")
 	opts := zap.Options{
 		Development: true,
+		Level:       getZapLogLevel(),
 	}
 	opts.BindFlags(flag.CommandLine)
 	flag.Parse()
 
 	ctrl.SetLogger(zap.New(zap.UseFlagOptions(&opts)))
+	log := logrus.New()
+	log.SetLevel(getLogrusLogLevel())
+
+	watchNamespace, err := getWatchNamespace()
+	if err != nil {
+		setupLog.Error(err, "unable to get WatchNamespace, "+
+			"the manager will watch and manage resources in all namespaces")
+	}
+
+	printVersion(ctrl.Log, metricsAddr, probeAddr)
 
 	mgr, err := ctrl.NewManager(ctrl.GetConfigOrDie(), ctrl.Options{
 		Scheme:                 scheme,
@@ -72,27 +91,69 @@ func main() {
 		HealthProbeBindAddress: probeAddr,
 		LeaderElection:         enableLeaderElection,
 		LeaderElectionID:       "351cbbed.k8s.webcenter.fr",
-		Namespace:              "",
+		Namespace:              watchNamespace,
 	})
 	if err != nil {
 		setupLog.Error(err, "unable to start manager")
 		os.Exit(1)
 	}
 
-	if err = (&controllers.CentreonServiceReconciler{
-		Client: mgr.GetClient(),
-		Scheme: mgr.GetScheme(),
-	}).SetupWithManager(mgr); err != nil {
-		setupLog.Error(err, "unable to create controller", "controller", "CentreonService")
+	// Get monitoring type to enable the right controllers
+	monitoringType := os.Getenv("MONITORING_PLATEFORM")
+	switch monitoringType {
+	case MONITORING_CENTREON:
+		// Init Centreon API client
+		cfg, err := getCentreonConfig()
+		if err != nil {
+			setupLog.Error(err, "unable to get Centreon config")
+			os.Exit(1)
+		}
+		centreonClient, err := centreon.NewClient(cfg)
+		if err != nil {
+			setupLog.Error(err, "unable to get Centreon client")
+			os.Exit(1)
+		}
+
+		// Init CentreonConfig
+		centreonConfig := &monitorv1alpha1.Centreon{}
+		var a atomic.Value
+		a.Store(centreonConfig)
+
+		// Set controllers for Centreon resources
+		logController := log.WithFields(logrus.Fields{
+			"type": "controllers",
+			"name": "CentreonService",
+		})
+		if err = (&controllers.CentreonServiceReconciler{
+			Client:         mgr.GetClient(),
+			Scheme:         mgr.GetScheme(),
+			Service:        controllers.NewCentreonService(centreonClient, logController),
+			CentreonConfig: a,
+			Log:            logController,
+		}).SetupWithManager(mgr); err != nil {
+			setupLog.Error(err, "unable to create controller", "controller", "CentreonService")
+			os.Exit(1)
+		}
+
+		if err = (&controllers.IngressCentreonReconciler{
+			Client:         mgr.GetClient(),
+			Scheme:         mgr.GetScheme(),
+			CentreonConfig: a,
+			Log: log.WithFields(logrus.Fields{
+				"type": "controllers",
+				"name": "IngressCentreon",
+			}),
+		}).SetupWithManager(mgr); err != nil {
+			setupLog.Error(err, "unable to create controller", "controller", "IngressCentreon")
+			os.Exit(1)
+		}
+
+		break
+	default:
+		setupLog.Error(errors.Errorf("MONITORING_PLATEFORM not supported. You need to set %s", MONITORING_CENTREON), "Monitoring plateform not supported")
 		os.Exit(1)
 	}
-	if err = (&controllers.IngressReconciler{
-		Client: mgr.GetClient(),
-		Scheme: mgr.GetScheme(),
-	}).SetupWithManager(mgr); err != nil {
-		setupLog.Error(err, "unable to create controller", "controller", "Ingress")
-		os.Exit(1)
-	}
+
 	//+kubebuilder:scaffold:builder
 
 	if err := mgr.AddHealthzCheck("healthz", healthz.Ping); err != nil {

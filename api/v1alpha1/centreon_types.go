@@ -29,19 +29,6 @@ type CentreonSpec struct {
 	// INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
 	// Important: Run "make" to regenerate code after modifying this file
 
-	// The target Rest API
-	Url string `json:"url"`
-
-	// The username to connect on API
-	Username string `json:"username"`
-
-	// The password to connect on API
-	Password string `json:"password"`
-
-	// Don't check certificat validy
-	// +optional
-	SelfSignedCertificate bool `json:"selfSignedCertificate,omitempty"`
-
 	// The endpoint default setting
 	Endpoints *CentreonSpecEndpoint `json:"endpoint"`
 }
@@ -51,15 +38,18 @@ type CentreonSpec struct {
 type CentreonSpecEndpoint struct {
 
 	// Auto create service when discover new endpoint
-	DiscoverEnpoint *bool `json:"discoverEndpoint"`
+	DiscoverEnpoint bool `json:"discoverEndpoint"`
 
 	// The default service template to use when create service from endpoint
+	// +optional
 	Template string `json:"template"`
 
 	// The default template name when create service from endpoint
+	// +optional
 	NameTemplate string `json:"nameTemplate"`
 
 	// The default host to attach service
+	// +optional
 	DefaultHost string `json:"defaultHost"`
 
 	// The default macro to set when create service
@@ -91,6 +81,9 @@ type CentreonSpecEndpoint struct {
 type CentreonStatus struct {
 	// INSERT ADDITIONAL STATUS FIELD - define observed state of cluster
 	// Important: Run "make" to regenerate code after modifying this file
+
+	// The date when item is handle by operator
+	UpdatedAt string `json:"updatedAt,omitempty"`
 }
 
 //+kubebuilder:object:root=true
@@ -116,4 +109,14 @@ type CentreonList struct {
 
 func init() {
 	SchemeBuilder.Register(&Centreon{}, &CentreonList{})
+}
+
+// IsBeingDeleted returns true if a deletion timestamp is set
+func (c *Centreon) IsBeingDeleted() bool {
+	return !c.ObjectMeta.DeletionTimestamp.IsZero()
+}
+
+// IsSubmitted return true if service has been submitted to Centreon
+func (c *Centreon) IsSubmitted() bool {
+	return c.Status.UpdatedAt != ""
 }

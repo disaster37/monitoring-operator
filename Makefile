@@ -1,3 +1,7 @@
+MONITORING_URL ?= "https://centreon/centreon/api.php
+MONITORING_USERNAME ?= "admin"
+MONITORING_PASSWORD ?= "admin"
+
 # VERSION defines the project version for the bundle.
 # Update this value when you upgrade the version of your project.
 # To re-generate a bundle for another specific version without changing the standard setup, you can:
@@ -85,16 +89,22 @@ fmt: ## Run go fmt against code.
 vet: ## Run go vet against code.
 	go vet ./...
 
-test: manifests generate fmt vet envtest ## Run tests.
-	KUBEBUILDER_ASSETS="$(shell $(ENVTEST) use $(ENVTEST_K8S_VERSION) -p path)" go test ./... -coverprofile cover.out
+test: manifests generate fmt envtest ## Run tests.
+	KUBEBUILDER_ASSETS="$(shell $(ENVTEST) use $(ENVTEST_K8S_VERSION) -p path)" go test ./pkg/... ./api/... -v -coverprofile cover.out
 
 ##@ Build
 
 build: generate fmt vet ## Build manager binary.
-	go build -o bin/manager main.go
+	go build -o bin/manager .
 
 run: manifests generate fmt vet ## Run a controller from your host.
-	go run ./main.go
+	MONITORING_URL=$(MONITORING_URL) MONITORING_USERNAME=$(MONITORING_USERNAME) MONITORING_PASSWORD=$(MONITORING_PASSWORD) go run .
+
+install-sample: manifests kustomize ## Install samples
+	$(KUSTOMIZE) build config/samples | kubectl apply -f -
+
+uninstall-sample: manifests kustomize ## Uninstall samples
+	$(KUSTOMIZE) build config/samples | kubectl delete -f -
 
 docker-build: test ## Build docker image with the manager.
 	docker build -t ${IMG} .
