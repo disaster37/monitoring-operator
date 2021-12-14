@@ -1,8 +1,8 @@
 # Build the manager binary
 FROM golang:1.16 as builder
 
-ARG Version
-ARG Commit
+ARG version
+ARG commit
 
 WORKDIR /workspace
 # Copy the Go Modules manifests
@@ -18,7 +18,7 @@ COPY api/ api/
 COPY controllers/ controllers/
 
 # Build
-RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -a -o manager main.go -s -w -X main.version=${Version} -X main.commit=${Commit}
+RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -a -o manager main.go -s -w -X main.version=${version} -X main.commit=${commit}
 
 # Use distroless as minimal base image to package the manager binary
 # Refer to https://github.com/GoogleContainerTools/distroless for more details

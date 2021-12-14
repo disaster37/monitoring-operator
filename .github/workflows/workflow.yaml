@@ -114,6 +114,4 @@ jobs:
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
-          build-args:
-            Version: ${{ steps.tagName.outputs.tag }}
-            Commit: "${GITHUB_SHA::8}"
+          build-args: "version:${{ steps.tagName.outputs.tag }},commit: ${GITHUB_SHA::8}"
