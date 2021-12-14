@@ -35,6 +35,7 @@ import (
 	"github.com/disaster37/go-centreon-rest/v21"
 	monitorv1alpha1 "github.com/disaster37/monitoring-operator/api/v1alpha1"
 	"github.com/disaster37/monitoring-operator/controllers"
+	"github.com/disaster37/monitoring-operator/pkg/centreonhandler"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	//+kubebuilder:scaffold:imports
@@ -47,6 +48,8 @@ const (
 var (
 	scheme   = runtime.NewScheme()
 	setupLog = ctrl.Log.WithName("setup")
+	version  = "develop"
+	commit   = ""
 )
 
 func init() {
@@ -83,6 +86,7 @@ func main() {
 	}
 
 	printVersion(ctrl.Log, metricsAddr, probeAddr)
+	log.Infof("monitoring-operator version: %s - %s", version, commit)
 
 	mgr, err := ctrl.NewManager(ctrl.GetConfigOrDie(), ctrl.Options{
 		Scheme:                 scheme,
@@ -113,11 +117,12 @@ func main() {
 			setupLog.Error(err, "unable to get Centreon client")
 			os.Exit(1)
 		}
+		centreonHandler := centreonhandler.NewCentreonHandler(centreonClient, logrus.NewEntry(log))
 
 		// Init CentreonConfig
 		centreonConfig := &monitorv1alpha1.Centreon{}
 		var a atomic.Value
-		a.Store(centreonConfig)
+		a.Store(centreonConfig.Spec)
 
 		// Set controllers for Centreon resources
 		logController := log.WithFields(logrus.Fields{
@@ -127,7 +132,7 @@ func main() {
 		if err = (&controllers.CentreonServiceReconciler{
 			Client:         mgr.GetClient(),
 			Scheme:         mgr.GetScheme(),
-			Service:        controllers.NewCentreonService(centreonClient, logController),
+			Service:        controllers.NewCentreonService(centreonHandler),
 			CentreonConfig: a,
 			Log:            logController,
 		}).SetupWithManager(mgr); err != nil {

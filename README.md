@@ -66,3 +66,9 @@ make instal-sample
 ```
 
 https://github.com/Azure/azure-databricks-operator/blob/0f722a710fea06b86ecdccd9455336ca712bf775/controllers/secretscope_controller.go
+
+https://redhat-scholars.github.io/operators-sdk-tutorial/template-tutorial/index.html
+
+Quand on crée des sous item dans kube, il faut ajouter dans les metas data le OwnerReference
+
+SI on veut surveiller des sous items, il faut créer un watcher sur les sous ressources (les types)

@@ -17,10 +17,6 @@ limitations under the License.
 package v1alpha1
 
 import (
-	"reflect"
-
-	"github.com/disaster37/go-centreon-rest/v21/models"
-	"github.com/disaster37/monitoring-operator/pkg/helpers"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 )
@@ -99,6 +95,10 @@ type CentreonServiceStatus struct {
 	// The service ID on Centreon
 	ID string `json:"id,omitempty"`
 
+	// The date when service is created on Centreon by operator
+	// It can stay empty if service will be created by external process
+	CreatedAt string `json:"CreatedAt,omitempty"`
+
 	// The date when service is modified on Centreon by operator
 	UpdatedAt string `json:"updatedAt,omitempty"`
 }
@@ -151,69 +151,4 @@ func (c *CentreonService) AddFinalizer() {
 // RemoveFinalizer removes the specified finalizer
 func (c *CentreonService) RemoveFinalizer() {
 	controllerutil.RemoveFinalizer(c, centreonServicedFinalizer)
-}
-
-func (c *CentreonService) NeedUpdate(actualService *models.ServiceGet, params map[string]string, actualGroups, actualCategories []string, actualMacros []*models.Macro) bool {
-
-	expectedService := &models.ServiceGet{
-		ServiceBaseGet: &models.ServiceBaseGet{
-			ID:                  actualService.ID,
-			HostId:              actualService.HostId,
-			HostName:            c.Spec.Host,
-			Name:                c.Spec.Name,
-			CheckCommand:        c.Spec.CheckCommand,
-			CheckCommandArgs:    helpers.CheckArgumentsToString(c.Spec.Arguments),
-			NormalCheckInterval: c.Spec.NormalCheckInterval,
-			RetryCheckInterval:  c.Spec.RetryCheckInterval,
-			MaxCheckAttempts:    c.Spec.MaxCheckAttempts,
-			ActiveCheckEnabled:  helpers.BoolToString(c.Spec.ActiveCheckEnabled),
-			PassiveCheckEnabled: helpers.BoolToString(c.Spec.PassiveCheckEnabled),
-			Activated:           helpers.BoolToString(&c.Spec.Activated),
-		},
-	}
-	if !reflect.DeepEqual(actualService, expectedService) {
-		return true
-	}
-
-	// Check params
-	actualParams := map[string]string{}
-	if c.Spec.Template != "" {
-		actualParams["template"] = c.Spec.Template
-	}
-	if params == nil {
-		params = map[string]string{}
-	}
-	if !reflect.DeepEqual(actualParams, params) {
-		return true
-	}
-
-	// Check groups
-	if !reflect.DeepEqual(actualGroups, c.Spec.Groups) {
-		return true
-	}
-
-	// Check categories
-	if !reflect.DeepEqual(actualCategories, c.Spec.Categories) {
-		return true
-	}
-
-	// Check macro
-	var expectedMacros []*models.Macro = nil
-	if c.Spec.Macros != nil {
-		expectedMacros = make([]*models.Macro, 0, len(c.Spec.Macros))
-		for name, value := range c.Spec.Macros {
-			macro := &models.Macro{
-				Name:       name,
-				Value:      value,
-				IsPassword: "0",
-			}
-			expectedMacros = append(expectedMacros, macro)
-		}
-	}
-
-	if !reflect.DeepEqual(actualMacros, expectedMacros) {
-		return true
-	}
-
-	return false
 }

@@ -2,24 +2,30 @@ package centreonhandler
 
 import (
 	"github.com/disaster37/go-centreon-rest/v21/models"
-	"github.com/disaster37/monitoring-operator/api/v1alpha1"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
 )
 
 func (t *CentreonHandlerTestSuite) TestCreateService() {
-	toCreate := &v1alpha1.CentreonServiceSpec{
-		Name:         "ping",
-		Host:         "central",
-		Template:     "my-template",
-		CheckCommand: "ping",
-		Arguments:    []string{"arg1"},
-		Groups:       []string{"sg1"},
-		Categories:   []string{"cat1"},
-		Macros: map[string]string{
-			"macro1": "value",
-		},
-		Activated:           true,
+	macro1 := &models.Macro{
+
+		Name:       "macro1",
+		Value:      "value",
+		IsPassword: "0",
+	}
+	toCreate := &CentreonService{
+		Name:                "ping",
+		Host:                "central",
+		Template:            "my-template",
+		CheckCommand:        "ping",
+		CheckCommandArgs:    "!arg1",
+		Groups:              []string{"sg1"},
+		Categories:          []string{"cat1"},
+		Macros:              []*models.Macro{macro1},
+		Activated:           "1",
+		PassiveCheckEnabled: "default",
+		ActiveCheckEnabled:  "default",
+		Comment:             "some comments",
 		NormalCheckInterval: "30s",
 		RetryCheckInterval:  "1s",
 		MaxCheckAttempts:    "3",
@@ -56,7 +62,7 @@ func (t *CentreonHandlerTestSuite) TestCreateService() {
 		SetParam(gomock.Eq("central"), gomock.Eq("ping"), gomock.Eq("passive_checks_enabled"), gomock.Eq("default")).
 		Return(nil)
 	t.mockService.EXPECT().
-		SetParam(gomock.Eq("central"), gomock.Eq("ping"), gomock.Eq("comment"), gomock.Any()).
+		SetParam(gomock.Eq("central"), gomock.Eq("ping"), gomock.Eq("comment"), gomock.Eq("some comments")).
 		Return(nil)
 
 	// Mock set service groups
@@ -71,7 +77,7 @@ func (t *CentreonHandlerTestSuite) TestCreateService() {
 
 	//Mock set macros
 	t.mockService.EXPECT().
-		SetMacro(gomock.Eq("central"), gomock.Eq("ping"), gomock.Any()).
+		SetMacro(gomock.Eq("central"), gomock.Eq("ping"), gomock.Eq(macro1)).
 		Return(nil)
 
 	err := t.client.CreateService(toCreate)
@@ -79,22 +85,105 @@ func (t *CentreonHandlerTestSuite) TestCreateService() {
 }
 
 func (t *CentreonHandlerTestSuite) TestUpdateService() {
-	toUpdate := &v1alpha1.CentreonServiceSpec{
-		Name:         "ping",
-		Host:         "central",
-		Template:     "my-template2",
-		CheckCommand: "ping2",
-		Arguments:    []string{"arg2"},
-		Groups:       []string{"sg2"},
-		Categories:   []string{"cat2"},
-		Macros: map[string]string{
-			"macro2": "value",
-		},
-		Activated:           false,
-		NormalCheckInterval: "35s",
-		RetryCheckInterval:  "2s",
-		MaxCheckAttempts:    "4",
+	macro1 := &models.Macro{
+		Name:       "macro1",
+		Value:      "value1",
+		IsPassword: "0",
 	}
+	macro2 := &models.Macro{
+		Name:       "macro2",
+		Value:      "value2",
+		IsPassword: "0",
+	}
+	toUpdate := &CentreonServiceDiff{
+		IsDiff:             true,
+		Name:               "ping",
+		Host:               "central",
+		GroupsToSet:        []string{"sg2"},
+		GroupsToDelete:     []string{"sg1"},
+		CategoriesToSet:    []string{"cat2"},
+		CategoriesToDelete: []string{"cat1"},
+		MacrosToSet:        []*models.Macro{macro2},
+		MacrosToDelete:     []*models.Macro{macro1},
+		ParamsToSet: map[string]string{
+			"param1": "value1",
+			"param2": "value2",
+		},
+	}
+
+	// Mock set params on Centreon
+	t.mockService.EXPECT().
+		SetParam(gomock.Eq("central"), gomock.Eq("ping"), gomock.Eq("param1"), gomock.Eq("value1")).
+		Return(nil)
+	t.mockService.EXPECT().
+		SetParam(gomock.Eq("central"), gomock.Eq("ping"), gomock.Eq("param2"), gomock.Eq("value2")).
+		Return(nil)
+
+		// Mock set service groups
+	t.mockService.EXPECT().
+		SetServiceGroups(gomock.Eq("central"), gomock.Eq("ping"), gomock.Eq([]string{"sg2"})).
+		Return(nil)
+	t.mockService.EXPECT().
+		DeleteServiceGroups(gomock.Eq("central"), gomock.Eq("ping"), gomock.Eq([]string{"sg1"})).
+		Return(nil)
+
+	// Mock set categories
+	t.mockService.EXPECT().
+		SetCategories(gomock.Eq("central"), gomock.Eq("ping"), gomock.Eq([]string{"cat2"})).
+		Return(nil)
+	t.mockService.EXPECT().
+		DeleteCategories(gomock.Eq("central"), gomock.Eq("ping"), gomock.Eq([]string{"cat1"})).
+		Return(nil)
+
+	//Mock set macros
+	t.mockService.EXPECT().
+		SetMacro(gomock.Eq("central"), gomock.Eq("ping"), gomock.Eq(macro2)).
+		Return(nil)
+	t.mockService.EXPECT().
+		DeleteMacro(gomock.Eq("central"), gomock.Eq("ping"), gomock.Eq(macro1.Name)).
+		Return(nil)
+
+	err := t.client.UpdateService(toUpdate)
+	assert.NoError(t.T(), err)
+
+}
+
+func (t *CentreonHandlerTestSuite) TestDeleteService() {
+
+	// Mock delete
+	t.mockService.EXPECT().
+		Delete(gomock.Eq("central"), gomock.Eq("ping")).
+		Return(nil)
+
+	err := t.client.DeleteService("central", "ping")
+	assert.NoError(t.T(), err)
+}
+
+func (t *CentreonHandlerTestSuite) TestGetService() {
+
+	macro1 := &models.Macro{
+		Name:       "macro1",
+		Value:      "value1",
+		IsPassword: "0",
+	}
+	expected := &CentreonService{
+		Name:                "ping",
+		Host:                "central",
+		Template:            "my-template",
+		CheckCommand:        "ping",
+		CheckCommandArgs:    "!arg1",
+		Groups:              []string{"sg1"},
+		Categories:          []string{"cat1"},
+		Macros:              []*models.Macro{macro1},
+		Activated:           "1",
+		PassiveCheckEnabled: "default",
+		ActiveCheckEnabled:  "default",
+		Comment:             "my comment",
+		NormalCheckInterval: "30s",
+		RetryCheckInterval:  "1s",
+		MaxCheckAttempts:    "3",
+	}
+
 	cs := &models.ServiceGet{
 		ServiceBaseGet: &models.ServiceBaseGet{
 			HostName:            "central",
@@ -117,92 +206,205 @@ func (t *CentreonHandlerTestSuite) TestUpdateService() {
 
 	// Mock get params
 	t.mockService.EXPECT().
-		GetParam(gomock.Eq("central"), gomock.Eq("ping"), []string{"template"}).
-		Return(map[string]string{"template": "my-template"}, nil)
+		GetParam(gomock.Eq("central"), gomock.Eq("ping"), []string{"template", "comment"}).
+		Return(map[string]string{"template": "my-template", "comment": "my comment"}, nil)
 
-		// Mock get macros
+	// Mock get macros
 	t.mockService.EXPECT().
 		GetMacros(gomock.Eq("central"), gomock.Eq("ping")).
-		Return([]*models.Macro{
-			{
-				Name:       "macro1",
-				Value:      "value",
-				IsPassword: "0",
-			},
-		}, nil)
+		Return([]*models.Macro{macro1}, nil)
 
-		// Mock get Categories
+	// Mock get Categories
 	t.mockService.EXPECT().
 		GetCategories(gomock.Eq("central"), gomock.Eq("ping")).
 		Return([]string{"cat1"}, nil)
 
-		// Mock get service groups
+	// Mock get service groups
 	t.mockService.EXPECT().
 		GetServiceGroups(gomock.Eq("central"), gomock.Eq("ping")).
 		Return([]string{"sg1"}, nil)
 
-	// Mock set params on Centreon
-	t.mockService.EXPECT().
-		SetParam(gomock.Eq("central"), gomock.Eq("ping"), gomock.Eq("check_command"), gomock.Eq("ping2")).
-		Return(nil)
-	t.mockService.EXPECT().
-		SetParam(gomock.Eq("central"), gomock.Eq("ping"), gomock.Eq("normal_check_interval"), gomock.Eq("35s")).
-		Return(nil)
-	t.mockService.EXPECT().
-		SetParam(gomock.Eq("central"), gomock.Eq("ping"), gomock.Eq("retry_check_interval"), gomock.Eq("2s")).
-		Return(nil)
-	t.mockService.EXPECT().
-		SetParam(gomock.Eq("central"), gomock.Eq("ping"), gomock.Eq("max_check_attempts"), gomock.Eq("4")).
-		Return(nil)
-	t.mockService.EXPECT().
-		SetParam(gomock.Eq("central"), gomock.Eq("ping"), gomock.Eq("check_command_arguments"), gomock.Eq("!arg2")).
-		Return(nil)
-	t.mockService.EXPECT().
-		SetParam(gomock.Eq("central"), gomock.Eq("ping"), gomock.Eq("activate"), gomock.Eq("0")).
-		Return(nil)
-	t.mockService.EXPECT().
-		SetParam(gomock.Eq("central"), gomock.Eq("ping"), gomock.Eq("template"), gomock.Eq("my-template2")).
-		Return(nil)
-
-	// Mock set service groups
-	t.mockService.EXPECT().
-		SetServiceGroups(gomock.Eq("central"), gomock.Eq("ping"), gomock.Eq([]string{"sg2"})).
-		Return(nil)
-	t.mockService.EXPECT().
-		DeleteServiceGroups(gomock.Eq("central"), gomock.Eq("ping"), gomock.Eq([]string{"sg1"})).
-		Return(nil)
-
-	// Mock set categories
-	t.mockService.EXPECT().
-		SetCategories(gomock.Eq("central"), gomock.Eq("ping"), gomock.Eq([]string{"cat2"})).
-		Return(nil)
-	t.mockService.EXPECT().
-		DeleteCategories(gomock.Eq("central"), gomock.Eq("ping"), gomock.Eq([]string{"cat1"})).
-		Return(nil)
-
-	//Mock set macros
-	t.mockService.EXPECT().
-		SetMacro(gomock.Eq("central"), gomock.Eq("ping"), gomock.Any()).
-		Return(nil)
-	t.mockService.EXPECT().
-		DeleteMacro(gomock.Eq("central"), gomock.Eq("ping"), gomock.Eq("macro1")).
-		Return(nil)
-
-	err := t.client.UpdateService(toUpdate)
+	service, err := t.client.GetService("central", "ping")
 	assert.NoError(t.T(), err)
+	assert.Equal(t.T(), expected, service)
+
 }
 
-func (t *CentreonHandlerTestSuite) TestDeleteService() {
-	toDelete := &v1alpha1.CentreonServiceSpec{
-		Name: "ping",
-		Host: "central",
+func (t *CentreonHandlerTestSuite) TestDiffService() {
+
+	tests := []struct {
+		Name            string
+		ActualService   *CentreonService
+		ExpectedService *CentreonService
+		ExpectedDiff    *CentreonServiceDiff
+	}{
+		{
+			Name: "no need update and extra infos is nil",
+			ActualService: &CentreonService{
+				Host: "central",
+				Name: "ping",
+			},
+			ExpectedService: &CentreonService{
+				Host: "central",
+				Name: "ping",
+			},
+			ExpectedDiff: &CentreonServiceDiff{
+				IsDiff:             false,
+				Host:               "central",
+				Name:               "ping",
+				ParamsToSet:        map[string]string{},
+				GroupsToSet:        make([]string, 0),
+				GroupsToDelete:     make([]string, 0),
+				CategoriesToSet:    make([]string, 0),
+				CategoriesToDelete: make([]string, 0),
+				MacrosToSet:        make([]*models.Macro, 0),
+				MacrosToDelete:     make([]*models.Macro, 0),
+			},
+		},
+		{
+			Name: "No Need update and all properties set",
+			ActualService: &CentreonService{
+				Host:                "central",
+				Name:                "ping",
+				Activated:           "1",
+				Template:            "template2",
+				CheckCommand:        "ping2",
+				NormalCheckInterval: "31s",
+				RetryCheckInterval:  "2s",
+				MaxCheckAttempts:    "6",
+				ActiveCheckEnabled:  "1",
+				PassiveCheckEnabled: "1",
+				CheckCommandArgs:    "!arg2",
+				Comment:             "comment2",
+				Groups:              []string{"sg2"},
+				Categories:          []string{"cat2"},
+				Macros: []*models.Macro{
+					{
+						Name:  "macro2",
+						Value: "value2",
+					},
+				},
+			},
+			ExpectedService: &CentreonService{
+				Host:                "central",
+				Name:                "ping",
+				Activated:           "1",
+				Template:            "template2",
+				CheckCommand:        "ping2",
+				NormalCheckInterval: "31s",
+				RetryCheckInterval:  "2s",
+				MaxCheckAttempts:    "6",
+				ActiveCheckEnabled:  "1",
+				PassiveCheckEnabled: "1",
+				CheckCommandArgs:    "!arg2",
+				Comment:             "comment2",
+				Groups:              []string{"sg2"},
+				Categories:          []string{"cat2"},
+				Macros: []*models.Macro{
+					{
+						Name:  "macro2",
+						Value: "value2",
+					},
+				},
+			},
+			ExpectedDiff: &CentreonServiceDiff{
+				IsDiff:             false,
+				Host:               "central",
+				Name:               "ping",
+				ParamsToSet:        map[string]string{},
+				GroupsToSet:        make([]string, 0),
+				GroupsToDelete:     make([]string, 0),
+				CategoriesToSet:    make([]string, 0),
+				CategoriesToDelete: make([]string, 0),
+				MacrosToSet:        make([]*models.Macro, 0),
+				MacrosToDelete:     make([]*models.Macro, 0),
+			},
+		},
+		{
+			Name: "Need update all properties",
+			ActualService: &CentreonService{
+				Host:                "central",
+				Name:                "ping",
+				Activated:           "0",
+				Template:            "template",
+				CheckCommand:        "ping",
+				NormalCheckInterval: "30s",
+				RetryCheckInterval:  "1s",
+				MaxCheckAttempts:    "5",
+				ActiveCheckEnabled:  "0",
+				PassiveCheckEnabled: "0",
+				CheckCommandArgs:    "!arg1",
+				Comment:             "comment",
+				Groups:              []string{"sg1"},
+				Categories:          []string{"cat1"},
+				Macros: []*models.Macro{
+					{
+						Name:  "macro1",
+						Value: "value1",
+					},
+				},
+			},
+			ExpectedService: &CentreonService{
+				Host:                "central",
+				Name:                "ping",
+				Activated:           "1",
+				Template:            "template2",
+				CheckCommand:        "ping2",
+				NormalCheckInterval: "31s",
+				RetryCheckInterval:  "2s",
+				MaxCheckAttempts:    "6",
+				ActiveCheckEnabled:  "1",
+				PassiveCheckEnabled: "1",
+				CheckCommandArgs:    "!arg2",
+				Comment:             "comment2",
+				Groups:              []string{"sg2"},
+				Categories:          []string{"cat2"},
+				Macros: []*models.Macro{
+					{
+						Name:  "macro2",
+						Value: "value2",
+					},
+				},
+			},
+			ExpectedDiff: &CentreonServiceDiff{
+				IsDiff: true,
+				Host:   "central",
+				Name:   "ping",
+				ParamsToSet: map[string]string{
+					"retry_check_interval":    "2s",
+					"max_check_attempts":      "6",
+					"check_command_arguments": "!arg2",
+					"activate":                "1",
+					"template":                "template2",
+					"check_command":           "ping2",
+					"normal_check_interval":   "31s",
+					"comment":                 "comment2",
+					"active_checks_enabled":   "1",
+					"passive_checks_enabled":  "1",
+				},
+				GroupsToSet:        []string{"sg2"},
+				GroupsToDelete:     []string{"sg1"},
+				CategoriesToSet:    []string{"cat2"},
+				CategoriesToDelete: []string{"cat1"},
+				MacrosToSet: []*models.Macro{
+					{
+						Name:  "macro2",
+						Value: "value2",
+					},
+				},
+				MacrosToDelete: []*models.Macro{
+					{
+						Name:  "macro1",
+						Value: "value1",
+					},
+				},
+			},
+		},
 	}
 
-	// Mock delete
-	t.mockService.EXPECT().
-		Delete(gomock.Eq("central"), gomock.Eq("ping")).
-		Return(nil)
-
-	err := t.client.DeleteService(toDelete)
-	assert.NoError(t.T(), err)
+	for _, test := range tests {
+		diff, err := t.client.DiffService(test.ActualService, test.ExpectedService)
+		assert.NoErrorf(t.T(), err, test.Name)
+		assert.Equalf(t.T(), test.ExpectedDiff, diff, test.Name)
+	}
 }

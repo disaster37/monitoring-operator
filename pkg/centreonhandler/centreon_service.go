@@ -1,41 +1,48 @@
 package centreonhandler
 
 import (
-	"fmt"
+	"reflect"
 	"strings"
-	"time"
 
 	"github.com/disaster37/go-centreon-rest/v21/models"
-	"github.com/disaster37/monitoring-operator/api/v1alpha1"
-	"github.com/disaster37/monitoring-operator/pkg/helpers"
 	"github.com/pkg/errors"
 	"github.com/thoas/go-funk"
 )
 
 // CreateService permit to create new service on Centreon from spec
-func (h *CentreonHandlerImpl) CreateService(spec *v1alpha1.CentreonServiceSpec) (err error) {
+func (h *CentreonHandlerImpl) CreateService(service *CentreonService) (err error) {
+
+	if service == nil {
+		return errors.New("Service must be provided")
+	}
+	if service.Host == "" {
+		return errors.New("Host must be provided")
+	}
+	if service.Name == "" {
+		return errors.New("Service name must be provided")
+	}
 
 	// Create main object
-	if err = h.client.API.Service().Add(spec.Host, spec.Name, spec.Template); err != nil {
+	if err = h.client.API.Service().Add(service.Host, service.Name, service.Template); err != nil {
 		return err
 	}
 	h.log.Debug("Create service core from Centreon")
 
 	// Set extra params
 	params := map[string]string{
-		"check_command":           spec.CheckCommand,
-		"normal_check_interval":   spec.NormalCheckInterval,
-		"retry_check_interval":    spec.RetryCheckInterval,
-		"max_check_attempts":      spec.MaxCheckAttempts,
-		"check_command_arguments": helpers.CheckArgumentsToString(spec.Arguments),
-		"activate":                helpers.BoolToString(&spec.Activated),
-		"active_checks_enabled":   helpers.BoolToString(spec.ActiveCheckEnabled),
-		"passive_checks_enabled":  helpers.BoolToString(spec.PassiveCheckEnabled),
-		"comment":                 fmt.Sprintf("Created by monitoring-opeator at %s", time.Now()),
+		"check_command":           service.CheckCommand,
+		"normal_check_interval":   service.NormalCheckInterval,
+		"retry_check_interval":    service.RetryCheckInterval,
+		"max_check_attempts":      service.MaxCheckAttempts,
+		"check_command_arguments": service.CheckCommandArgs,
+		"activate":                service.Activated,
+		"active_checks_enabled":   service.ActiveCheckEnabled,
+		"passive_checks_enabled":  service.PassiveCheckEnabled,
+		"comment":                 service.Comment,
 	}
 	for param, value := range params {
 		if value != "" {
-			if err = h.client.API.Service().SetParam(spec.Host, spec.Name, param, value); err != nil {
+			if err = h.client.API.Service().SetParam(service.Host, service.Name, param, value); err != nil {
 				return err
 			}
 			h.log.Debugf("Set param %s on service from Centreon", param)
@@ -43,33 +50,28 @@ func (h *CentreonHandlerImpl) CreateService(spec *v1alpha1.CentreonServiceSpec) 
 	}
 
 	// Set service groups
-	if spec.Groups != nil && len(spec.Groups) > 0 {
-		if err = h.client.API.Service().SetServiceGroups(spec.Host, spec.Name, spec.Groups); err != nil {
+	if service.Groups != nil && len(service.Groups) > 0 {
+		if err = h.client.API.Service().SetServiceGroups(service.Host, service.Name, service.Groups); err != nil {
 			return err
 		}
-		h.log.Debugf("Set service groups %s from Centreon", strings.Join(spec.Groups, "|"))
+		h.log.Debugf("Set service groups %s from Centreon", strings.Join(service.Groups, "|"))
 	}
 
 	// Set categories
-	if spec.Categories != nil && len(spec.Categories) > 0 {
-		if err = h.client.API.Service().SetCategories(spec.Host, spec.Name, spec.Categories); err != nil {
+	if service.Categories != nil && len(service.Categories) > 0 {
+		if err = h.client.API.Service().SetCategories(service.Host, service.Name, service.Categories); err != nil {
 			return err
 		}
-		h.log.Debugf("Set categories %s from Centreon", strings.Join(spec.Categories, "|"))
+		h.log.Debugf("Set categories %s from Centreon", strings.Join(service.Categories, "|"))
 	}
 
 	// Set macros
-	if spec.Macros != nil && len(spec.Macros) > 0 {
-		for key, value := range spec.Macros {
-			macro := &models.Macro{
-				Name:       key,
-				Value:      value,
-				IsPassword: "0",
-			}
-			if err = h.client.API.Service().SetMacro(spec.Host, spec.Name, macro); err != nil {
+	if service.Macros != nil && len(service.Macros) > 0 {
+		for _, macro := range service.Macros {
+			if err = h.client.API.Service().SetMacro(service.Host, service.Name, macro); err != nil {
 				return err
 			}
-			h.log.Debugf("Set macro %s from Centreon", key)
+			h.log.Debugf("Set macro %s from Centreon", macro.Name)
 		}
 	}
 
@@ -80,108 +82,28 @@ func (h *CentreonHandlerImpl) CreateService(spec *v1alpha1.CentreonServiceSpec) 
 }
 
 // UpdateService permit to update existing service on Centreon from spec
-func (h *CentreonHandlerImpl) UpdateService(spec *v1alpha1.CentreonServiceSpec) (err error) {
-	// Get service from Centreon
-	service, err := h.client.API.Service().Get(spec.Host, spec.Name)
-	if err != nil {
-		return err
-	}
-	if service == nil {
-		return errors.Errorf("Service %s/%s not found on Centreon", spec.Host, spec.Name)
+func (h *CentreonHandlerImpl) UpdateService(serviceDiff *CentreonServiceDiff) (err error) {
+
+	if serviceDiff == nil {
+		return errors.New("ServiceDiff must be provided")
 	}
 
-	// Get extras params
-	extras, err := h.client.API.Service().GetParam(spec.Host, spec.Name, []string{"template"})
-	if err != nil {
-		return err
+	if serviceDiff.Host == "" {
+		return errors.New("Host must be provided")
+	}
+	if serviceDiff.Name == "" {
+		return errors.New("Service name must be provided")
 	}
 
-	// Get service groups
-	sgs, err := h.client.API.Service().GetServiceGroups(spec.Host, spec.Name)
-	if err != nil {
-		return err
+	if !serviceDiff.IsDiff {
+		h.log.Debug("No update needed, skip it")
+		return nil
 	}
 
-	// Get catgeories
-	cats, err := h.client.API.Service().GetCategories(spec.Host, spec.Name)
-	if err != nil {
-		return err
-	}
-
-	// Get macros
-	macros, err := h.client.API.Service().GetMacros(spec.Host, spec.Name)
-	if err != nil {
-		return err
-	}
-
-	propertiesChange := map[string]string{}
-	// Check the main properties
-	if helpers.BoolToString(&spec.Activated) != service.Activated {
-		propertiesChange["activate"] = helpers.BoolToString(&spec.Activated)
-	}
-	if helpers.BoolToString(spec.ActiveCheckEnabled) != service.ActiveCheckEnabled {
-		propertiesChange["active_checks_enabled"] = helpers.BoolToString(spec.ActiveCheckEnabled)
-	}
-	if spec.CheckCommand != service.CheckCommand {
-		propertiesChange["check_command"] = spec.CheckCommand
-	}
-	if helpers.CheckArgumentsToString(spec.Arguments) != service.CheckCommandArgs {
-		propertiesChange["check_command_arguments"] = helpers.CheckArgumentsToString(spec.Arguments)
-	}
-	if spec.MaxCheckAttempts != service.MaxCheckAttempts {
-		propertiesChange["max_check_attempts"] = spec.MaxCheckAttempts
-	}
-	if spec.NormalCheckInterval != service.NormalCheckInterval {
-		propertiesChange["normal_check_interval"] = spec.NormalCheckInterval
-	}
-	if helpers.BoolToString(spec.PassiveCheckEnabled) != service.PassiveCheckEnabled {
-		propertiesChange["passive_checks_enabled"] = helpers.BoolToString(spec.PassiveCheckEnabled)
-	}
-	if spec.RetryCheckInterval != service.RetryCheckInterval {
-		propertiesChange["retry_check_interval"] = spec.RetryCheckInterval
-	}
-	if spec.Template != extras["template"] {
-		propertiesChange["template"] = spec.Template
-	}
-
-	// Check the service groups
-	sgNeededTmp, sgDeleteTmp := funk.Difference(spec.Groups, sgs)
-	sgNeeded := sgNeededTmp.([]string)
-	sgDelete := sgDeleteTmp.([]string)
-
-	// Check the categories
-	catNeededTmp, catDeleteTmp := funk.Difference(spec.Categories, cats)
-	catNeeded := catNeededTmp.([]string)
-	catDelete := catDeleteTmp.([]string)
-
-	// Check macros
-	macrosNeeded := make([]*models.Macro, 0)
-	for key, value := range spec.Macros {
-		isFound := false
-		for i, m := range macros {
-			if key == m.Name {
-				if value == m.Value {
-					isFound = true
-				}
-				macros = append(macros[:i], macros[i+1:]...)
-				break
-			}
-		}
-
-		if !isFound {
-			macro := &models.Macro{
-				Name:       key,
-				Value:      value,
-				IsPassword: "0",
-			}
-			macrosNeeded = append(macrosNeeded, macro)
-		}
-	}
-
-	// Operate changes
-	if len(propertiesChange) > 0 {
-		for param, value := range propertiesChange {
-			err = h.client.API.Service().SetParam(spec.Host, spec.Name, param, value)
+	// Update properties
+	if len(serviceDiff.ParamsToSet) > 0 {
+		for param, value := range serviceDiff.ParamsToSet {
+			err = h.client.API.Service().SetParam(serviceDiff.Host, serviceDiff.Name, param, value)
 			if err != nil {
 				return err
 			}
@@ -189,46 +111,51 @@ func (h *CentreonHandlerImpl) UpdateService(spec *v1alpha1.CentreonServiceSpec) 
 		}
 	}
 
-	if len(sgNeeded) > 0 {
-		err = h.client.API.Service().SetServiceGroups(spec.Host, spec.Name, sgNeeded)
+	// Update service groups
+	if len(serviceDiff.GroupsToSet) > 0 {
+		err = h.client.API.Service().SetServiceGroups(serviceDiff.Host, serviceDiff.Name, serviceDiff.GroupsToSet)
 		if err != nil {
 			return err
 		}
-		h.log.Debugf("Set service groups %s from Centreon", strings.Join(sgNeeded, "|"))
+		h.log.Debugf("Set service groups %s from Centreon", strings.Join(serviceDiff.GroupsToSet, "|"))
 	}
-	if len(sgDelete) > 0 {
-		err = h.client.API.Service().DeleteServiceGroups(spec.Host, spec.Name, sgDelete)
+	if len(serviceDiff.GroupsToDelete) > 0 {
+		err = h.client.API.Service().DeleteServiceGroups(serviceDiff.Host, serviceDiff.Name, serviceDiff.GroupsToDelete)
 		if err != nil {
 			return err
 		}
-		h.log.Debugf("Delete service groups %s from Centreon", strings.Join(sgDelete, "|"))
+		h.log.Debugf("Delete service groups %s from Centreon", strings.Join(serviceDiff.GroupsToDelete, "|"))
 	}
-	if len(catNeeded) > 0 {
-		err = h.client.API.Service().SetCategories(spec.Host, spec.Name, catNeeded)
+
+	// Update categories
+	if len(serviceDiff.CategoriesToSet) > 0 {
+		err = h.client.API.Service().SetCategories(serviceDiff.Host, serviceDiff.Name, serviceDiff.CategoriesToSet)
 		if err != nil {
 			return err
 		}
-		h.log.Debugf("Set categories %s from Centreon", strings.Join(catNeeded, "|"))
+		h.log.Debugf("Set categories %s from Centreon", strings.Join(serviceDiff.CategoriesToSet, "|"))
 	}
-	if len(catDelete) > 0 {
-		err = h.client.API.Service().DeleteCategories(spec.Host, spec.Name, catDelete)
+	if len(serviceDiff.CategoriesToDelete) > 0 {
+		err = h.client.API.Service().DeleteCategories(serviceDiff.Host, serviceDiff.Name, serviceDiff.CategoriesToDelete)
 		if err != nil {
 			return err
 		}
-		h.log.Debugf("Delete categories %s from Centreon", strings.Join(catDelete, "|"))
+		h.log.Debugf("Delete categories %s from Centreon", strings.Join(serviceDiff.CategoriesToDelete, "|"))
 	}
-	if len(macrosNeeded) > 0 {
-		for _, macro := range macrosNeeded {
-			err = h.client.API.Service().SetMacro(spec.Host, spec.Name, macro)
+
+	// Update macros
+	if len(serviceDiff.MacrosToSet) > 0 {
+		for _, macro := range serviceDiff.MacrosToSet {
+			err = h.client.API.Service().SetMacro(serviceDiff.Host, serviceDiff.Name, macro)
 			if err != nil {
 				return err
 			}
 			h.log.Debugf("Set macro %s from Centreon", macro.Name)
 		}
 	}
-	if len(macros) > 0 {
-		for _, macro := range macros {
-			err = h.client.API.Service().DeleteMacro(spec.Host, spec.Name, macro.Name)
+	if len(serviceDiff.MacrosToDelete) > 0 {
+		for _, macro := range serviceDiff.MacrosToDelete {
+			err = h.client.API.Service().DeleteMacro(serviceDiff.Host, serviceDiff.Name, macro.Name)
 			if err != nil {
 				return err
 			}
@@ -236,12 +163,162 @@ func (h *CentreonHandlerImpl) UpdateService(spec *v1alpha1.CentreonServiceSpec) 
 		}
 	}
 
-	h.log.Debug("Update service successfully on Centreon")
-
 	return nil
 }
 
 // DeleteService permit to delete an existing service on Centreon
-func (h *CentreonHandlerImpl) DeleteService(spec *v1alpha1.CentreonServiceSpec) (err error) {
-	return h.client.API.Service().Delete(spec.Host, spec.Name)
+func (h *CentreonHandlerImpl) DeleteService(host, name string) (err error) {
+	return h.client.API.Service().Delete(host, name)
+}
+
+func (h *CentreonHandlerImpl) DiffService(actual, expected *CentreonService) (diff *CentreonServiceDiff, err error) {
+	diff = &CentreonServiceDiff{
+		Host:           expected.Host,
+		Name:           expected.Name,
+		IsDiff:         false,
+		ParamsToSet:    map[string]string{},
+		MacrosToSet:    make([]*models.Macro, 0),
+		MacrosToDelete: make([]*models.Macro, len(actual.Macros)),
+	}
+
+	// Check params
+	if actual.Activated != expected.Activated {
+		diff.ParamsToSet["activate"] = expected.Activated
+	}
+	if actual.ActiveCheckEnabled != expected.ActiveCheckEnabled {
+		diff.ParamsToSet["active_checks_enabled"] = expected.ActiveCheckEnabled
+	}
+	if actual.CheckCommand != expected.CheckCommand {
+		diff.ParamsToSet["check_command"] = expected.CheckCommand
+	}
+	if actual.CheckCommandArgs != expected.CheckCommandArgs {
+		diff.ParamsToSet["check_command_arguments"] = expected.CheckCommandArgs
+	}
+	if actual.MaxCheckAttempts != expected.MaxCheckAttempts {
+		diff.ParamsToSet["max_check_attempts"] = expected.MaxCheckAttempts
+	}
+	if actual.NormalCheckInterval != expected.NormalCheckInterval {
+		diff.ParamsToSet["normal_check_interval"] = expected.NormalCheckInterval
+	}
+	if actual.PassiveCheckEnabled != expected.PassiveCheckEnabled {
+		diff.ParamsToSet["passive_checks_enabled"] = expected.PassiveCheckEnabled
+	}
+	if actual.RetryCheckInterval != expected.RetryCheckInterval {
+		diff.ParamsToSet["retry_check_interval"] = expected.RetryCheckInterval
+	}
+	if actual.Template != expected.Template {
+		diff.ParamsToSet["template"] = expected.Template
+	}
+	if actual.Comment != expected.Comment {
+		diff.ParamsToSet["comment"] = expected.Comment
+	}
+
+	// Check the service groups
+	sgNeed, sgDelete := funk.Difference(expected.Groups, actual.Groups)
+	diff.GroupsToSet = sgNeed.([]string)
+	diff.GroupsToDelete = sgDelete.([]string)
+
+	// Check the categories
+	catNeed, catDelete := funk.Difference(expected.Categories, actual.Categories)
+	diff.CategoriesToSet = catNeed.([]string)
+	diff.CategoriesToDelete = catDelete.([]string)
+
+	// Check macros
+	if actual.Macros == nil {
+		actual.Macros = make([]*models.Macro, 0)
+	}
+	if expected.Macros == nil {
+		expected.Macros = make([]*models.Macro, 0)
+	}
+	copy(diff.MacrosToDelete, actual.Macros)
+	for _, expectedMacro := range expected.Macros {
+		isFound := false
+		for i, actualMacro := range diff.MacrosToDelete {
+			if actualMacro.Name == expectedMacro.Name {
+				if reflect.DeepEqual(actualMacro, expectedMacro) {
+					isFound = true
+				}
+				diff.MacrosToDelete = append(diff.MacrosToDelete[:i], diff.MacrosToDelete[i+1:]...)
+				break
+			}
+		}
+
+		if !isFound {
+			diff.MacrosToSet = append(diff.MacrosToSet, expectedMacro)
+		}
+	}
+
+	// Compute IsDiff
+	if len(diff.ParamsToSet) > 0 || len(diff.CategoriesToDelete) > 0 || len(diff.CategoriesToSet) > 0 || len(diff.GroupsToDelete) > 0 || len(diff.GroupsToSet) > 0 || len(diff.MacrosToDelete) > 0 || len(diff.MacrosToSet) > 0 {
+		diff.IsDiff = true
+		h.log.Debugf("Some diff founds :%s", diff)
+	} else {
+		h.log.Debug("No diff found")
+	}
+
+	return diff, nil
+}
+
+func (h *CentreonHandlerImpl) GetService(host, name string) (service *CentreonService, err error) {
+	if host == "" {
+		return nil, errors.New("Host must be provided")
+	}
+	if name == "" {
+		return nil, errors.New("Service name must be provided")
+	}
+
+	// Get service from Centreon
+	baseService, err := h.client.API.Service().Get(host, name)
+	if err != nil {
+		return nil, err
+	}
+	if baseService == nil {
+		return nil, nil
+	}
+
+	// Get extras params
+	extras, err := h.client.API.Service().GetParam(host, name, []string{"template", "comment"})
+	if err != nil {
+		return nil, err
+	}
+
+	// Get service groups
+	sgs, err := h.client.API.Service().GetServiceGroups(host, name)
+	if err != nil {
+		return nil, err
+	}
+
+	// Get catgeories
+	cats, err := h.client.API.Service().GetCategories(host, name)
+	if err != nil {
+		return nil, err
+	}
+
+	// Get macros
+	macros, err := h.client.API.Service().GetMacros(host, name)
+	if err != nil {
+		return nil, err
+	}
+
+	service = &CentreonService{
+		Host:                host,
+		Name:                name,
+		Template:            extras["template"],
+		Comment:             extras["comment"],
+		CheckCommand:        baseService.CheckCommand,
+		CheckCommandArgs:    baseService.CheckCommandArgs,
+		NormalCheckInterval: baseService.NormalCheckInterval,
+		RetryCheckInterval:  baseService.RetryCheckInterval,
+		MaxCheckAttempts:    baseService.MaxCheckAttempts,
+		ActiveCheckEnabled:  baseService.ActiveCheckEnabled,
+		PassiveCheckEnabled: baseService.PassiveCheckEnabled,
+		Activated:           baseService.Activated,
+		Macros:              macros,
+		Categories:          cats,
+		Groups:              sgs,
+	}
+
+	h.log.Debugf("Actual service: %s", service)
+
+	return service, nil
 }

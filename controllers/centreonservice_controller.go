@@ -24,7 +24,8 @@ import (
 
 	"github.com/disaster37/monitoring-operator/api/v1alpha1"
 	"github.com/sirupsen/logrus"
-	//corev1 "k8s.io/api/core/v1"
+
+	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/tools/record"
@@ -58,19 +59,8 @@ type CentreonServiceReconciler struct {
 // - https://pkg.go.dev/sigs.k8s.io/controller-runtime@v0.10.0/pkg/reconcile
 func (r *CentreonServiceReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 
-	log := r.Log.WithField("ressource", req.NamespacedName)
-	_ = log
-	log.Infof("Starting reconcile loop for %v", req.NamespacedName)
-	defer log.Infof("Finish reconcile loop for %v", req.NamespacedName)
-
-	// Get or wait Centreon ressource
-	/*
-		centreon := r.CentreonConfig.Load().(*v1alpha1.Centreon)
-		if centreon == nil {
-			log.Info("Centreon object is not yet initializd, we wait it 30s")
-			return ctrl.Result{RequeueAfter: 30 * time.Second}, nil
-		}
-	*/
+	r.Log.Infof("Starting reconcile loop for %v", req.NamespacedName)
+	defer r.Log.Infof("Finish reconcile loop for %v", req.NamespacedName)
 
 	// Get instance
 	instance := &v1alpha1.CentreonService{}
@@ -79,85 +69,79 @@ func (r *CentreonServiceReconciler) Reconcile(ctx context.Context, req ctrl.Requ
 		if errors.IsNotFound(err) {
 			return ctrl.Result{}, nil
 		}
-		log.Error(err, "Error when get resource")
+		r.Log.Errorf("Error when get resource: %s", err.Error())
 		return ctrl.Result{}, err
 	}
-
-	log = log.WithFields(logrus.Fields{
+	r.Log = r.Log.WithFields(logrus.Fields{
 		"Host":    instance.Spec.Host,
 		"Service": instance.Spec.Name,
 	})
 
 	// Add finalizer
+	// Requeue if add finalizer to avoid lock resource
 	if !instance.HasFinalizer() {
 		instance.AddFinalizer()
 		if err := r.Update(ctx, instance); err != nil {
-			log.Error(err, "Error when add finalizer")
-			//r.Recorder.Eventf(instance, corev1.EventTypeWarning, "Adding finalizer", "Failed to add finalizer: %s", err)
+			r.Log.Errorf("Error when add finalizer: %s", err.Error())
+			r.Recorder.Eventf(instance, corev1.EventTypeWarning, "Adding finalizer", "Failed to add finalizer: %s", err)
 			return ctrl.Result{}, err
 		}
-		//r.Recorder.Event(instance, corev1.EventTypeNormal, "Added", "Object finalizer is added")
-		log.Info("Add finalizer successfully")
+		r.Recorder.Event(instance, corev1.EventTypeNormal, "Added", "Object finalizer is added")
+		r.Log.Debug("Add finalizer successfully")
+		return ctrl.Result{Requeue: true}, nil
 	}
 
-	r.Service.SetLogger(log)
+	r.Service.SetLogger(r.Log)
 
 	// Delete
 	if instance.IsBeingDeleted() {
 		if instance.HasFinalizer() {
-			if err := r.Service.Delete(&instance.Spec); err != nil {
-				log.Error("Error when delete service on Centreon")
+			if err := r.Service.Delete(instance); err != nil {
+				r.Log.Errorf("Error when delete service on Centreon: %s", err.Error())
+				r.Recorder.Eventf(instance, corev1.EventTypeWarning, "Failed", "Error when delete service on Centreon: %s", err.Error())
 				return ctrl.Result{}, err
 			}
 
 			instance.RemoveFinalizer()
 			if err := r.Update(ctx, instance); err != nil {
-				log.Error("Failed to remove finalizer")
-				//r.Recorder.Eventf(instance, corev1.EventTypeWarning, "Failed", "Error when remove finalizer: %s", err.Error())
+				r.Log.Errorf("Failed to remove finalizer: %s", err.Error())
+				r.Recorder.Eventf(instance, corev1.EventTypeWarning, "Failed", "Error when remove finalizer: %s", err.Error())
 				return ctrl.Result{}, err
 			}
-			log.Info("Remove finalizer successfully")
+			r.Log.Debug("Remove finalizer successfully")
 		}
+		r.Log.Info("Delete Centreon service successfully")
 		return ctrl.Result{}, nil
 	}
 
-	// Create
-	if !instance.IsSubmitted() {
-		_, err := r.Service.CreateOrUpdate(&instance.Spec)
-		if err != nil {
-			log.Error("Error when create service")
-		}
-		// Update status
-		instance.Status.ID = fmt.Sprintf("%s/%s", instance.Spec.Host, instance.Spec.Name)
-		instance.Status.UpdatedAt = time.Now().String()
-		instance.Status.IsAvailable = true
-		if err := r.Status().Update(ctx, instance); err != nil {
-			log.Error("Failed to update CentreonService status")
-			//r.Recorder.Eventf(instance, corev1.EventTypeWarning, "Failed", "Error when update status: %s", err.Error())
-			return ctrl.Result{}, err
-		}
-		//r.Recorder.Event(instance, corev1.EventTypeNormal, "Completed", "Service created on Centreon")
-		return ctrl.Result{}, nil
-	} else {
-		isChange, err := r.Service.CreateOrUpdate(&instance.Spec)
-		if err != nil {
-			log.Error("Error when update service")
-			return ctrl.Result{}, err
-		}
+	// Reconcile
+	isCreated, isUpdated, err := r.Service.Reconcile(instance)
+	if err != nil {
+		r.Log.Errorf("Error when reconcile Centreon service: %s", err.Error())
+		r.Recorder.Eventf(instance, corev1.EventTypeWarning, "Failed", "Error when reconcile: %s", err.Error())
+		return ctrl.Result{}, err
+	}
 
-		if isChange {
-			// Update status
+	if isCreated || isUpdated {
+		if isCreated {
+			instance.Status.CreatedAt = time.Now().String()
+			r.Log.Info("Create service on Centreon successfully")
+			r.Recorder.Event(instance, corev1.EventTypeNormal, "Completed", "Service created on Centreon")
+		} else {
 			instance.Status.UpdatedAt = time.Now().String()
-			if err := r.Status().Update(ctx, instance); err != nil {
-				log.Error("Failed to update CentreonService status")
-				//r.Recorder.Eventf(instance, corev1.EventTypeWarning, "Failed", "Error when update status: %s", err.Error())
-				return ctrl.Result{}, err
-			}
-			//r.Recorder.Event(instance, corev1.EventTypeNormal, "Completed", "Service updated on Centreon")
+			r.Log.Info("Update service on Centreon successfully")
+			r.Recorder.Event(instance, corev1.EventTypeNormal, "Completed", "Service updated on Centreon")
 		}
-
-		return ctrl.Result{}, nil
+		instance.Status.ID = fmt.Sprintf("%s/%s", instance.Spec.Host, instance.Spec.Name)
+		if err := r.Status().Update(ctx, instance); err != nil {
+			r.Log.Errorf("Failed to update status: %s", err.Error())
+			r.Recorder.Eventf(instance, corev1.EventTypeWarning, "Failed", "Error when update status: %s", err.Error())
+			return ctrl.Result{}, err
+		}
 	}
+
+	return ctrl.Result{}, nil
+
 }
 
 // SetupWithManager sets up the controller with the Manager.

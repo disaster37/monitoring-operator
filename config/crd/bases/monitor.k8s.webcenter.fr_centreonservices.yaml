@@ -93,6 +93,10 @@ spec:
           status:
             description: CentreonServiceStatus defines the observed state of CentreonService
             properties:
+              CreatedAt:
+                description: The date when service is created on Centreon by operator
+                  It can stay empty if service will be created by external process
+                type: string
               id:
                 description: The service ID on Centreon
                 type: string

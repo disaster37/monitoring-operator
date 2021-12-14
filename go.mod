@@ -6,7 +6,7 @@ require (
 	github.com/disaster37/go-centreon-rest/v21 v21.0.2
 	github.com/go-logr/logr v0.4.0
 	github.com/golang/mock v1.6.0
-	github.com/onsi/ginkgo v1.16.5
+	github.com/onsi/ginkgo v1.16.5 // indirect
 	github.com/onsi/gomega v1.17.0
 	github.com/pkg/errors v0.9.1
 	github.com/sirupsen/logrus v1.8.1

@@ -1,4 +1,4 @@
-MONITORING_URL ?= "https://centreon/centreon/api.php
+MONITORING_URL ?= "http://localhost/centreon/api.php
 MONITORING_USERNAME ?= "admin"
 MONITORING_PASSWORD ?= "admin"
 
@@ -89,8 +89,14 @@ fmt: ## Run go fmt against code.
 vet: ## Run go vet against code.
 	go vet ./...
 
-test: manifests generate fmt envtest ## Run tests.
-	KUBEBUILDER_ASSETS="$(shell $(ENVTEST) use $(ENVTEST_K8S_VERSION) -p path)" go test ./pkg/... ./api/... -v -coverprofile cover.out
+mock-gen:
+	go install github.com/golang/mock/mockgen@v1.6.0
+	mockgen --build_flags=--mod=mod -destination=pkg/mocks/centreon.go -package=mocks github.com/disaster37/monitoring-operator/pkg/centreonhandler CentreonHandler
+	mockgen --build_flags=--mod=mod -destination=pkg/mocks/centreon_service.go -package=mocks github.com/disaster37/monitoring-operator/controllers CentreonService
+
+
+test: manifests generate mock-gen fmt envtest ## Run tests.
+	KUBEBUILDER_ASSETS="$(shell $(ENVTEST) use $(ENVTEST_K8S_VERSION) -p path)" go test ./...  -v -coverprofile cover.out $(TESTARGS) -timeout 600s
 
 ##@ Build
 
