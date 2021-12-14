@@ -28,9 +28,9 @@ jobs:
       with:
         go-version: '1.16' # The Go version to download (if necessary) and use.
     # Setup operator-sdk
-    - uses: shivanshs9/setup-k8s-operator-sdk@v1
+    - uses: shivanshs9/setup-k8s-operator-sdk@v1.1.5
       with:
-        version: "1.15.0"
+        version: "^1.15.0"
     # Install all the dependencies
     - name: Install dependencies
       run: |
