@@ -13,9 +13,7 @@ COPY go.sum go.sum
 RUN go mod download
 
 # Copy the go source
-COPY *.go ./
-COPY api/ api/
-COPY controllers/ controllers/
+COPY . ./
 
 # Build
 RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -a -ldflags "-s -w -X main.version=${version} -X main.commit=${commit}" -o manager .

@@ -17,7 +17,6 @@ jobs:
   build:
     # The type of runner that the job will run on
     runs-on: ubuntu-latest
-
     # Steps represent a sequence of tasks that will be executed as part of the job
     steps:
     # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
@@ -32,11 +31,6 @@ jobs:
       uses: jpkrohling/setup-operator-sdk@v1.1.0
       with:
         operator-sdk-version: v1.15.0
-    # Install all the dependencies
-    - name: Install dependencies
-      run: |
-        go version
-        go env
     # Run build of the application
     - name: Run build
       run: make build
@@ -47,6 +41,25 @@ jobs:
         files: cover.out
         flags: unittests
         fail_ci_if_error: true
+    - name: Setup Minikube
+      uses: manusa/actions-setup-minikube@v2.4.2
+      with:
+        minikube version: 'v1.23.2'
+        kubernetes version: 'v1.21.5'
+        driver: docker
+        start args: --addons ingress
+    - name: Setup Centreon
+      run: |
+        #!/bin/bash
+        set -e
+
+        docker run --name centreon -d --privileged -t -p 80:80 disaster/centreon:21.10-installed
+    - name: Setup tests
+      run: |
+        #!/bin/bash
+        set -e
+        minikube status
+        make install run
 
 
   release:
