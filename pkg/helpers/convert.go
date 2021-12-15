@@ -8,7 +8,7 @@ import (
 func BoolToString(value *bool) (result string) {
 
 	if value == nil {
-		return "default"
+		return "2"
 	}
 
 	switch *value {
@@ -17,7 +17,7 @@ func BoolToString(value *bool) (result string) {
 	case false:
 		return "0"
 	default:
-		return "default"
+		return "2"
 	}
 }
 

@@ -1,4 +1,4 @@
-MONITORING_URL ?= "http://localhost/centreon/api.php"
+MONITORING_URL ?= "http://localhost/centreon/api/index.php"
 MONITORING_USERNAME ?= "admin"
 MONITORING_PASSWORD ?= "admin"
 MONITORING_PLATEFORM ?= "centreon"
@@ -108,7 +108,7 @@ build: generate fmt vet ## Build manager binary.
 	go build -o bin/manager .
 
 run: manifests generate fmt vet ## Run a controller from your host.
-	MONITORING_PLATEFORM=$(MONITORING_PLATEFORM) MONITORING_URL=$(MONITORING_URL) MONITORING_USERNAME=$(MONITORING_USERNAME) MONITORING_PASSWORD=$(MONITORING_PASSWORD) LOG_LEVEL=DEBUG go run .
+	MONITORING_PLATEFORM=$(MONITORING_PLATEFORM) MONITORING_URL=$(MONITORING_URL) MONITORING_USERNAME=$(MONITORING_USERNAME) MONITORING_PASSWORD=$(MONITORING_PASSWORD) LOG_LEVEL=debug go run .
 
 install-sample: manifests kustomize ## Install samples
 	$(KUSTOMIZE) build config/samples | kubectl apply -f -

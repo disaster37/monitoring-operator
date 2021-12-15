@@ -41,7 +41,7 @@ type CentreonSpecEndpoint struct {
 	DiscoverEnpoint bool `json:"discoverEndpoint"`
 
 	// The default service template to use when create service from endpoint
-	// +optional
+	// It normally optional, but Centreon bug impose to set an existed template
 	Template string `json:"template"`
 
 	// The default template name when create service from endpoint

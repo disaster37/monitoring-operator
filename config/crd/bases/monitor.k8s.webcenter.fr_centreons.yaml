@@ -76,10 +76,12 @@ spec:
                     type: array
                   template:
                     description: The default service template to use when create service
-                      from endpoint
+                      from endpoint It normally optional, but Centreon bug impose
+                      to set an existed template
                     type: string
                 required:
                 - discoverEndpoint
+                - template
                 type: object
             required:
             - endpoint

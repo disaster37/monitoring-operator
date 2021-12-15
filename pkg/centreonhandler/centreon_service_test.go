@@ -23,8 +23,8 @@ func (t *CentreonHandlerTestSuite) TestCreateService() {
 		Categories:          []string{"cat1"},
 		Macros:              []*models.Macro{macro1},
 		Activated:           "1",
-		PassiveCheckEnabled: "default",
-		ActiveCheckEnabled:  "default",
+		PassiveCheckEnabled: "2",
+		ActiveCheckEnabled:  "2",
 		Comment:             "some comments",
 		NormalCheckInterval: "30s",
 		RetryCheckInterval:  "1s",
@@ -56,10 +56,10 @@ func (t *CentreonHandlerTestSuite) TestCreateService() {
 		SetParam(gomock.Eq("central"), gomock.Eq("ping"), gomock.Eq("activate"), gomock.Eq("1")).
 		Return(nil)
 	t.mockService.EXPECT().
-		SetParam(gomock.Eq("central"), gomock.Eq("ping"), gomock.Eq("active_checks_enabled"), gomock.Eq("default")).
+		SetParam(gomock.Eq("central"), gomock.Eq("ping"), gomock.Eq("active_checks_enabled"), gomock.Eq("2")).
 		Return(nil)
 	t.mockService.EXPECT().
-		SetParam(gomock.Eq("central"), gomock.Eq("ping"), gomock.Eq("passive_checks_enabled"), gomock.Eq("default")).
+		SetParam(gomock.Eq("central"), gomock.Eq("ping"), gomock.Eq("passive_checks_enabled"), gomock.Eq("2")).
 		Return(nil)
 	t.mockService.EXPECT().
 		SetParam(gomock.Eq("central"), gomock.Eq("ping"), gomock.Eq("comment"), gomock.Eq("some comments")).
@@ -176,8 +176,8 @@ func (t *CentreonHandlerTestSuite) TestGetService() {
 		Categories:          []string{"cat1"},
 		Macros:              []*models.Macro{macro1},
 		Activated:           "1",
-		PassiveCheckEnabled: "default",
-		ActiveCheckEnabled:  "default",
+		PassiveCheckEnabled: "2",
+		ActiveCheckEnabled:  "2",
 		Comment:             "my comment",
 		NormalCheckInterval: "30s",
 		RetryCheckInterval:  "1s",
@@ -190,8 +190,8 @@ func (t *CentreonHandlerTestSuite) TestGetService() {
 			Name:                "ping",
 			CheckCommand:        "ping",
 			Activated:           "1",
-			ActiveCheckEnabled:  "default",
-			PassiveCheckEnabled: "default",
+			ActiveCheckEnabled:  "2",
+			PassiveCheckEnabled: "2",
 			CheckCommandArgs:    "!arg1",
 			NormalCheckInterval: "30s",
 			RetryCheckInterval:  "1s",
@@ -280,8 +280,10 @@ func (t *CentreonHandlerTestSuite) TestDiffService() {
 				Categories:          []string{"cat2"},
 				Macros: []*models.Macro{
 					{
-						Name:  "macro2",
-						Value: "value2",
+						Name:       "macro2",
+						Value:      "value2",
+						Source:     "direct",
+						IsPassword: "0",
 					},
 				},
 			},
@@ -302,8 +304,10 @@ func (t *CentreonHandlerTestSuite) TestDiffService() {
 				Categories:          []string{"cat2"},
 				Macros: []*models.Macro{
 					{
-						Name:  "macro2",
-						Value: "value2",
+						Name:       "macro2",
+						Value:      "value2",
+						Source:     "direct",
+						IsPassword: "0",
 					},
 				},
 			},
@@ -339,8 +343,10 @@ func (t *CentreonHandlerTestSuite) TestDiffService() {
 				Categories:          []string{"cat1"},
 				Macros: []*models.Macro{
 					{
-						Name:  "macro1",
-						Value: "value1",
+						Name:       "macro1",
+						Value:      "value1",
+						Source:     "direct",
+						IsPassword: "0",
 					},
 				},
 			},
@@ -361,8 +367,10 @@ func (t *CentreonHandlerTestSuite) TestDiffService() {
 				Categories:          []string{"cat2"},
 				Macros: []*models.Macro{
 					{
-						Name:  "macro2",
-						Value: "value2",
+						Name:       "macro2",
+						Value:      "value2",
+						Source:     "direct",
+						IsPassword: "0",
 					},
 				},
 			},
@@ -388,14 +396,18 @@ func (t *CentreonHandlerTestSuite) TestDiffService() {
 				CategoriesToDelete: []string{"cat1"},
 				MacrosToSet: []*models.Macro{
 					{
-						Name:  "macro2",
-						Value: "value2",
+						Name:       "macro2",
+						Value:      "value2",
+						Source:     "direct",
+						IsPassword: "0",
 					},
 				},
 				MacrosToDelete: []*models.Macro{
 					{
-						Name:  "macro1",
-						Value: "value1",
+						Name:       "macro1",
+						Value:      "value1",
+						Source:     "direct",
+						IsPassword: "0",
 					},
 				},
 			},

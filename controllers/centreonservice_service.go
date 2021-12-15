@@ -1,6 +1,8 @@
 package controllers
 
 import (
+	"strings"
+
 	"github.com/disaster37/go-centreon-rest/v21/models"
 	"github.com/disaster37/monitoring-operator/api/v1alpha1"
 	"github.com/disaster37/monitoring-operator/pkg/centreonhandler"
@@ -69,7 +71,7 @@ func (cs *CentreonServiceImpl) Reconcile(centreonService *v1alpha1.CentreonServi
 	}
 	for name, value := range centreonService.Spec.Macros {
 		macro := &models.Macro{
-			Name:       name,
+			Name:       strings.ToUpper(name),
 			Value:      value,
 			IsPassword: "0",
 		}

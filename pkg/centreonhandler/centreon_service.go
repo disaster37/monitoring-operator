@@ -1,7 +1,6 @@
 package centreonhandler
 
 import (
-	"reflect"
 	"strings"
 
 	"github.com/disaster37/go-centreon-rest/v21/models"
@@ -231,11 +230,23 @@ func (h *CentreonHandlerImpl) DiffService(actual, expected *CentreonService) (di
 		expected.Macros = make([]*models.Macro, 0)
 	}
 	copy(diff.MacrosToDelete, actual.Macros)
+	// The IsPassword macro with value "" or "0" is the same
+	// We mitigeate this behavior here
+	for _, macro := range diff.MacrosToDelete {
+		if macro.IsPassword == "" {
+			macro.IsPassword = "0"
+		}
+	}
+	for _, macro := range expected.Macros {
+		if macro.IsPassword == "" {
+			macro.IsPassword = "0"
+		}
+	}
 	for _, expectedMacro := range expected.Macros {
 		isFound := false
 		for i, actualMacro := range diff.MacrosToDelete {
 			if actualMacro.Name == expectedMacro.Name {
-				if reflect.DeepEqual(actualMacro, expectedMacro) {
+				if actualMacro.Value == expectedMacro.Value && actualMacro.IsPassword == expectedMacro.IsPassword {
 					isFound = true
 				}
 				diff.MacrosToDelete = append(diff.MacrosToDelete[:i], diff.MacrosToDelete[i+1:]...)
@@ -245,6 +256,12 @@ func (h *CentreonHandlerImpl) DiffService(actual, expected *CentreonService) (di
 
 		if !isFound {
 			diff.MacrosToSet = append(diff.MacrosToSet, expectedMacro)
+		}
+	}
+	// Remove indirect macro herited by templates
+	for i, macro := range diff.MacrosToDelete {
+		if macro.Source != "direct" {
+			diff.MacrosToDelete = append(diff.MacrosToDelete[:i], diff.MacrosToDelete[i+1:]...)
 		}
 	}
 

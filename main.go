@@ -113,6 +113,9 @@ func main() {
 			setupLog.Error(err, "unable to get Centreon config")
 			os.Exit(1)
 		}
+		if log.GetLevel() == logrus.DebugLevel {
+			cfg.Debug = true
+		}
 		centreonClient, err := centreon.NewClient(cfg)
 		if err != nil {
 			setupLog.Error(err, "unable to get Centreon client")

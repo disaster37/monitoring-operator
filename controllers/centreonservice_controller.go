@@ -124,11 +124,11 @@ func (r *CentreonServiceReconciler) Reconcile(ctx context.Context, req ctrl.Requ
 
 	if isCreated || isUpdated {
 		if isCreated {
-			instance.Status.CreatedAt = time.Now().String()
+			instance.Status.CreatedAt = time.Now().Format(time.RFC3339)
 			r.Log.Info("Create service on Centreon successfully")
 			r.Recorder.Event(instance, corev1.EventTypeNormal, "Completed", "Service created on Centreon")
 		} else {
-			instance.Status.UpdatedAt = time.Now().String()
+			instance.Status.UpdatedAt = time.Now().Format(time.RFC3339)
 			r.Log.Info("Update service on Centreon successfully")
 			r.Recorder.Event(instance, corev1.EventTypeNormal, "Completed", "Service updated on Centreon")
 		}

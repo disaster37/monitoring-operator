@@ -114,7 +114,7 @@ func (t *ControllerTestSuite) TestCentreonServiceReconcile() {
 		Categories:          []string{"cat1"},
 		Macros: []*models.Macro{
 			{
-				Name:       "macro1",
+				Name:       "MACRO1",
 				Value:      "value1",
 				IsPassword: "0",
 			},

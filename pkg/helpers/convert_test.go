@@ -12,7 +12,7 @@ func TestBoolToString(t *testing.T) {
 
 	assert.Equal(t, "1", BoolToString(&trueValue))
 	assert.Equal(t, "0", BoolToString(&falseValue))
-	assert.Equal(t, "default", BoolToString(nil))
+	assert.Equal(t, "2", BoolToString(nil))
 }
 
 func TestCheckArgumentsToString(t *testing.T) {
