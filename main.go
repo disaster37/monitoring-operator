@@ -36,6 +36,7 @@ import (
 	monitorv1alpha1 "github.com/disaster37/monitoring-operator/api/v1alpha1"
 	"github.com/disaster37/monitoring-operator/controllers"
 	"github.com/disaster37/monitoring-operator/pkg/centreonhandler"
+	"github.com/disaster37/monitoring-operator/pkg/helpers"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	//+kubebuilder:scaffold:imports
@@ -107,7 +108,7 @@ func main() {
 	switch monitoringType {
 	case MONITORING_CENTREON:
 		// Init Centreon API client
-		cfg, err := getCentreonConfig()
+		cfg, err := helpers.GetCentreonConfig()
 		if err != nil {
 			setupLog.Error(err, "unable to get Centreon config")
 			os.Exit(1)

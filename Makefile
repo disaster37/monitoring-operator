@@ -1,4 +1,4 @@
-MONITORING_URL ?= "http://localhost/centreon/api.php
+MONITORING_URL ?= "http://localhost/centreon/api.php"
 MONITORING_USERNAME ?= "admin"
 MONITORING_PASSWORD ?= "admin"
 
@@ -97,6 +97,9 @@ mock-gen:
 
 test: manifests generate mock-gen fmt envtest ## Run tests.
 	KUBEBUILDER_ASSETS="$(shell $(ENVTEST) use $(ENVTEST_K8S_VERSION) -p path)" go test ./...  -v -coverprofile cover.out $(TESTARGS) -timeout 600s
+
+test-acc:
+	MONITORING_URL=$(MONITORING_URL) MONITORING_USERNAME=$(MONITORING_USERNAME) MONITORING_PASSWORD=$(MONITORING_PASSWORD) go test ./acctests/... -v $(TESTARGS) -timeout 600s
 
 ##@ Build
 

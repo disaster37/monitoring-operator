@@ -53,13 +53,15 @@ jobs:
         #!/bin/bash
         set -e
 
-        docker run --name centreon -d --privileged -t -p 80:80 disaster/centreon:21.10-installed
-    - name: Setup tests
+        docker run --name centreon -d --privileged -t -p 80:80 disaster/centreon:21.10-configured
+        until $(curl --output /dev/null --silent --head --fail http://localhost/centreon/index.php); do sleep 5; done
+    - name: Run acceptance tests
       run: |
         #!/bin/bash
         set -e
         minikube status
-        make install run
+        make install run &
+        make test-acc
 
 
   release:
