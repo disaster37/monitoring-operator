@@ -136,6 +136,7 @@ func main() {
 			Service:        controllers.NewCentreonService(centreonHandler),
 			CentreonConfig: a,
 			Log:            logController,
+			Recorder:       mgr.GetEventRecorderFor("centreonservice-controller"),
 		}).SetupWithManager(mgr); err != nil {
 			setupLog.Error(err, "unable to create controller", "controller", "CentreonService")
 			os.Exit(1)

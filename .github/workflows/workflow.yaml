@@ -60,7 +60,8 @@ jobs:
         #!/bin/bash
         set -e
         minikube status
-        make install run &
+        make install
+        make run &
         sleep 60
         make test-acc
 
