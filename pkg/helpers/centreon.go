@@ -7,12 +7,14 @@ import (
 	"github.com/pkg/errors"
 )
 
-func GetCentreonConfig() (cfg *models.Config, err error) {
+const (
+	urlEnvVar             = "MONITORING_URL"
+	usernameEnvVar        = "MONITORING_USERNAME"
+	passwordEnvVar        = "MONITORING_PASSWORD"
+	disableSSLCheckEnvVar = "MONITORING_DISABLE_SSL_CHECK"
+)
 
-	urlEnvVar := "MONITORING_URL"
-	usernameEnvVar := "MONITORING_USERNAME"
-	passwordEnvVar := "MONITORING_PASSWORD"
-	disableSSLCheckEnvVar := "MONITORING_DISABLE_SSL_CHECK"
+func GetCentreonConfig() (cfg *models.Config, err error) {
 
 	url, found := os.LookupEnv(urlEnvVar)
 	if !found {
