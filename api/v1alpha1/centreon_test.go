@@ -30,9 +30,7 @@ func (t *V1alpha1TestSuite) TestCentreonCRUD() {
 			Namespace: key.Namespace,
 		},
 		Spec: CentreonSpec{
-			Endpoints: &CentreonSpecEndpoint{
-				DiscoverEnpoint: false,
-			},
+			Endpoints: &CentreonSpecEndpoint{},
 		},
 	}
 	err = t.k8sClient.Create(context.Background(), created)

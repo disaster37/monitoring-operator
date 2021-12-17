@@ -37,9 +37,6 @@ type CentreonSpec struct {
 // +k8s:openapi-gen=true
 type CentreonSpecEndpoint struct {
 
-	// Auto create service when discover new endpoint
-	DiscoverEnpoint bool `json:"discoverEndpoint"`
-
 	// The default service template to use when create service from endpoint
 	// It normally optional, but Centreon bug impose to set an existed template
 	Template string `json:"template"`
@@ -60,21 +57,20 @@ type CentreonSpecEndpoint struct {
 	// The default command arguements to set when create service
 	// You can use special tag to generate value on the flow
 	// +optional
-	Args []string `json:"args;omitempty"`
+	Arguments []string `json:"args;omitempty"`
 
 	// By default, activate service when created it
 	// Default to true
 	// +optional
-	ActivateService *bool `json:"activeService;omitempty"`
-
-	// Reload poller when it modify service on Centreon
-	// Default to false
-	// +optional
-	ReloadPoller *bool `json:"reloadPoller;omitempty"`
+	ActivateService bool `json:"activeService;omitempty"`
 
 	// Default service groups
 	// +optional
 	ServiceGroups []string `json:"serviceGroups;omitempty"`
+
+	// Default categories
+	// +optional
+	Categories []string `json:"categories;omitempty"`
 }
 
 // CentreonStatus defines the observed state of Centreon

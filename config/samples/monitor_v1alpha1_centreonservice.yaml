@@ -1,9 +1,10 @@
 apiVersion: monitor.k8s.webcenter.fr/v1alpha1
 kind: CentreonService
 metadata:
-  name: centreonservice-sample
+  name: cs-sample
 spec:
   host: localhost
   name: test-ping
-  checkCommand: "ping"
+  template: template-test
+  checkCommand: ping
   activate: true

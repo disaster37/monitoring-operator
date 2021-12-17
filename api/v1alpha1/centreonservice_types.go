@@ -152,3 +152,12 @@ func (c *CentreonService) AddFinalizer() {
 func (c *CentreonService) RemoveFinalizer() {
 	controllerutil.RemoveFinalizer(c, centreonServicedFinalizer)
 }
+
+// IsValid check Centreon service is valid for Centreon
+func (c *CentreonService) IsValid() bool {
+	if c.Spec.Host == "" || c.Spec.Name == "" || c.Spec.Template == "" {
+		return false
+	}
+
+	return true
+}

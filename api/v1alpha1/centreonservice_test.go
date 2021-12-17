@@ -1,6 +1,7 @@
 package v1alpha1
 
 import (
+	"testing"
 	"time"
 
 	"github.com/disaster37/monitoring-operator/pkg/helpers"
@@ -79,4 +80,49 @@ func (t *V1alpha1TestSuite) TestCentreonServiceFinalizer() {
 	centreonService.RemoveFinalizer()
 	assert.Equal(t.T(), 0, len(centreonService.GetFinalizers()))
 	assert.False(t.T(), centreonService.HasFinalizer())
+}
+
+func TestCentreonServiceIsValid(t *testing.T) {
+	var centreonService *CentreonService
+
+	// When is valid
+	centreonService = &CentreonService{
+		Spec: CentreonServiceSpec{
+			Host:     "localhost",
+			Name:     "ping",
+			Template: "template",
+		},
+	}
+	assert.True(t, centreonService.IsValid())
+
+	// When invalid
+	centreonService = &CentreonService{
+		Spec: CentreonServiceSpec{
+			Host:     "",
+			Name:     "ping",
+			Template: "template",
+		},
+	}
+	assert.False(t, centreonService.IsValid())
+
+	centreonService = &CentreonService{
+		Spec: CentreonServiceSpec{
+			Host:     "localhost",
+			Name:     "",
+			Template: "template",
+		},
+	}
+	assert.False(t, centreonService.IsValid())
+
+	centreonService = &CentreonService{
+		Spec: CentreonServiceSpec{
+			Host:     "localhost",
+			Name:     "ping",
+			Template: "",
+		},
+	}
+	assert.False(t, centreonService.IsValid())
+
+	centreonService = &CentreonService{}
+	assert.False(t, centreonService.IsValid())
 }

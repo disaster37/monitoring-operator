@@ -49,12 +49,14 @@ spec:
                     items:
                       type: string
                     type: array
+                  categories;omitempty:
+                    description: Default categories
+                    items:
+                      type: string
+                    type: array
                   defaultHost:
                     description: The default host to attach service
                     type: string
-                  discoverEndpoint:
-                    description: Auto create service when discover new endpoint
-                    type: boolean
                   macros;omitempty:
                     additionalProperties:
                       type: string
@@ -65,10 +67,6 @@ spec:
                     description: The default template name when create service from
                       endpoint
                     type: string
-                  reloadPoller;omitempty:
-                    description: Reload poller when it modify service on Centreon
-                      Default to false
-                    type: boolean
                   serviceGroups;omitempty:
                     description: Default service groups
                     items:
@@ -80,7 +78,6 @@ spec:
                       to set an existed template
                     type: string
                 required:
-                - discoverEndpoint
                 - template
                 type: object
             required:

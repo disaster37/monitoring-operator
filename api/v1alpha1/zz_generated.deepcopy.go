@@ -234,23 +234,18 @@ func (in *CentreonSpecEndpoint) DeepCopyInto(out *CentreonSpecEndpoint) {
 			(*out)[key] = val
 		}
 	}
-	if in.Args != nil {
-		in, out := &in.Args, &out.Args
+	if in.Arguments != nil {
+		in, out := &in.Arguments, &out.Arguments
 		*out = make([]string, len(*in))
 		copy(*out, *in)
 	}
-	if in.ActivateService != nil {
-		in, out := &in.ActivateService, &out.ActivateService
-		*out = new(bool)
-		**out = **in
-	}
-	if in.ReloadPoller != nil {
-		in, out := &in.ReloadPoller, &out.ReloadPoller
-		*out = new(bool)
-		**out = **in
-	}
 	if in.ServiceGroups != nil {
 		in, out := &in.ServiceGroups, &out.ServiceGroups
+		*out = make([]string, len(*in))
+		copy(*out, *in)
+	}
+	if in.Categories != nil {
+		in, out := &in.Categories, &out.Categories
 		*out = make([]string, len(*in))
 		copy(*out, *in)
 	}
