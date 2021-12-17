@@ -124,9 +124,7 @@ func main() {
 		centreonHandler := centreonhandler.NewCentreonHandler(centreonClient, logrus.NewEntry(log))
 
 		// Init CentreonConfig
-		centreonConfig := &monitorv1alpha1.Centreon{}
 		var a atomic.Value
-		a.Store(centreonConfig.Spec)
 
 		// Set controllers for Centreon resources
 		logController := log.WithFields(logrus.Fields{
@@ -137,7 +135,7 @@ func main() {
 			Client:         mgr.GetClient(),
 			Scheme:         mgr.GetScheme(),
 			Service:        controllers.NewCentreonService(centreonHandler),
-			CentreonConfig: a,
+			CentreonConfig: &a,
 			Log:            logController,
 			Recorder:       mgr.GetEventRecorderFor("centreonservice-controller"),
 		}).SetupWithManager(mgr); err != nil {
@@ -148,7 +146,7 @@ func main() {
 		if err = (&controllers.IngressCentreonReconciler{
 			Client:         mgr.GetClient(),
 			Scheme:         mgr.GetScheme(),
-			CentreonConfig: a,
+			CentreonConfig: &a,
 			Log: log.WithFields(logrus.Fields{
 				"type": "controllers",
 				"name": "IngressCentreon",

@@ -1,13 +1,18 @@
 package controllers
 
 import (
+	"context"
+	"errors"
 	"testing"
+	"time"
 
 	"github.com/disaster37/monitoring-operator/api/v1alpha1"
+	"github.com/disaster37/monitoring-operator/pkg/helpers"
 	"github.com/stretchr/testify/assert"
 	networkv1 "k8s.io/api/networking/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/types"
 )
 
 func TestInitIngressCentreonServiceDefaultValue(t *testing.T) {
@@ -618,16 +623,223 @@ func TestVentreonServiceFromIngress(t *testing.T) {
 
 }
 
-/*
-func (t *ControllerTestSuite) TestCentreonServiceFromIngress() {
-	var (
-		ingress    *networkv1.Ingress
-		cs         *v1alpha1.CentreonService
-		expectedCS *v1alpha1.CentreonService
-		err        error
-	)
+func (t *ControllerTestSuite) TestIngressCentreonControllerWhenNoCentreonSpec() {
 
-	// When ingress is nil
-	t.
+	var (
+		err                     error
+		fetched                 *networkv1.Ingress
+		cs                      *v1alpha1.CentreonService
+		expectedCentreonService *v1alpha1.CentreonService
+		isTimeout               bool
+	)
+	ingressName := "t-ingress-" + helpers.RandomString(10)
+	key := types.NamespacedName{
+		Name:      ingressName,
+		Namespace: "default",
+	}
+
+	//Create new ingress
+	pathType := networkv1.PathTypePrefix
+	toCreate := &networkv1.Ingress{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      key.Name,
+			Namespace: key.Namespace,
+			Labels: map[string]string{
+				"app": "appTest",
+				"env": "dev",
+			},
+			Annotations: map[string]string{
+				"monitor.k8s.webcenter.fr/discover":                       "true",
+				"centreon.monitor.k8s.webcenter.fr/name":                  "ping",
+				"centreon.monitor.k8s.webcenter.fr/template":              "template",
+				"centreon.monitor.k8s.webcenter.fr/host":                  "localhost",
+				"centreon.monitor.k8s.webcenter.fr/macros":                `{"mac1": "value1", "mac2": "value2"}`,
+				"centreon.monitor.k8s.webcenter.fr/arguments":             "arg1, arg2",
+				"centreon.monitor.k8s.webcenter.fr/activated":             "1",
+				"centreon.monitor.k8s.webcenter.fr/groups":                "sg1",
+				"centreon.monitor.k8s.webcenter.fr/categories":            "cat1",
+				"centreon.monitor.k8s.webcenter.fr/normal-check-interval": "30",
+				"centreon.monitor.k8s.webcenter.fr/retry-check-interval":  "10",
+				"centreon.monitor.k8s.webcenter.fr/max-check-attempts":    "5",
+				"centreon.monitor.k8s.webcenter.fr/active-check-enabled":  "2",
+				"centreon.monitor.k8s.webcenter.fr/passive-check-enabled": "2",
+			},
+		},
+		Spec: networkv1.IngressSpec{
+			Rules: []networkv1.IngressRule{
+				{
+					Host: "front.local.local",
+					IngressRuleValue: networkv1.IngressRuleValue{
+						HTTP: &networkv1.HTTPIngressRuleValue{
+							Paths: []networkv1.HTTPIngressPath{
+								{
+									Path:     "/",
+									PathType: &pathType,
+									Backend: networkv1.IngressBackend{
+										Service: &networkv1.IngressServiceBackend{
+											Name: "test",
+											Port: networkv1.ServiceBackendPort{Number: 80},
+										},
+									},
+								},
+								{
+									Path:     "/api",
+									PathType: &pathType,
+									Backend: networkv1.IngressBackend{
+										Service: &networkv1.IngressServiceBackend{
+											Name: "test",
+											Port: networkv1.ServiceBackendPort{Number: 80},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+				{
+					Host: "back.local.local",
+					IngressRuleValue: networkv1.IngressRuleValue{
+						HTTP: &networkv1.HTTPIngressRuleValue{
+							Paths: []networkv1.HTTPIngressPath{
+								{
+									Path:     "/",
+									PathType: &pathType,
+									Backend: networkv1.IngressBackend{
+										Service: &networkv1.IngressServiceBackend{
+											Name: "test",
+											Port: networkv1.ServiceBackendPort{Number: 80},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			TLS: []networkv1.IngressTLS{
+				{
+					Hosts: []string{"back.local.local"},
+				},
+			},
+		},
+	}
+	expectedCentreonService = &v1alpha1.CentreonService{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "test",
+			Namespace: "default",
+			Labels: map[string]string{
+				"app": "appTest",
+				"env": "dev",
+			},
+			Annotations: map[string]string{
+				"monitor.k8s.webcenter.fr/discover":                       "true",
+				"centreon.monitor.k8s.webcenter.fr/name":                  "ping",
+				"centreon.monitor.k8s.webcenter.fr/template":              "template",
+				"centreon.monitor.k8s.webcenter.fr/host":                  "localhost",
+				"centreon.monitor.k8s.webcenter.fr/macros":                `{"mac1": "value1", "mac2": "value2"}`,
+				"centreon.monitor.k8s.webcenter.fr/arguments":             "arg1, arg2",
+				"centreon.monitor.k8s.webcenter.fr/activated":             "1",
+				"centreon.monitor.k8s.webcenter.fr/groups":                "sg1",
+				"centreon.monitor.k8s.webcenter.fr/categories":            "cat1",
+				"centreon.monitor.k8s.webcenter.fr/normal-check-interval": "30",
+				"centreon.monitor.k8s.webcenter.fr/retry-check-interval":  "10",
+				"centreon.monitor.k8s.webcenter.fr/max-check-attempts":    "5",
+				"centreon.monitor.k8s.webcenter.fr/active-check-enabled":  "2",
+				"centreon.monitor.k8s.webcenter.fr/passive-check-enabled": "2",
+			},
+		},
+		Spec: v1alpha1.CentreonServiceSpec{
+			Host:     "localhost",
+			Name:     "ping",
+			Template: "template",
+			Macros: map[string]string{
+				"mac1": "value1",
+				"mac2": "value2",
+			},
+			Arguments:           []string{"arg1", "arg2"},
+			Activated:           true,
+			Groups:              []string{"sg1"},
+			Categories:          []string{"cat1"},
+			NormalCheckInterval: "30",
+			RetryCheckInterval:  "10",
+			MaxCheckAttempts:    "5",
+		},
+	}
+	err = t.k8sClient.Create(context.Background(), toCreate)
+	assert.NoError(t.T(), err)
+	isTimeout, err = RunWithTimeout(func() error {
+		cs = &v1alpha1.CentreonService{}
+		if err := t.k8sClient.Get(context.Background(), key, cs); err != nil {
+			return errors.New("Not yet created")
+		}
+		return nil
+	}, time.Second*30, time.Second*1)
+	assert.NoError(t.T(), err)
+	assert.False(t.T(), isTimeout)
+	assert.Equal(t.T(), expectedCentreonService.Spec, cs.Spec)
+	assert.Equal(t.T(), expectedCentreonService.GetLabels(), cs.GetLabels())
+	assert.Equal(t.T(), expectedCentreonService.GetAnnotations(), cs.GetAnnotations())
+	time.Sleep(10 * time.Second)
+
+	// Update Ingress
+	fetched = &networkv1.Ingress{}
+	if err := t.k8sClient.Get(context.Background(), key, fetched); err != nil {
+		t.T().Fatal(err)
+	}
+
+	fetched.ObjectMeta.Annotations["centreon.monitor.k8s.webcenter.fr/max-check-attempts"] = "6"
+
+	expectedCentreonService = &v1alpha1.CentreonService{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "test",
+			Namespace: "default",
+			Labels: map[string]string{
+				"app": "appTest",
+				"env": "dev",
+			},
+			Annotations: map[string]string{
+				"monitor.k8s.webcenter.fr/discover":                       "true",
+				"centreon.monitor.k8s.webcenter.fr/name":                  "ping",
+				"centreon.monitor.k8s.webcenter.fr/template":              "template",
+				"centreon.monitor.k8s.webcenter.fr/host":                  "localhost",
+				"centreon.monitor.k8s.webcenter.fr/macros":                `{"mac1": "value1", "mac2": "value2"}`,
+				"centreon.monitor.k8s.webcenter.fr/arguments":             "arg1, arg2",
+				"centreon.monitor.k8s.webcenter.fr/activated":             "1",
+				"centreon.monitor.k8s.webcenter.fr/groups":                "sg1",
+				"centreon.monitor.k8s.webcenter.fr/categories":            "cat1",
+				"centreon.monitor.k8s.webcenter.fr/normal-check-interval": "30",
+				"centreon.monitor.k8s.webcenter.fr/retry-check-interval":  "10",
+				"centreon.monitor.k8s.webcenter.fr/max-check-attempts":    "6",
+				"centreon.monitor.k8s.webcenter.fr/active-check-enabled":  "2",
+				"centreon.monitor.k8s.webcenter.fr/passive-check-enabled": "2",
+			},
+		},
+		Spec: v1alpha1.CentreonServiceSpec{
+			Host:     "localhost",
+			Name:     "ping",
+			Template: "template",
+			Macros: map[string]string{
+				"mac1": "value1",
+				"mac2": "value2",
+			},
+			Arguments:           []string{"arg1", "arg2"},
+			Activated:           true,
+			Groups:              []string{"sg1"},
+			Categories:          []string{"cat1"},
+			NormalCheckInterval: "30",
+			RetryCheckInterval:  "10",
+			MaxCheckAttempts:    "6",
+		},
+	}
+	err = t.k8sClient.Update(context.Background(), fetched)
+	assert.NoError(t.T(), err)
+	time.Sleep(30 * time.Second)
+	cs = &v1alpha1.CentreonService{}
+	if err := t.k8sClient.Get(context.Background(), key, cs); err != nil {
+		t.T().Fatal(err)
+	}
+	assert.Equal(t.T(), expectedCentreonService.Spec, cs.Spec)
+	assert.Equal(t.T(), expectedCentreonService.GetLabels(), cs.GetLabels())
+	assert.Equal(t.T(), expectedCentreonService.GetAnnotations(), cs.GetAnnotations())
+	time.Sleep(10 * time.Second)
 }
-*/

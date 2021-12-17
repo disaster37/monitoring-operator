@@ -40,7 +40,7 @@ type CentreonServiceReconciler struct {
 	Recorder       record.EventRecorder
 	Log            *logrus.Entry
 	Service        CentreonService
-	CentreonConfig atomic.Value
+	CentreonConfig *atomic.Value
 }
 
 //+kubebuilder:rbac:groups=monitor.k8s.webcenter.fr,resources=centreonservices,verbs=get;list;watch;create;update;patch;delete

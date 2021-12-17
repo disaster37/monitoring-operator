@@ -2,6 +2,7 @@ package controllers
 
 import (
 	"path/filepath"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -30,6 +31,7 @@ type ControllerTestSuite struct {
 	mockCentreonService *mocks.MockCentreonService
 	mockCtrl            *gomock.Controller
 	service             CentreonService
+	a                   *atomic.Value
 }
 
 func TestControllerSuite(t *testing.T) {
@@ -45,6 +47,9 @@ func (t *ControllerTestSuite) SetupSuite() {
 
 	logf.SetLogger(zap.New(zap.UseDevMode(true)))
 	logrus.SetLevel(logrus.DebugLevel)
+	logrus.SetFormatter(&logrus.TextFormatter{
+		DisableQuote: true,
+	})
 
 	// Setup testenv
 	testEnv = &envtest.Environment{
@@ -82,11 +87,25 @@ func (t *ControllerTestSuite) SetupSuite() {
 		"type": "controllers",
 		"name": "CentreonService",
 	})
+	var a atomic.Value
+	t.a = &a
 	err = (&CentreonServiceReconciler{
-		Client:   k8sClient,
-		Recorder: k8sManager.GetEventRecorderFor("centreonservice-controller"),
-		Log:      log,
-		Service:  t.mockCentreonService,
+		Client:         k8sClient,
+		Recorder:       k8sManager.GetEventRecorderFor("centreonservice-controller"),
+		Scheme:         scheme.Scheme,
+		Log:            log,
+		Service:        t.mockCentreonService,
+		CentreonConfig: &a,
+	}).SetupWithManager(k8sManager)
+	if err != nil {
+		panic(err)
+	}
+	err = (&IngressCentreonReconciler{
+		Client:         k8sClient,
+		Recorder:       k8sManager.GetEventRecorderFor("ingresscentreon-controller"),
+		Log:            log,
+		Scheme:         scheme.Scheme,
+		CentreonConfig: &a,
 	}).SetupWithManager(k8sManager)
 	if err != nil {
 		panic(err)

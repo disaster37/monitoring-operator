@@ -21,13 +21,13 @@ import (
 	"encoding/json"
 	errorspkg "errors"
 	"fmt"
-	"reflect"
 	"regexp"
 	"sync/atomic"
 
 	"github.com/disaster37/monitoring-operator/api/v1alpha1"
 	monitorv1alpha1 "github.com/disaster37/monitoring-operator/api/v1alpha1"
 	"github.com/disaster37/monitoring-operator/pkg/helpers"
+	"github.com/google/go-cmp/cmp"
 	"github.com/sirupsen/logrus"
 	corev1 "k8s.io/api/core/v1"
 	networkv1 "k8s.io/api/networking/v1"
@@ -53,7 +53,7 @@ type IngressCentreonReconciler struct {
 	Scheme         *runtime.Scheme
 	Log            *logrus.Entry
 	Recorder       record.EventRecorder
-	CentreonConfig atomic.Value
+	CentreonConfig *atomic.Value
 }
 
 //+kubebuilder:rbac:groups=networking.k8s.io,resources=ingresses,verbs=get;list;watch;create;update;patch;delete
@@ -99,13 +99,17 @@ func (r *IngressCentreonReconciler) Reconcile(ctx context.Context, req ctrl.Requ
 	}
 
 	// Reconcile
-	data := r.CentreonConfig.Load()
 	var centreonSpec *v1alpha1.CentreonSpec
-	if data == nil {
-		r.Log.Warning("It's recommanded to set some default values on custom resource called `Centreon` on the same operator namespace. It avoid to set on each ingress all Centreon service properties as annotations")
-	} else {
-		centreonSpec = data.(*v1alpha1.CentreonSpec)
+	if r.CentreonConfig != nil {
+		data := r.CentreonConfig.Load()
+		if data != nil {
+			centreonSpec = data.(*v1alpha1.CentreonSpec)
+		}
 	}
+	if centreonSpec == nil {
+		r.Log.Warning("It's recommanded to set some default values on custom resource called `Centreon` on the same operator namespace. It avoid to set on each ingress all Centreon service properties as annotations")
+	}
+
 	cs := &v1alpha1.CentreonService{}
 	err = r.Get(ctx, types.NamespacedName{Name: instance.Name, Namespace: instance.Namespace}, cs)
 	if err != nil && errors.IsNotFound(err) {
@@ -139,7 +143,12 @@ func (r *IngressCentreonReconciler) Reconcile(ctx context.Context, req ctrl.Requ
 		r.Recorder.Eventf(instance, corev1.EventTypeWarning, "Failed", "Error when reconcile: %s", err.Error())
 		return ctrl.Result{}, err
 	}
-	if !reflect.DeepEqual(cs.Spec, expectedCs.Spec) || !reflect.DeepEqual(cs.GetLabels(), expectedCs.GetLabels()) || !reflect.DeepEqual(cs.GetAnnotations(), expectedCs.GetAnnotations()) {
+
+	diffSpec := cmp.Diff(expectedCs.Spec, cs.Spec)
+	diffLabels := cmp.Diff(expectedCs.GetLabels(), cs.GetLabels())
+	diffAnnotations := cmp.Diff(expectedCs.GetAnnotations(), cs.GetAnnotations())
+	if diffSpec != "" || diffLabels != "" || diffAnnotations != "" {
+		r.Log.Infof("Diff detected:\n%s\n%s\n%s", diffSpec, diffLabels, diffAnnotations)
 		//Update
 		cs.SetLabels(expectedCs.GetLabels())
 		cs.SetAnnotations(expectedCs.GetAnnotations())

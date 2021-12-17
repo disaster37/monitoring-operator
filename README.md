@@ -5,6 +5,32 @@
 # monitoring-operator
 Kubernetes operator to manage monitoring resources
 
+## Notes
+List des annotations:
+  - monitor.k8s.webcenter.fr/discover : true to watch resource
+  - centreon.monitor.k8s.webcenter.fr/name: the service name on centreon
+  - centreon.monitor.k8s.webcenter.fr/template: the template name to affect on service on Centreon
+  - centreon.monitor.k8s.webcenter.fr/host: the host to link with the service on Centreon
+  - centreon.monitor.k8s.webcenter.fr/macros: the map of macros (as json form). It can placeolder value from tags
+  - centreon.monitor.k8s.webcenter.fr/arguments: the command arguments to set on service. Comma separated
+  - centreon.monitor.k8s.webcenter.fr/activated: activate or disable the service on Centreon (0 or 1)
+  - centreon.monitor.k8s.webcenter.fr/groups: The list of service groups linked with service on Centreon. Comma separated
+  - centreon.monitor.k8s.webcenter.fr/categories: The list of categories linked with service on Centreon. Comma separated
+  - centreon.monitor.k8s.webcenter.fr/normal-check-interval: 
+  - centreon.monitor.k8s.webcenter.fr/retry-check-interval:
+  - centreon.monitor.k8s.webcenter.fr/max-check-attempts:
+  - centreon.monitor.k8s.webcenter.fr/active-check-enabled: (0, 1 or 2)
+  - centreon.monitor.k8s.webcenter.fr/passive-check-enabled (0, 1 or 2)
+  
+ placeholders available:
+   - <rule.0.host> (the url)
+   - <rule.0.scheme> (http or https)
+   - <rule.0.path.0> (the path)
+   - <name> ingress name
+   - <namespace> ingress namespace
+   - <label.key>
+   - <annotation.key>
+
 ## Initialise project for memory
 
 1. Create new project
