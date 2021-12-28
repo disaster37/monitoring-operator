@@ -11,13 +11,15 @@ import (
 	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/suite"
 	"k8s.io/client-go/dynamic"
+	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/clientcmd"
 )
 
 type AccTestSuite struct {
 	suite.Suite
-	k8sclient dynamic.Interface
-	centreon  centreonhandler.CentreonHandler
+	k8sclient    dynamic.Interface
+	k8sclientStd kubernetes.Interface
+	centreon     centreonhandler.CentreonHandler
 }
 
 func TestSuite(t *testing.T) {
@@ -43,6 +45,11 @@ func (t *AccTestSuite) SetupSuite() {
 		panic(err)
 	}
 	t.k8sclient = client
+	clientStd, err := kubernetes.NewForConfig(config)
+	if err != nil {
+		panic(err)
+	}
+	t.k8sclientStd = clientStd
 
 	// Init Centreon client
 	cfg, err := helpers.GetCentreonConfig()

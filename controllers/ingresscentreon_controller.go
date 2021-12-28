@@ -314,6 +314,9 @@ func initIngressCentreonServiceFromAnnotations(ingressAnnotations map[string]str
 			case "passive-check-enabled":
 				cs.Spec.PassiveCheckEnabled = helpers.StringToBool(value)
 				break
+			case "check-command":
+				cs.Spec.CheckCommand = value
+				break
 			case "arguments":
 				cs.Spec.Arguments = helpers.StringToSlice(value, ",")
 				break

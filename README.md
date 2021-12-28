@@ -12,6 +12,7 @@ List des annotations:
   - centreon.monitor.k8s.webcenter.fr/template: the template name to affect on service on Centreon
   - centreon.monitor.k8s.webcenter.fr/host: the host to link with the service on Centreon
   - centreon.monitor.k8s.webcenter.fr/macros: the map of macros (as json form). It can placeolder value from tags
+  -  - centreon.monitor.k8s.webcenter.fr/check-command: the check command on Centreon
   - centreon.monitor.k8s.webcenter.fr/arguments: the command arguments to set on service. Comma separated
   - centreon.monitor.k8s.webcenter.fr/activated: activate or disable the service on Centreon (0 or 1)
   - centreon.monitor.k8s.webcenter.fr/groups: The list of service groups linked with service on Centreon. Comma separated
