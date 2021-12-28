@@ -127,17 +127,16 @@ func main() {
 		var a atomic.Value
 
 		// Set controllers for Centreon resources
-		logController := log.WithFields(logrus.Fields{
-			"type": "controllers",
-			"name": "CentreonService",
-		})
 		if err = (&controllers.CentreonServiceReconciler{
 			Client:         mgr.GetClient(),
 			Scheme:         mgr.GetScheme(),
 			Service:        controllers.NewCentreonService(centreonHandler),
 			CentreonConfig: &a,
-			Log:            logController,
-			Recorder:       mgr.GetEventRecorderFor("centreonservice-controller"),
+			Log: log.WithFields(logrus.Fields{
+				"type": "controllers",
+				"name": "CentreonService",
+			}),
+			Recorder: mgr.GetEventRecorderFor("centreonservice-controller"),
 		}).SetupWithManager(mgr); err != nil {
 			setupLog.Error(err, "unable to create controller", "controller", "CentreonService")
 			os.Exit(1)
@@ -147,6 +146,7 @@ func main() {
 			Client:         mgr.GetClient(),
 			Scheme:         mgr.GetScheme(),
 			CentreonConfig: &a,
+			Recorder:       mgr.GetEventRecorderFor("ingresscentreon-controller"),
 			Log: log.WithFields(logrus.Fields{
 				"type": "controllers",
 				"name": "IngressCentreon",
