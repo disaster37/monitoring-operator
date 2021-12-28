@@ -114,7 +114,6 @@ func (r *IngressCentreonReconciler) Reconcile(ctx context.Context, req ctrl.Requ
 	err = r.Get(ctx, types.NamespacedName{Name: instance.Name, Namespace: instance.Namespace}, cs)
 	if err != nil && errors.IsNotFound(err) {
 		//Create
-
 		cs, err = centreonServiceFromIngress(instance, centreonSpec, r.Scheme)
 		if err != nil {
 			r.Log.Errorf("Error when generate CentreonService from Ingress: %s", err.Error())
@@ -144,9 +143,9 @@ func (r *IngressCentreonReconciler) Reconcile(ctx context.Context, req ctrl.Requ
 		return ctrl.Result{}, err
 	}
 
-	diffSpec := cmp.Diff(expectedCs.Spec, cs.Spec)
-	diffLabels := cmp.Diff(expectedCs.GetLabels(), cs.GetLabels())
-	diffAnnotations := cmp.Diff(expectedCs.GetAnnotations(), cs.GetAnnotations())
+	diffSpec := cmp.Diff(cs.Spec, expectedCs.Spec)
+	diffLabels := cmp.Diff(cs.GetLabels(), expectedCs.GetLabels())
+	diffAnnotations := cmp.Diff(cs.GetAnnotations(), expectedCs.GetAnnotations())
 	if diffSpec != "" || diffLabels != "" || diffAnnotations != "" {
 		r.Log.Infof("Diff detected:\n%s\n%s\n%s", diffSpec, diffLabels, diffAnnotations)
 		//Update
