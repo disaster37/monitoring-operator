@@ -156,7 +156,7 @@ func (t *AccTestSuite) TestIngress() {
 	ingress.Annotations["centreon.monitor.k8s.webcenter.fr/normal-check-interval"] = "60"
 	ingress.Annotations["centreon.monitor.k8s.webcenter.fr/retry-check-interval"] = "10"
 	ingress.Annotations["centreon.monitor.k8s.webcenter.fr/max-check-attempts"] = "2"
-	ingress.Annotations["centreon.monitor.k8s.webcenter.fr/macros"] = `{"MAC1": "value}`
+	ingress.Annotations["centreon.monitor.k8s.webcenter.fr/macros"] = `{"MAC1": "value"}`
 
 	expectedS = &centreonhandler.CentreonService{
 		Host:                "localhost",
