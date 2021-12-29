@@ -46,7 +46,6 @@ type CentreonServiceReconciler struct {
 //+kubebuilder:rbac:groups=monitor.k8s.webcenter.fr,resources=centreonservices,verbs=get;list;watch;create;update;patch;delete
 //+kubebuilder:rbac:groups=monitor.k8s.webcenter.fr,resources=centreonservices/status,verbs=get;update;patch
 //+kubebuilder:rbac:groups=monitor.k8s.webcenter.fr,resources=centreonservices/finalizers,verbs=update
-//+kubebuilder:rbac:groups=monitor.k8s.webcenter.fr,resources=centreons,verbs=get;list;watch;create;update;patch;delete
 
 // Reconcile is part of the main kubernetes reconciliation loop which aims to
 // move the current state of the cluster closer to the desired state.
