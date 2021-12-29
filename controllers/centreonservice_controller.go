@@ -72,8 +72,10 @@ func (r *CentreonServiceReconciler) Reconcile(ctx context.Context, req ctrl.Requ
 		return ctrl.Result{}, err
 	}
 	r.Log = r.Log.WithFields(logrus.Fields{
-		"Host":    instance.Spec.Host,
-		"Service": instance.Spec.Name,
+		"name":      instance.Name,
+		"namespace": instance.Namespace,
+		"host":      instance.Spec.Host,
+		"service":   instance.Spec.Name,
 	})
 
 	// Add finalizer

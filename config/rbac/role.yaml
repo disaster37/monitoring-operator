@@ -21,6 +21,20 @@ rules:
 - apiGroups:
   - monitor.k8s.webcenter.fr
   resources:
+  - centreons/finalizers
+  verbs:
+  - update
+- apiGroups:
+  - monitor.k8s.webcenter.fr
+  resources:
+  - centreons/status
+  verbs:
+  - get
+  - patch
+  - update
+- apiGroups:
+  - monitor.k8s.webcenter.fr
+  resources:
   - centreonservices
   verbs:
   - create

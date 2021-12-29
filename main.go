@@ -133,8 +133,7 @@ func main() {
 			Service:        controllers.NewCentreonService(centreonHandler),
 			CentreonConfig: &a,
 			Log: log.WithFields(logrus.Fields{
-				"type": "controllers",
-				"name": "CentreonService",
+				"type": "CentreonServiceController",
 			}),
 			Recorder: mgr.GetEventRecorderFor("centreonservice-controller"),
 		}).SetupWithManager(mgr); err != nil {
@@ -148,11 +147,23 @@ func main() {
 			CentreonConfig: &a,
 			Recorder:       mgr.GetEventRecorderFor("ingresscentreon-controller"),
 			Log: log.WithFields(logrus.Fields{
-				"type": "controllers",
-				"name": "IngressCentreon",
+				"type": "IngressCentreonControllers",
 			}),
 		}).SetupWithManager(mgr); err != nil {
 			setupLog.Error(err, "unable to create controller", "controller", "IngressCentreon")
+			os.Exit(1)
+		}
+
+		if err = (&controllers.CentreonReconciler{
+			Client:         mgr.GetClient(),
+			Scheme:         mgr.GetScheme(),
+			CentreonConfig: &a,
+			Recorder:       mgr.GetEventRecorderFor("centreon-controller"),
+			Log: log.WithFields(logrus.Fields{
+				"type": "CentreonControllers",
+			}),
+		}).SetupWithManager(mgr); err != nil {
+			setupLog.Error(err, "unable to create controller", "controller", "Centreon")
 			os.Exit(1)
 		}
 

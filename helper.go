@@ -61,13 +61,3 @@ func getWatchNamespace() (ns string, err error) {
 
 	return ns, nil
 }
-
-func getConfigNamespace() (ns string, err error) {
-	configNamespaceEnvVar := "CONFIG_NAMESPACE"
-	ns, found := os.LookupEnv(configNamespaceEnvVar)
-	if !found {
-		return "", errors.Errorf("%s must be set", configNamespaceEnvVar)
-	}
-
-	return ns, nil
-}

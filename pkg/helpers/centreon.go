@@ -8,10 +8,11 @@ import (
 )
 
 const (
-	urlEnvVar             = "MONITORING_URL"
-	usernameEnvVar        = "MONITORING_USERNAME"
-	passwordEnvVar        = "MONITORING_PASSWORD"
-	disableSSLCheckEnvVar = "MONITORING_DISABLE_SSL_CHECK"
+	urlEnvVar               = "MONITORING_URL"
+	usernameEnvVar          = "MONITORING_USERNAME"
+	passwordEnvVar          = "MONITORING_PASSWORD"
+	disableSSLCheckEnvVar   = "MONITORING_DISABLE_SSL_CHECK"
+	centreonNamespaceEnvVar = "NAMESPACE"
 )
 
 func GetCentreonConfig() (cfg *models.Config, err error) {
@@ -44,4 +45,13 @@ func GetCentreonConfig() (cfg *models.Config, err error) {
 
 	return cfg, nil
 
+}
+
+func GetCentreonNamespace() (ns string, err error) {
+	ns, found := os.LookupEnv(centreonNamespaceEnvVar)
+	if !found {
+		return "", errors.Errorf("%s must be set", centreonNamespaceEnvVar)
+	}
+
+	return ns, nil
 }

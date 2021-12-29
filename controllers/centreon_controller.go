@@ -26,18 +26,14 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/sirupsen/logrus"
 	corev1 "k8s.io/api/core/v1"
-	networkv1 "k8s.io/api/networking/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/tools/record"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/event"
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
 )
-
 
 // CentreonReconciler reconciles a Ingress object
 type CentreonReconciler struct {
@@ -65,13 +61,8 @@ func (r *CentreonReconciler) Reconcile(ctx context.Context, req ctrl.Request) (c
 	r.Log.Infof("Starting reconcile loop for %v", req.NamespacedName)
 	defer r.Log.Infof("Finish reconcile loop for %v", req.NamespacedName)
 
-	// Check default value is specified
-	if r.CentreonConfig.Load() == nil {
-
-	}
-
 	// Get instance
-	instance := &networkv1.Ingress{}
+	instance := &monitorv1alpha1.Centreon{}
 	err := r.Get(ctx, req.NamespacedName, instance)
 	if err != nil {
 		if errors.IsNotFound(err) {
@@ -81,16 +72,18 @@ func (r *CentreonReconciler) Reconcile(ctx context.Context, req ctrl.Request) (c
 		return ctrl.Result{}, err
 	}
 	r.Log = r.Log.WithFields(logrus.Fields{
-		"Ingress": instance.Name,
+		"name":      instance.Name,
+		"namespace": instance.Namespace,
 	})
 
 	// Delete
 	if !instance.ObjectMeta.DeletionTimestamp.IsZero() {
-		r.Log.Info("Ingress is being deleted, auto delete CentreonService if exist")
+		r.Log.Info("Centreon is being deleted, unshare Centreon")
+		r.CentreonConfig.Store(nil)
 		return ctrl.Result{}, nil
 	}
 
-	// Reconcile
+	// Load current Centreon share
 	var centreonSpec *v1alpha1.CentreonSpec
 	if r.CentreonConfig != nil {
 		data := r.CentreonConfig.Load()
@@ -98,59 +91,23 @@ func (r *CentreonReconciler) Reconcile(ctx context.Context, req ctrl.Request) (c
 			centreonSpec = data.(*v1alpha1.CentreonSpec)
 		}
 	}
+
+	// Share new CrentreonSpec with other controllers
 	if centreonSpec == nil {
-		r.Log.Warning("It's recommanded to set some default values on custom resource called `Centreon` on the same operator namespace. It avoid to set on each ingress all Centreon service properties as annotations")
-	}
-
-	cs := &v1alpha1.CentreonService{}
-	err = r.Get(ctx, types.NamespacedName{Name: instance.Name, Namespace: instance.Namespace}, cs)
-	if err != nil && errors.IsNotFound(err) {
-		//Create
-		cs, err = centreonServiceFromIngress(instance, centreonSpec, r.Scheme)
-		if err != nil {
-			r.Log.Errorf("Error when generate CentreonService from Ingress: %s", err.Error())
-			r.Recorder.Eventf(instance, corev1.EventTypeWarning, "Failed", "Error when reconcile: %s", err.Error())
-			return ctrl.Result{}, err
-		}
-		if err = r.Create(ctx, cs); err != nil {
-			r.Log.Errorf("Error when create CentreonService: %s", err.Error())
-			r.Recorder.Eventf(instance, corev1.EventTypeWarning, "Failed", "Error when reconcile: %s", err.Error())
-			return ctrl.Result{}, err
-		}
-
-		r.Log.Info("Create CentreonService successfully")
-		r.Recorder.Event(instance, corev1.EventTypeNormal, "Completed", "Centreon Service created successfully")
+		r.CentreonConfig.Store(&instance.Spec)
+		r.Log.Info("Share Centreon successfully")
+		r.Recorder.Event(instance, corev1.EventTypeNormal, "Completed", "Centreon shared successfully")
 		return ctrl.Result{}, nil
-	} else if err != nil {
-		r.Log.Errorf("Failed to get CentreonService: %s", err.Error())
-		r.Recorder.Eventf(instance, corev1.EventTypeWarning, "Failed", "Error when reconcile: %s", err.Error())
-		return ctrl.Result{}, err
 	}
 
-	// Update if needed
-	expectedCs, err := centreonServiceFromIngress(instance, centreonSpec, r.Scheme)
-	if err != nil {
-		r.Log.Errorf("Error when generate CentreonService from Ingress: %s", err.Error())
-		r.Recorder.Eventf(instance, corev1.EventTypeWarning, "Failed", "Error when reconcile: %s", err.Error())
-		return ctrl.Result{}, err
-	}
-
-	diffSpec := cmp.Diff(cs.Spec, expectedCs.Spec)
-	diffLabels := cmp.Diff(cs.GetLabels(), expectedCs.GetLabels())
-	diffAnnotations := cmp.Diff(cs.GetAnnotations(), expectedCs.GetAnnotations())
-	if diffSpec != "" || diffLabels != "" || diffAnnotations != "" {
-		r.Log.Infof("Diff detected:\n%s\n%s\n%s", diffSpec, diffLabels, diffAnnotations)
-		//Update
-		cs.SetLabels(expectedCs.GetLabels())
-		cs.SetAnnotations(expectedCs.GetAnnotations())
-		cs.Spec = expectedCs.Spec
-		if err = r.Update(ctx, cs); err != nil {
-			r.Log.Errorf("Error when update CentreonService: %s", err.Error())
-			r.Recorder.Eventf(instance, corev1.EventTypeWarning, "Failed", "Error when reconcile: %s", err.Error())
-			return ctrl.Result{}, err
-		}
-		r.Log.Info("Update CentreonService successfully")
-		r.Recorder.Event(instance, corev1.EventTypeNormal, "Completed", "Centreon Service updated successfully")
+	// Rconcile
+	diff := cmp.Diff(centreonSpec, &instance.Spec)
+	if diff != "" {
+		r.Log.Infof("Diff detected:\n%s", diff)
+		r.CentreonConfig.Store(&instance.Spec)
+		r.Log.Info("Update share Centreon successfully")
+		r.Recorder.Event(instance, corev1.EventTypeNormal, "Completed", "Centreon shared successfully updated")
+		return ctrl.Result{}, nil
 	}
 
 	return ctrl.Result{}, nil
@@ -160,8 +117,34 @@ func (r *CentreonReconciler) Reconcile(ctx context.Context, req ctrl.Request) (c
 func (r *CentreonReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
 		// Uncomment the following line adding a pointer to an instance of the controlled resource as an argument
-		For(&networkv1.Ingress{}).
-		Owns(&monitorv1alpha1.CentreonService{}).
-		WithEventFilter(viewIngressWithMonitoringAnnotationPredicate()).
+		For(&monitorv1alpha1.Centreon{}).
+		WithEventFilter(viewCentreonNamespacePredicate()).
 		Complete(r)
+}
+
+// Handle only Centreon on the same controller namespace, or default namespace if not found
+func viewCentreonNamespacePredicate() predicate.Predicate {
+	return predicate.Funcs{
+		UpdateFunc: func(e event.UpdateEvent) bool {
+			return isOnControllerNamespace(e.ObjectOld.GetNamespace()) || isOnControllerNamespace(e.ObjectNew.GetNamespace())
+		},
+		DeleteFunc: func(e event.DeleteEvent) bool {
+			return isOnControllerNamespace(e.Object.GetNamespace())
+		},
+		CreateFunc: func(e event.CreateEvent) bool {
+			return isOnControllerNamespace(e.Object.GetNamespace())
+		},
+		GenericFunc: func(e event.GenericEvent) bool {
+			return isOnControllerNamespace(e.Object.GetNamespace())
+		},
+	}
+}
+
+func isOnControllerNamespace(ns string) bool {
+	expectedNs, err := helpers.GetCentreonNamespace()
+	if err != nil {
+		expectedNs = "default"
+	}
+
+	return ns == expectedNs
 }

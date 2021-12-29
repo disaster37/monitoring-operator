@@ -89,7 +89,8 @@ func (r *IngressCentreonReconciler) Reconcile(ctx context.Context, req ctrl.Requ
 		return ctrl.Result{}, err
 	}
 	r.Log = r.Log.WithFields(logrus.Fields{
-		"Ingress": instance.Name,
+		"name":      instance.Name,
+		"namespace": instance.Namespace,
 	})
 
 	// Delete

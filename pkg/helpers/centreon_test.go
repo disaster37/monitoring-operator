@@ -59,3 +59,14 @@ func TestGetCentreonConfig(t *testing.T) {
 	assert.Error(t, err)
 	os.Setenv(passwordEnvVar, "pass")
 }
+
+func TestGetCentreonNamespace(t *testing.T) {
+	os.Setenv(centreonNamespaceEnvVar, "test")
+	ns, err := GetCentreonNamespace()
+	assert.NoError(t, err)
+	assert.Equal(t, "test", ns)
+
+	os.Unsetenv(centreonNamespaceEnvVar)
+	ns, err = GetCentreonNamespace()
+	assert.Error(t, err)
+}
