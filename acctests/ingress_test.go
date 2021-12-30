@@ -121,7 +121,9 @@ func (t *AccTestSuite) TestIngress() {
 		Activated:           "1",
 	}
 	_, err = t.k8sclientStd.NetworkingV1().Ingresses("default").Create(context.Background(), ingress, v1.CreateOptions{})
-	assert.NoError(t.T(), err)
+	if err != nil {
+		t.T().Fatal(err)
+	}
 	time.Sleep(20 * time.Second)
 
 	// Check that CentreonService created and in right status
@@ -138,7 +140,9 @@ func (t *AccTestSuite) TestIngress() {
 
 	// Check ressource created on Centreon
 	s, err = t.centreon.GetService("localhost", "test-ingress-ping")
-	assert.NoError(t.T(), err)
+	if err != nil {
+		t.T().Fatal(err)
+	}
 	assert.NotNil(t.T(), s)
 	assert.Equal(t.T(), expectedS, s)
 
@@ -148,7 +152,7 @@ func (t *AccTestSuite) TestIngress() {
 	time.Sleep(30 * time.Second)
 	ingress, err = t.k8sclientStd.NetworkingV1().Ingresses("default").Get(context.Background(), "test-ingress", v1.GetOptions{})
 	if err != nil {
-		assert.Fail(t.T(), err.Error())
+		t.T().Fatal(err)
 	}
 	ingress.Annotations["centreon.monitor.k8s.webcenter.fr/groups"] = "sg1"
 	ingress.Annotations["centreon.monitor.k8s.webcenter.fr/categories"] = "Ping"
@@ -182,22 +186,26 @@ func (t *AccTestSuite) TestIngress() {
 		CheckCommandArgs:    "!arg1",
 	}
 	_, err = t.k8sclientStd.NetworkingV1().Ingresses("default").Update(context.Background(), ingress, v1.UpdateOptions{})
-	assert.NoError(t.T(), err)
+	if err != nil {
+		t.T().Fatal(err)
+	}
 	time.Sleep(20 * time.Second)
 
 	// Check that status is updated
 	ucs, err = t.k8sclient.Resource(centreonServiceGVR).Namespace("default").Get(context.Background(), "test-ingress", v1.GetOptions{})
 	if err != nil {
-		assert.Fail(t.T(), err.Error())
+		t.T().Fatal(err)
 	}
 	if err = unstructuredToStructured(ucs, cs); err != nil {
-		assert.Fail(t.T(), err.Error())
+		t.T().Fatal(err)
 	}
 	assert.NotEmpty(t.T(), cs.Status.UpdatedAt)
 
 	// Check service updated on Centreon
 	s, err = t.centreon.GetService("localhost", "test-ingress-ping")
-	assert.NoError(t.T(), err)
+	if err != nil {
+		t.T().Fatal(err)
+	}
 	assert.NotNil(t.T(), s)
 	assert.Equal(t.T(), expectedS, s)
 
@@ -205,8 +213,9 @@ func (t *AccTestSuite) TestIngress() {
 	 * Delete service
 	 */
 	time.Sleep(20 * time.Second)
-	err = t.k8sclientStd.NetworkingV1().Ingresses("default").Delete(context.Background(), "test-ingress", *metav1.NewDeleteOptions(0))
-	assert.NoError(t.T(), err)
+	if err = t.k8sclientStd.NetworkingV1().Ingresses("default").Delete(context.Background(), "test-ingress", *metav1.NewDeleteOptions(0)); err != nil {
+		t.T().Fatal(err)
+	}
 	time.Sleep(20 * time.Second)
 
 	// Check CentreonService delete on k8s

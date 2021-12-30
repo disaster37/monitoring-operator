@@ -10,7 +10,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
-	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 )
 
@@ -19,7 +18,6 @@ func (t *AccTestSuite) TestCentreonService() {
 	var (
 		cs        *v1alpha1.CentreonService
 		ucs       *unstructured.Unstructured
-		ucsTmp    map[string]interface{}
 		s         *centreonhandler.CentreonService
 		expectedS *centreonhandler.CentreonService
 		err       error
@@ -64,16 +62,15 @@ func (t *AccTestSuite) TestCentreonService() {
 		Activated:           "1",
 	}
 
-	ucsTmp, err = runtime.DefaultUnstructuredConverter.ToUnstructured(cs)
+	ucs, err = structuredToUntructured(cs)
 	if err != nil {
-		assert.Fail(t.T(), err.Error())
-	}
-	ucs = &unstructured.Unstructured{
-		Object: ucsTmp,
+		t.T().Fatal(err)
 	}
 
 	_, err = t.k8sclient.Resource(centreonServiceGVR).Namespace("default").Create(context.Background(), ucs, v1.CreateOptions{})
-	assert.NoError(t.T(), err)
+	if err != nil {
+		t.T().Fatal(err)
+	}
 	time.Sleep(20 * time.Second)
 
 	// Check that status is updated
@@ -81,15 +78,17 @@ func (t *AccTestSuite) TestCentreonService() {
 	if err != nil {
 		assert.Fail(t.T(), err.Error())
 	}
-	if err = runtime.DefaultUnstructuredConverter.FromUnstructured(ucs.Object, cs); err != nil {
-		assert.Fail(t.T(), err.Error())
+	if err = unstructuredToStructured(ucs, cs); err != nil {
+		t.T().Fatal(err)
 	}
 	assert.NotEmpty(t.T(), cs.Status.ID)
 	assert.NotEmpty(t.T(), cs.Status.CreatedAt)
 
 	// Check ressource created on Centreon
 	s, err = t.centreon.GetService("localhost", "test-ping")
-	assert.NoError(t.T(), err)
+	if err != nil {
+		t.T().Fatal(err)
+	}
 	assert.NotNil(t.T(), s)
 	assert.Equal(t.T(), expectedS, s)
 
@@ -99,10 +98,10 @@ func (t *AccTestSuite) TestCentreonService() {
 	time.Sleep(30 * time.Second)
 	ucs, err = t.k8sclient.Resource(centreonServiceGVR).Namespace("default").Get(context.Background(), "test", v1.GetOptions{})
 	if err != nil {
-		assert.Fail(t.T(), err.Error())
+		t.T().Fatal(err)
 	}
-	if err = runtime.DefaultUnstructuredConverter.FromUnstructured(ucs.Object, cs); err != nil {
-		assert.Fail(t.T(), err.Error())
+	if err = unstructuredToStructured(ucs, cs); err != nil {
+		t.T().Fatal(err)
 	}
 	cs.Spec.Groups = []string{"sg1"}
 	cs.Spec.Categories = []string{"Ping"}
@@ -111,12 +110,9 @@ func (t *AccTestSuite) TestCentreonService() {
 	cs.Spec.RetryCheckInterval = "10"
 	cs.Spec.MaxCheckAttempts = "2"
 	cs.Spec.Macros = map[string]string{"MAC1": "value"}
-	ucsTmp, err = runtime.DefaultUnstructuredConverter.ToUnstructured(cs)
+	ucs, err = structuredToUntructured(cs)
 	if err != nil {
-		assert.Fail(t.T(), err.Error())
-	}
-	ucs = &unstructured.Unstructured{
-		Object: ucsTmp,
+		t.T().Fatal(err)
 	}
 	expectedS = &centreonhandler.CentreonService{
 		Host:                "localhost",
@@ -142,22 +138,26 @@ func (t *AccTestSuite) TestCentreonService() {
 		CheckCommandArgs:    "!arg1",
 	}
 	_, err = t.k8sclient.Resource(centreonServiceGVR).Namespace("default").Update(context.Background(), ucs, v1.UpdateOptions{})
-	assert.NoError(t.T(), err)
+	if err != nil {
+		t.T().Fatal(err)
+	}
 	time.Sleep(20 * time.Second)
 
 	// Check that status is updated
 	ucs, err = t.k8sclient.Resource(centreonServiceGVR).Namespace("default").Get(context.Background(), "test", v1.GetOptions{})
 	if err != nil {
-		assert.Fail(t.T(), err.Error())
+		t.T().Fatal(err)
 	}
-	if err = runtime.DefaultUnstructuredConverter.FromUnstructured(ucs.Object, cs); err != nil {
-		assert.Fail(t.T(), err.Error())
+	if err = unstructuredToStructured(ucs, cs); err != nil {
+		t.T().Fatal(err)
 	}
 	assert.NotEmpty(t.T(), cs.Status.UpdatedAt)
 
 	// Check service updated on Centreon
 	s, err = t.centreon.GetService("localhost", "test-ping")
-	assert.NoError(t.T(), err)
+	if err != nil {
+		t.T().Fatal(err)
+	}
 	assert.NotNil(t.T(), s)
 	assert.Equal(t.T(), expectedS, s)
 
@@ -166,11 +166,15 @@ func (t *AccTestSuite) TestCentreonService() {
 	 */
 	time.Sleep(20 * time.Second)
 	err = t.k8sclient.Resource(centreonServiceGVR).Namespace("default").Delete(context.Background(), "test", *&v1.DeleteOptions{})
-	assert.NoError(t.T(), err)
+	if err != nil {
+		t.T().Fatal(err)
+	}
 	time.Sleep(20 * time.Second)
 
 	// Check service is delete from centreon
 	s, err = t.centreon.GetService("localhost", "test-ping")
-	assert.NoError(t.T(), err)
+	if err != nil {
+		t.T().Fatal(err)
+	}
 	assert.Nil(t.T(), s)
 }

@@ -84,8 +84,9 @@ func (t *ControllerTestSuite) TestCentreonServiceController() {
 			PassiveCheckEnabled: &activated,
 		},
 	}
-	err = t.k8sClient.Create(context.Background(), toCreate)
-	assert.NoError(t.T(), err)
+	if err = t.k8sClient.Create(context.Background(), toCreate); err != nil {
+		t.T().Fatal(err)
+	}
 	isTimeout, err = RunWithTimeout(func() error {
 		fetched = &v1alpha1.CentreonService{}
 		if err := t.k8sClient.Get(context.Background(), key, fetched); err != nil {
@@ -112,8 +113,9 @@ func (t *ControllerTestSuite) TestCentreonServiceController() {
 	fetched.Spec.Template = "my template 2"
 	update := "update"
 	step = &update
-	err = t.k8sClient.Update(context.Background(), fetched)
-	assert.NoError(t.T(), err)
+	if err = t.k8sClient.Update(context.Background(), fetched); err != nil {
+		t.T().Fatal(err)
+	}
 	isTimeout, err = RunWithTimeout(func() error {
 		fetched = &v1alpha1.CentreonService{}
 		if err := t.k8sClient.Get(context.Background(), key, fetched); err != nil {
@@ -140,10 +142,11 @@ func (t *ControllerTestSuite) TestCentreonServiceController() {
 	delete := "delete"
 	step = &delete
 	wait := int64(0)
-	err = t.k8sClient.Delete(context.Background(), fetched, &client.DeleteOptions{
+	if err = t.k8sClient.Delete(context.Background(), fetched, &client.DeleteOptions{
 		GracePeriodSeconds: &wait,
-	})
-	assert.NoError(t.T(), err)
+	}); err != nil {
+		t.T().Fatal(err)
+	}
 	isTimeout, err = RunWithTimeout(func() error {
 		fetched = &v1alpha1.CentreonService{}
 		if err := t.k8sClient.Get(context.Background(), key, fetched); err != nil {
@@ -158,5 +161,4 @@ func (t *ControllerTestSuite) TestCentreonServiceController() {
 	assert.NoError(t.T(), err)
 	assert.False(t.T(), isTimeout)
 	time.Sleep(10 * time.Second)
-
 }

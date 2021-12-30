@@ -48,8 +48,9 @@ func (t *ControllerTestSuite) TestCentreonController() {
 			},
 		},
 	}
-	err = t.k8sClient.Create(context.Background(), toCreate)
-	assert.NoError(t.T(), err)
+	if err = t.k8sClient.Create(context.Background(), toCreate); err != nil {
+		t.T().Fatal(err)
+	}
 	isTimeout, err = RunWithTimeout(func() error {
 		fetched = &v1alpha1.Centreon{}
 		if err := t.k8sClient.Get(context.Background(), key, fetched); err != nil {
@@ -72,8 +73,9 @@ func (t *ControllerTestSuite) TestCentreonController() {
 		t.T().Fatal(err)
 	}
 	fetched.Spec.Endpoints.Template = "my template 2"
-	err = t.k8sClient.Update(context.Background(), fetched)
-	assert.NoError(t.T(), err)
+	if err = t.k8sClient.Update(context.Background(), fetched); err != nil {
+		t.T().Fatal(err)
+	}
 	isTimeout, err = RunWithTimeout(func() error {
 		fetched = &v1alpha1.Centreon{}
 		if err := t.k8sClient.Get(context.Background(), key, fetched); err != nil {
@@ -96,10 +98,11 @@ func (t *ControllerTestSuite) TestCentreonController() {
 	if err := t.k8sClient.Get(context.Background(), key, fetched); err != nil {
 		t.T().Fatal(err)
 	}
-	err = t.k8sClient.Delete(context.Background(), fetched, &client.DeleteOptions{
+	if err = t.k8sClient.Delete(context.Background(), fetched, &client.DeleteOptions{
 		GracePeriodSeconds: &wait,
-	})
-	assert.NoError(t.T(), err)
+	}); err != nil {
+		t.T().Fatal(err)
+	}
 	isTimeout, err = RunWithTimeout(func() error {
 		fetched = &v1alpha1.Centreon{}
 		if err := t.k8sClient.Get(context.Background(), key, fetched); err != nil {

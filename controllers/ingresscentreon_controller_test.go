@@ -767,8 +767,9 @@ func (t *ControllerTestSuite) TestIngressCentreonControllerWhenNoCentreonSpec() 
 			MaxCheckAttempts:    "5",
 		},
 	}
-	err = t.k8sClient.Create(context.Background(), toCreate)
-	assert.NoError(t.T(), err)
+	if err = t.k8sClient.Create(context.Background(), toCreate); err != nil {
+		t.T().Fatal(err)
+	}
 	isTimeout, err = RunWithTimeout(func() error {
 		cs = &v1alpha1.CentreonService{}
 		if err := t.k8sClient.Get(context.Background(), key, cs); err != nil {
@@ -833,8 +834,9 @@ func (t *ControllerTestSuite) TestIngressCentreonControllerWhenNoCentreonSpec() 
 			MaxCheckAttempts:    "6",
 		},
 	}
-	err = t.k8sClient.Update(context.Background(), fetched)
-	assert.NoError(t.T(), err)
+	if err = t.k8sClient.Update(context.Background(), fetched); err != nil {
+		t.T().Fatal(err)
+	}
 	time.Sleep(30 * time.Second)
 	cs = &v1alpha1.CentreonService{}
 	if err := t.k8sClient.Get(context.Background(), key, cs); err != nil {
