@@ -53,7 +53,7 @@ func printVersion(logger logr.Logger, metricsAddr, probeAddr string) {
 
 func getWatchNamespace() (ns string, err error) {
 
-	watchNamespaceEnvVar := "WATCH_NAMESPACE"
+	watchNamespaceEnvVar := "WATCH_NAMESPACES"
 	ns, found := os.LookupEnv(watchNamespaceEnvVar)
 	if !found {
 		return "", errors.Errorf("%s must be set", watchNamespaceEnvVar)

@@ -12,7 +12,7 @@ const (
 	usernameEnvVar          = "MONITORING_USERNAME"
 	passwordEnvVar          = "MONITORING_PASSWORD"
 	disableSSLCheckEnvVar   = "MONITORING_DISABLE_SSL_CHECK"
-	centreonNamespaceEnvVar = "NAMESPACE"
+	centreonNamespaceEnvVar = "OPERATOR_NAMESPACE"
 )
 
 func GetCentreonConfig() (cfg *models.Config, err error) {

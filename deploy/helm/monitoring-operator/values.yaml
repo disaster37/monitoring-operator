@@ -1,0 +1,92 @@
+# nameOverride is the short name for the deployment. Leave empty to let Helm generate a name using chart values.
+nameOverride: "monitoring-operator"
+
+# fullnameOverride is the full name for the deployment. Leave empty to let Helm generate a name using chart values.
+fullnameOverride: "monitoring-operator"
+
+# managedNamespaces is the set of namespaces that the operator manages. Leave empty to manage all namespaces.
+managedNamespaces: []
+
+# installCRDs determines whether Custom Resource Definitions (CRD) are installed by the chart.
+# Note that CRDs are global resources and require cluster admin privileges to install.
+# If you are sharing a cluster with other users who may want to install monitoring-operator on their own namespaces, setting this to true can have unintended consequences.
+# 1. Upgrades will overwrite the global CRDs and could disrupt the other users of monitoring-operator who may be running a different version.
+# 2. Uninstalling the chart will delete the CRDs and potentially cause Centreon resources deployed by other users to be removed as well.
+installCRDs: true
+
+# replicaCount is the number of operator pods to run.
+replicaCount: 1
+
+image:
+  # repository is the container image prefixed by the registry name.
+  repository: webcenter/monitoring-operator
+  # pullPolicy is the container image pull policy.
+  pullPolicy: IfNotPresent
+  # tag is the container image tag. If not defined, defaults to chart appVersion.
+  tag: null
+
+# imagePullSecrets defines the secrets to use when pulling the operator container image.
+imagePullSecrets: []
+
+# resources define the container resource limits for the operator.
+resources:
+  limits:
+    cpu: 200m
+    memory: 100Mi
+  requests:
+    cpu: 100m
+    memory: 20Mi
+
+# podAnnotations define the annotations that should be added to the operator pod.
+podAnnotations: {}
+
+## podLabels define additional labels that should be added to the operator pod.
+podLabels: {}
+
+# podSecurityContext defines the pod security context for the operator pod.
+podSecurityContext:
+  runAsNonRoot: true
+
+# securityContext defines the security context of the operator container.
+securityContext:
+  allowPrivilegeEscalation: false
+
+# nodeSelector defines the node selector for the operator pod.
+nodeSelector: {}
+
+# tolerations defines the node tolerations for the operator pod.
+tolerations: []
+
+# affinity defines the node affinity rules for the operator pod.
+affinity: {}
+
+# createClusterScopedResources determines whether cluster-scoped resources (ClusterRoles, ClusterRoleBindings) should be created.
+createClusterScopedResources: true
+
+serviceAccount:
+  # Specifies whether a service account should be created
+  create: true
+  # Annotations to add to the service account
+  annotations: {}
+  # The name of the service account to use.
+  # If not set and create is true, a name is generated using the fullname template
+  name: ""
+
+
+monitoring:
+  secret-name: ""
+  secret-create: true
+  plateform: centreon
+  url: ""
+  username: ""
+  password: ""
+
+loglevel: info
+
+
+
+# Globals meant for internal use only
+global:
+  # createOperatorNamespace defines whether the operator namespace manifest should be generated when in manifestGen mode.
+  # Usually we do want that to happen (e.g. all-in-one.yaml) but, sometimes we don't (e.g. E2E tests). 
+  createOperatorNamespace: true

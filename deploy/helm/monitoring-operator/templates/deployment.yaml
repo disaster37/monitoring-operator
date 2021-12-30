@@ -1,0 +1,93 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "monitoring-operator.fullname" . }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "monitoring-operator.labels" . | nindent 4 }}
+spec:
+  selector:
+    matchLabels:
+       {{- include "monitoring-operator.selectorLabels" . | nindent 6 }}
+  serviceName: {{ include "monitoring-operator.fullname" . }}
+  replicas: {{ .Values.replicaCount }}
+  template:
+    metadata:
+      annotations:
+        {{- with .Values.podAnnotations }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+      labels:
+        {{- include "monitoring-operator.selectorLabels" . | nindent 8 }}
+        {{- with .Values.podLabels }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+    spec:
+      {{- with .Values.podSecurityContext }}
+      securityContext:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      containers:
+      - command:
+        - /manager
+        args:
+        - --leader-elect
+        image: controller:latest
+        name: manager
+        {{- with .Values.securityContext }}
+        securityContext:
+          {{- toYaml . | nindent 10 }}
+        {{- end }}
+        env:
+          - name: OPERATOR_NAMESPACE
+            valueFrom:
+              fieldRef:
+                fieldPath: metadata.namespace
+          {{- with .Values.managedNamespaces }}
+          - name: WATCH_NAMESPACES
+            value: {{ join "," .Values.managedNamespaces }}
+          {{- end }}
+          - name: LOG_LEVEL
+            value: {{ .Values.loglevel }}
+          - name: MONITORING_PLATEFORM
+            value: {{ .Values.monitoring.plateform }}
+          - name: MONITORING_URL
+            value: {{ .Values.monitoring.url }}
+        envFrom:
+        - secretRef:
+            name: {{ include "monitoring-operator.secretName" . }}
+        livenessProbe:
+          httpGet:
+            path: /healthz
+            port: 8081
+          initialDelaySeconds: 15
+          periodSeconds: 20
+        readinessProbe:
+          httpGet:
+            path: /readyz
+            port: 8081
+          initialDelaySeconds: 5
+          periodSeconds: 10
+        {{- with .Values.resources }}
+        resources:
+          {{- toYaml . | nindent 10 }}
+        {{- end }}
+      serviceAccountName: {{ include "monitoring-operator.serviceAccountName" . }}
+      terminationGracePeriodSeconds: 10
+    
+    {{- with .Values.nodeSelector }}
+    nodeSelector:
+      {{- toYaml . | nindent 10 }}
+    {{- end }}
+    {{- with .Values.affinity }}
+    affinity:
+      {{- toYaml . | nindent 10 }}
+    {{- end }}
+    {{- with .Values.tolerations }}
+    tolerations:
+      {{- toYaml . | nindent 10 }}
+    {{- end }}

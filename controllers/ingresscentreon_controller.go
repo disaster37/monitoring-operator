@@ -56,9 +56,7 @@ type IngressCentreonReconciler struct {
 	CentreonConfig *atomic.Value
 }
 
-//+kubebuilder:rbac:groups=networking.k8s.io,resources=ingresses,verbs=get;list;watch;create;update;patch;delete
-//+kubebuilder:rbac:groups=networking.k8s.io,resources=ingresses/status,verbs=get;update;patch
-//+kubebuilder:rbac:groups=networking.k8s.io,resources=ingresses/finalizers,verbs=update
+//+kubebuilder:rbac:groups=networking.k8s.io,resources=ingresses,verbs=get;list;watch
 
 // Reconcile is part of the main kubernetes reconciliation loop which aims to
 // move the current state of the cluster closer to the desired state.
@@ -72,11 +70,6 @@ type IngressCentreonReconciler struct {
 func (r *IngressCentreonReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	r.Log.Infof("Starting reconcile loop for %v", req.NamespacedName)
 	defer r.Log.Infof("Finish reconcile loop for %v", req.NamespacedName)
-
-	// Check default value is specified
-	if r.CentreonConfig.Load() == nil {
-
-	}
 
 	// Get instance
 	instance := &networkv1.Ingress{}
