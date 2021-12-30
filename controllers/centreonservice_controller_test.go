@@ -12,6 +12,7 @@ import (
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 func (t *ControllerTestSuite) TestCentreonServiceController() {
@@ -138,7 +139,10 @@ func (t *ControllerTestSuite) TestCentreonServiceController() {
 	}
 	delete := "delete"
 	step = &delete
-	err = t.k8sClient.Delete(context.Background(), fetched)
+	wait := int64(0)
+	err = t.k8sClient.Delete(context.Background(), fetched, &client.DeleteOptions{
+		GracePeriodSeconds: &wait,
+	})
 	assert.NoError(t.T(), err)
 	isTimeout, err = RunWithTimeout(func() error {
 		fetched = &v1alpha1.CentreonService{}

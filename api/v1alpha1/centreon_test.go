@@ -54,12 +54,11 @@ func (t *V1alpha1TestSuite) TestCentreonIsSubmitted() {
 	centreon := &Centreon{}
 	assert.False(t.T(), centreon.IsSubmitted())
 
-	centreon.Status.UpdatedAt = "test"
+	centreon.Status.CreatedAt = "test"
 	assert.True(t.T(), centreon.IsSubmitted())
 }
 
 func (t *V1alpha1TestSuite) TestCentreonIsBeingDeleted() {
-
 	centreon := &Centreon{
 		ObjectMeta: metav1.ObjectMeta{
 			DeletionTimestamp: &metav1.Time{
@@ -68,5 +67,16 @@ func (t *V1alpha1TestSuite) TestCentreonIsBeingDeleted() {
 		},
 	}
 	assert.True(t.T(), centreon.IsBeingDeleted())
+}
 
+func (t *V1alpha1TestSuite) TestCentreonFinalizer() {
+	centreon := &Centreon{}
+
+	centreon.AddFinalizer()
+	assert.Equal(t.T(), 1, len(centreon.GetFinalizers()))
+	assert.True(t.T(), centreon.HasFinalizer())
+
+	centreon.RemoveFinalizer()
+	assert.Equal(t.T(), 0, len(centreon.GetFinalizers()))
+	assert.False(t.T(), centreon.HasFinalizer())
 }

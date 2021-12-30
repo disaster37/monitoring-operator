@@ -19,6 +19,7 @@ package controllers
 import (
 	"context"
 	"sync/atomic"
+	"time"
 
 	"github.com/disaster37/monitoring-operator/api/v1alpha1"
 	monitorv1alpha1 "github.com/disaster37/monitoring-operator/api/v1alpha1"
@@ -66,6 +67,7 @@ func (r *CentreonReconciler) Reconcile(ctx context.Context, req ctrl.Request) (c
 	err := r.Get(ctx, req.NamespacedName, instance)
 	if err != nil {
 		if errors.IsNotFound(err) {
+			r.Log.Debug("Resource already deleted")
 			return ctrl.Result{}, nil
 		}
 		r.Log.Errorf("Error when get resource: %s", err.Error())
@@ -76,15 +78,39 @@ func (r *CentreonReconciler) Reconcile(ctx context.Context, req ctrl.Request) (c
 		"namespace": instance.Namespace,
 	})
 
+	// Add finalizer
+	// Requeue if add finalizer to avoid lock resource
+	if !instance.HasFinalizer() {
+		instance.AddFinalizer()
+		if err := r.Update(ctx, instance); err != nil {
+			r.Log.Errorf("Error when add finalizer: %s", err.Error())
+			r.Recorder.Eventf(instance, corev1.EventTypeWarning, "Adding finalizer", "Failed to add finalizer: %s", err)
+			return ctrl.Result{}, err
+		}
+		r.Recorder.Event(instance, corev1.EventTypeNormal, "Added", "Object finalizer is added")
+		r.Log.Debug("Add finalizer successfully")
+		return ctrl.Result{Requeue: true}, nil
+	}
+
+	var centreonSpec *v1alpha1.CentreonSpec
+
 	// Delete
-	if !instance.ObjectMeta.DeletionTimestamp.IsZero() {
-		r.Log.Info("Centreon is being deleted, unshare Centreon")
-		r.CentreonConfig.Store(nil)
+	if instance.IsBeingDeleted() {
+		if instance.HasFinalizer() {
+			r.CentreonConfig.Store(centreonSpec)
+			instance.RemoveFinalizer()
+			if err := r.Update(ctx, instance); err != nil {
+				r.Log.Errorf("Failed to remove finalizer: %s", err.Error())
+				r.Recorder.Eventf(instance, corev1.EventTypeWarning, "Failed", "Error when remove finalizer: %s", err.Error())
+				return ctrl.Result{}, err
+			}
+			r.Log.Debug("Remove finalizer successfully")
+		}
+		r.Log.Info("Unshare Centreon successfully")
 		return ctrl.Result{}, nil
 	}
 
 	// Load current Centreon share
-	var centreonSpec *v1alpha1.CentreonSpec
 	if r.CentreonConfig != nil {
 		data := r.CentreonConfig.Load()
 		if data != nil {
@@ -92,22 +118,36 @@ func (r *CentreonReconciler) Reconcile(ctx context.Context, req ctrl.Request) (c
 		}
 	}
 
+	// Create
 	// Share new CrentreonSpec with other controllers
 	if centreonSpec == nil {
 		r.CentreonConfig.Store(&instance.Spec)
 		r.Log.Info("Share Centreon successfully")
 		r.Recorder.Event(instance, corev1.EventTypeNormal, "Completed", "Centreon shared successfully")
+
+		instance.Status.CreatedAt = time.Now().Format(time.RFC3339)
+		if err := r.Status().Update(ctx, instance); err != nil {
+			r.Log.Errorf("Failed to update status: %s", err.Error())
+			r.Recorder.Eventf(instance, corev1.EventTypeWarning, "Failed", "Error when update status: %s", err.Error())
+			return ctrl.Result{}, err
+		}
 		return ctrl.Result{}, nil
 	}
 
-	// Rconcile
+	// Rconcile / Update if needed
 	diff := cmp.Diff(centreonSpec, &instance.Spec)
 	if diff != "" {
 		r.Log.Infof("Diff detected:\n%s", diff)
 		r.CentreonConfig.Store(&instance.Spec)
 		r.Log.Info("Update share Centreon successfully")
 		r.Recorder.Event(instance, corev1.EventTypeNormal, "Completed", "Centreon shared successfully updated")
-		return ctrl.Result{}, nil
+
+		instance.Status.UpdatedAt = time.Now().Format(time.RFC3339)
+		if err := r.Status().Update(ctx, instance); err != nil {
+			r.Log.Errorf("Failed to update status: %s", err.Error())
+			r.Recorder.Eventf(instance, corev1.EventTypeWarning, "Failed", "Error when update status: %s", err.Error())
+			return ctrl.Result{}, err
+		}
 	}
 
 	return ctrl.Result{}, nil

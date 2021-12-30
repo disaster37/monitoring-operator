@@ -86,8 +86,11 @@ spec:
           status:
             description: CentreonStatus defines the observed state of Centreon
             properties:
+              CreatedAt:
+                description: The date when item handle by operator the first time
+                type: string
               updatedAt:
-                description: The date when item is handle by operator
+                description: The date when item is handle for update by operator
                 type: string
             type: object
         type: object

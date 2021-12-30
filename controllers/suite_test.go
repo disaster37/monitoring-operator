@@ -83,17 +83,15 @@ func (t *ControllerTestSuite) SetupSuite() {
 	t.k8sClient = k8sClient
 
 	// Init controlles
-	log := logrus.WithFields(logrus.Fields{
-		"type": "controllers",
-		"name": "CentreonService",
-	})
 	var a atomic.Value
 	t.a = &a
 	err = (&CentreonServiceReconciler{
-		Client:         k8sClient,
-		Recorder:       k8sManager.GetEventRecorderFor("centreonservice-controller"),
-		Scheme:         scheme.Scheme,
-		Log:            log,
+		Client:   k8sClient,
+		Recorder: k8sManager.GetEventRecorderFor("centreonservice-controller"),
+		Scheme:   scheme.Scheme,
+		Log: logrus.WithFields(logrus.Fields{
+			"type": "centreonServiceController",
+		}),
 		Service:        t.mockCentreonService,
 		CentreonConfig: &a,
 	}).SetupWithManager(k8sManager)
@@ -101,9 +99,23 @@ func (t *ControllerTestSuite) SetupSuite() {
 		panic(err)
 	}
 	err = (&IngressCentreonReconciler{
-		Client:         k8sClient,
-		Recorder:       k8sManager.GetEventRecorderFor("ingresscentreon-controller"),
-		Log:            log,
+		Client:   k8sClient,
+		Recorder: k8sManager.GetEventRecorderFor("ingresscentreon-controller"),
+		Log: logrus.WithFields(logrus.Fields{
+			"type": "ingressCentreonController",
+		}),
+		Scheme:         scheme.Scheme,
+		CentreonConfig: &a,
+	}).SetupWithManager(k8sManager)
+	if err != nil {
+		panic(err)
+	}
+	err = (&CentreonReconciler{
+		Client:   k8sClient,
+		Recorder: k8sManager.GetEventRecorderFor("centreon-controller"),
+		Log: logrus.WithFields(logrus.Fields{
+			"type": "centreonController",
+		}),
 		Scheme:         scheme.Scheme,
 		CentreonConfig: &a,
 	}).SetupWithManager(k8sManager)
