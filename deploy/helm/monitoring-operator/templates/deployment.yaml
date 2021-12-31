@@ -9,7 +9,6 @@ spec:
   selector:
     matchLabels:
        {{- include "monitoring-operator.selectorLabels" . | nindent 6 }}
-  serviceName: {{ include "monitoring-operator.fullname" . }}
   replicas: {{ .Values.replicaCount }}
   template:
     metadata:
@@ -36,7 +35,7 @@ spec:
         - /manager
         args:
         - --leader-elect
-        image: controller:latest
+        image: "{{ .Values.image.repository }}:{{ default .Chart.AppVersion .Values.image.tag }}"
         name: manager
         {{- with .Values.securityContext }}
         securityContext:

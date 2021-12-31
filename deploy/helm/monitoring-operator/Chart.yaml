@@ -28,7 +28,7 @@ keywords:
   - Centreon
   - Operator
 
-  dependencies:
+dependencies:
   - name: monitoring-operator-crds
     version: "0.0.1"
     condition: installCRDs

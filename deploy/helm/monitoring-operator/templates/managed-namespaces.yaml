@@ -1,4 +1,4 @@
-{{- if .Values.softMultiTenancy.enabled -}}
+{{- if .Values.managedNamespaces -}}
 {{- range .Values.managedNamespaces }}
 {{- $namespace := . }}
 ---

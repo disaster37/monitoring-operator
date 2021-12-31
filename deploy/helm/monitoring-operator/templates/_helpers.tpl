@@ -65,10 +65,10 @@ Create the name of the service account to use
 Create the name of the secret
 */}}
 {{- define "monitoring-operator.secretName" -}}
-{{- if .Values.monitoring.secret-create }}
-{{- default (include "monitoring-operator.fullname" .) .Values.monitoring.secret-name }}
+{{- if .Values.monitoring.secret.create }}
+{{- default (include "monitoring-operator.fullname" .) .Values.monitoring.secret.name }}
 {{- else }}
-{{- default "default" .Values.monitoring.secret-name }}
+{{- default "default" .Values.monitoring.secret.name }}
 {{- end }}
 {{- end }}
 
@@ -76,6 +76,12 @@ Create the name of the secret
 RBAC permissions
 */}}
 {{- define "monitoring-operator.rbacRules" -}}
+- apiGroups:
+  - ""
+  resources:
+  - events
+  verbs:
+  - create
 - apiGroups:
   - monitor.k8s.webcenter.fr
   resources:

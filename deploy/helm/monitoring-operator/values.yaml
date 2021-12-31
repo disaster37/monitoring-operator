@@ -23,7 +23,7 @@ image:
   # pullPolicy is the container image pull policy.
   pullPolicy: IfNotPresent
   # tag is the container image tag. If not defined, defaults to chart appVersion.
-  tag: null
+  tag: main
 
 # imagePullSecrets defines the secrets to use when pulling the operator container image.
 imagePullSecrets: []
@@ -74,8 +74,9 @@ serviceAccount:
 
 
 monitoring:
-  secret-name: ""
-  secret-create: true
+  secret:
+    name: ""
+    create: true
   plateform: centreon
   url: ""
   username: ""
