@@ -169,7 +169,7 @@ jobs:
           build-args: "version:${{ steps.tagName.outputs.tag }},commit: ${GITHUB_SHA::8}"
   
   publish:
-    needs: [release_docker_image]
+    needs: [release_docker_image, helm-lint-test]
     runs-on: ubuntu-latest
     if: startsWith(github.ref, 'refs/tags/')
     steps:

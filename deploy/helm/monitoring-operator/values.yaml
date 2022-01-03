@@ -80,7 +80,7 @@ monitoring:
     name: ""
 
     # create permit to create secret with provided username and password
-    create: true
+    create: false
   
   # plateform is the remote monitoring plateform. Actually support only Centreon
   plateform: centreon
