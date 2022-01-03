@@ -3,6 +3,7 @@ package controllers
 import (
 	"context"
 	"errors"
+	"os"
 	"time"
 
 	"github.com/disaster37/monitoring-operator/api/v1alpha1"
@@ -20,6 +21,8 @@ func (t *ControllerTestSuite) TestCentreonController() {
 		fetched   *v1alpha1.Centreon
 		isTimeout bool
 	)
+
+	os.Setenv("OPERATOR_NAMESPACE", "default")
 
 	centreonName := "t-centreon-" + helpers.RandomString(10)
 	key := types.NamespacedName{
