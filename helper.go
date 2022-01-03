@@ -3,6 +3,7 @@ package main
 import (
 	"os"
 	osruntime "runtime"
+	"strconv"
 	"time"
 
 	"github.com/go-logr/logr"
@@ -67,7 +68,7 @@ func getKubeClientTimeout() (timeout time.Duration, err error) {
 	kubeClientTimeoutEnvVar := "KUBE_CLIENT_TIMEOUT"
 	t, found := os.LookupEnv(kubeClientTimeoutEnvVar)
 	if !found {
-		return 0, nil
+		return 30 * time.Second, nil
 	}
 
 	timeout, err = time.ParseDuration(t)

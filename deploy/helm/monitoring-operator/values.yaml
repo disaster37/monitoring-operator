@@ -105,9 +105,6 @@ config:
   # metricsPort defines the port to expose operator metrics. Set to 0 to disable metrics reporting.
   metricsPort: "0"
 
-  # maxConcurrentReconciles is the number of concurrent reconciliation operations to perform per controller.
-  maxConcurrentReconciles: "1"
-
   # kubeClientTimeout sets the request timeout for Kubernetes API calls made by the operator.
   kubeClientTimeout: 60s
 

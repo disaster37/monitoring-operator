@@ -67,8 +67,6 @@ spec:
             value: {{ .Values.monitoring.plateform }}
           - name: MONITORING_URL
             value: {{ .Values.monitoring.url }}
-          - name: MAX_CONCURRENT_RECONCILES
-            value: {{ .Values.config.maxConcurrentReconciles }}
           - name: KUBE_CLIENT_TIMEOUT
             value: {{ .Values.config.kubeClientTimeout }}
           - name: MONITORING_CLIENT_TIMEOUT
