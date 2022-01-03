@@ -3,6 +3,7 @@ package main
 import (
 	"os"
 	osruntime "runtime"
+	"time"
 
 	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
@@ -60,4 +61,19 @@ func getWatchNamespace() (ns string, err error) {
 	}
 
 	return ns, nil
+}
+
+func getKubeClientTimeout() (timeout time.Duration, err error) {
+	kubeClientTimeoutEnvVar := "KUBE_CLIENT_TIMEOUT"
+	t, found := os.LookupEnv(kubeClientTimeoutEnvVar)
+	if !found {
+		return 0, nil
+	}
+
+	timeout, err = time.ParseDuration(t)
+	if err != nil {
+		return 0, err
+	}
+
+	return timeout, nil
 }

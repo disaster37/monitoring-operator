@@ -1,3 +1,5 @@
+{{- $metricsPort := int .Values.metrics.port -}}
+---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -41,6 +43,12 @@ spec:
         securityContext:
           {{- toYaml . | nindent 10 }}
         {{- end }}
+        {{- if (gt $metricsPort 0) }}
+        ports:
+          - containerPort: {{ .Values.metrics.port }}
+            name: metrics
+            protocol: TCP
+        {{- end }}
         env:
           - name: OPERATOR_NAMESPACE
             valueFrom:
@@ -56,6 +64,12 @@ spec:
             value: {{ .Values.monitoring.plateform }}
           - name: MONITORING_URL
             value: {{ .Values.monitoring.url }}
+          - name: MAX_CONCURRENT_RECONCILES
+            value: {{ .Values.config.maxConcurrentReconciles }}
+          - name: KUBE_CLIENT_TIMEOUT
+            value: {{ .Values.config.kubeClientTimeout }}
+          - name: MONITORING_CLIENT_TIMEOUT
+            value: {{ .Values.config.monitoringClientTimeout }}
         envFrom:
         - secretRef:
             name: {{ include "monitoring-operator.secretName" . }}

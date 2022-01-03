@@ -1,0 +1,12 @@
+{{- if and (eq .Values.monitoring.plateform "centreon") .values.centreon }}
+---
+apiVersion: monitor.k8s.webcenter.fr/v1alpha1
+kind: Centreon
+metadata:
+  name: {{ include "monitoring-operator.fullname" . }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "monitoring-operator.labels" . | nindent 4 }}
+spec:
+  {{- toYaml .values.centreon  | nindent 2 }}
+{{- end -}}

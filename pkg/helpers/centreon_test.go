@@ -3,6 +3,7 @@ package helpers
 import (
 	"os"
 	"testing"
+	"time"
 
 	"github.com/disaster37/go-centreon-rest/v21/models"
 	"github.com/stretchr/testify/assert"
@@ -21,24 +22,27 @@ func TestGetCentreonConfig(t *testing.T) {
 		Username:         "user",
 		Password:         "pass",
 		DisableVerifySSL: true,
+		Timeout:          10 * time.Second,
 	}
 
 	os.Setenv(urlEnvVar, "http://localhost")
 	os.Setenv(usernameEnvVar, "user")
 	os.Setenv(passwordEnvVar, "pass")
 	os.Setenv(disableSSLCheckEnvVar, "true")
+	os.Setenv(monitoringTimeoutEnvVar, "10s")
 
 	cfg, err = GetCentreonConfig()
 	assert.NoError(t, err)
 	assert.Equal(t, expectedCFG, cfg)
 
-	// When optionan en not setted
+	// When optionnal not setted
 	expectedCFG = &models.Config{
 		Address:  "http://localhost",
 		Username: "user",
 		Password: "pass",
 	}
 	os.Unsetenv(disableSSLCheckEnvVar)
+	os.Unsetenv(monitoringTimeoutEnvVar)
 	cfg, err = GetCentreonConfig()
 	assert.NoError(t, err)
 	assert.Equal(t, expectedCFG, cfg)
@@ -60,13 +64,13 @@ func TestGetCentreonConfig(t *testing.T) {
 	os.Setenv(passwordEnvVar, "pass")
 }
 
-func TestGetCentreonNamespace(t *testing.T) {
-	os.Setenv(centreonNamespaceEnvVar, "test")
-	ns, err := GetCentreonNamespace()
+func TestGetOperatorNamespace(t *testing.T) {
+	os.Setenv(operatorNamespaceEnvVar, "test")
+	ns, err := GetOperatorNamespace()
 	assert.NoError(t, err)
 	assert.Equal(t, "test", ns)
 
-	os.Unsetenv(centreonNamespaceEnvVar)
-	ns, err = GetCentreonNamespace()
+	os.Unsetenv(operatorNamespaceEnvVar)
+	ns, err = GetOperatorNamespace()
 	assert.Error(t, err)
 }

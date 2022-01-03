@@ -23,7 +23,7 @@ image:
   # pullPolicy is the container image pull policy.
   pullPolicy: IfNotPresent
   # tag is the container image tag. If not defined, defaults to chart appVersion.
-  tag: main
+  tag: null
 
 # imagePullSecrets defines the secrets to use when pulling the operator container image.
 imagePullSecrets: []
@@ -72,17 +72,78 @@ serviceAccount:
   # If not set and create is true, a name is generated using the fullname template
   name: ""
 
-
+# monitoring permit to set parameters to access on remote monitoring plateform
 monitoring:
+  
   secret:
+    # name is the secret name to use
     name: ""
-    create: true
-  plateform: centreon
-  url: ""
-  username: ""
-  password: ""
 
-loglevel: info
+    # create permit to create secret with provided username and password
+    create: true
+  
+  # plateform is the remote monitoring plateform. Actually support only Centreon
+  plateform: centreon
+
+  # url is the monitoring plateform URL to access on API
+  url: null
+
+  # username is the user to access on API. It only used when you set secret.create to true
+  username: null
+
+  # password is the passsword to access on API. It only used when you set secret.create to true
+  password: null
+
+# centreon is the centreon spec contend.
+centreon: {}
+
+# config values for the operator.
+config:
+  # loglevel defines the logging level
+  loglevel: info
+
+  # metricsPort defines the port to expose operator metrics. Set to 0 to disable metrics reporting.
+  metricsPort: "0"
+
+  # maxConcurrentReconciles is the number of concurrent reconciliation operations to perform per controller.
+  maxConcurrentReconciles: "1"
+
+  # kubeClientTimeout sets the request timeout for Kubernetes API calls made by the operator.
+  kubeClientTimeout: 60s
+
+  # monitoringClientTimeout sets the request timeout for monitoring API calls made by the operator.
+  monitoringClientTimeout: 60s
+
+# Prometheus PodMonitor configuration
+# Reference: https://github.com/prometheus-operator/prometheus-operator/blob/master/Documentation/api.md#podmonitor
+podMonitor:
+
+  # enabled determines whether a podMonitor should deployed to scrape the operator metrics.
+  # This requires the prometheus operator and the config.metricsPort not to be 0
+  enabled: false
+
+  # labels adds additional labels to the podMonitor
+  labels: {}
+
+  # annotations adds additional annotations to the podMonitor
+  annotations: {}
+
+  # namespace determines in which namespace the podMonitor will be deployed.
+  # If not set the podMonitor will be created in the namespace to release is installed into
+  # namespace: monitoring
+
+  # interval specifies the interval at which metrics should be scraped
+  interval: 5m
+
+  # scrapeTimeout specifies the timeout after which the scrape is ended
+  scrapeTimeout: 30s
+
+  # podTargetLabels transfers labels on the Kubernetes Pod onto the target.
+  podTargetLabels: []
+
+  # podMetricsEndpointConfig allows to add an extended configuration to the podMonitor
+  podMetricsEndpointConfig: {}
+  # honorTimestamps: true
 
 
 

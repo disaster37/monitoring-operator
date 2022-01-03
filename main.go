@@ -89,7 +89,15 @@ func main() {
 	printVersion(ctrl.Log, metricsAddr, probeAddr)
 	log.Infof("monitoring-operator version: %s - %s", version, commit)
 
-	mgr, err := ctrl.NewManager(ctrl.GetConfigOrDie(), ctrl.Options{
+	cfg := ctrl.GetConfigOrDie()
+	timeout, err := getKubeClientTimeout()
+	if err != nil {
+		setupLog.Error(err, "KUBE_CLIENT_TIMEOUT must be a valid duration: %s", err.Error())
+		os.Exit(1)
+	}
+	cfg.Timeout = timeout
+
+	mgr, err := ctrl.NewManager(cfg, ctrl.Options{
 		Scheme:                 scheme,
 		MetricsBindAddress:     metricsAddr,
 		Port:                   9443,

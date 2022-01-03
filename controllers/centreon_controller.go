@@ -181,9 +181,9 @@ func viewCentreonNamespacePredicate() predicate.Predicate {
 }
 
 func isOnControllerNamespace(ns string) bool {
-	expectedNs, err := helpers.GetCentreonNamespace()
+	expectedNs, err := helpers.GetOperatorNamespace()
 	if err != nil {
-		expectedNs = "default"
+		expectedNs = "monitoring-operator"
 	}
 
 	return ns == expectedNs
