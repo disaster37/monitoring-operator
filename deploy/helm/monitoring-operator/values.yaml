@@ -88,6 +88,9 @@ monitoring:
   # url is the monitoring plateform URL to access on API
   url: null
 
+  # disableSSLCheck permit to disable the SSL check (usefull when self-signed certificate)
+  disableSSLCheck: false
+
   # username is the user to access on API. It only used when you set secret.create to true
   username: null
 

@@ -71,6 +71,8 @@ spec:
             value: {{ .Values.config.kubeClientTimeout }}
           - name: MONITORING_CLIENT_TIMEOUT
             value: {{ .Values.config.monitoringClientTimeout }}
+          - name: MONITORING_DISABLE_SSL_CHECK
+            value: {{ .Values.monitoring.disableSSLCheck }}
         envFrom:
         - secretRef:
             name: {{ include "monitoring-operator.secretName" . }}

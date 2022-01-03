@@ -182,6 +182,7 @@ jobs:
           replacement: 'version: "${{ steps.tagName.outputs.tag }}"'
           include: 'Chart\.yaml'
           exclude: 'charts\/.*'
+          flags: ''
           path: 'deploy/helm/monitoring-operator'
       - uses: mingjun97/file-regex-replace@v1
         with:
@@ -189,6 +190,7 @@ jobs:
           replacement: 'appVersion: "${{ steps.tagName.outputs.tag }}"'
           include: 'Chart\.yaml'
           exclude: 'charts\/.*'
+          flags: ''
           path: 'deploy/helm/monitoring-operator'
       - uses: goodsmileduck/helm-push-action@v3.3.1
         env:
