@@ -176,14 +176,22 @@ jobs:
       - uses: actions/checkout@v2
       - uses: little-core-labs/get-git-tag@v3.0.1
         id: tagName
-      - uses: datamonsters/replace-action@v2
+      - uses: mingjun97/file-regex-replace@v1
         with:
-          files: 'deploy/helm/monitoring-operator/Chart.yaml'
-          replacements: "version=${{ steps.tagName.outputs.tag }},appVersion=${{ steps.tagName.outputs.tag }}"
+          regex: 'version:.*'
+          replacement: 'version: "${{ steps.tagName.outputs.tag }}"'
+          include: 'Chart\.yaml'
+          path: 'deploy/helm/monitoring-operator'
+      - uses: mingjun97/file-regex-replace@v1
+        with:
+          regex: 'appVersion:.*'
+          replacement: 'appVersion: "${{ steps.tagName.outputs.tag }}"'
+          include: 'Chart\.yaml'
+          path: 'deploy/helm/monitoring-operator'
       - uses: goodsmileduck/helm-push-action@v3.3.1
         env:
-          SOURCE_DIR: '.'
-          CHART_FOLDER: 'deploy/helm/monitoring-operator'
+          SOURCE_DIR: 'deploy/helm'
+          CHART_FOLDER: 'monitoring-operator'
           FORCE: 'True'
           CHARTMUSEUM_URL: 'https://charts.webcenter.fr'
           CHARTMUSEUM_USER: '${{ secrets.CHARTMUSEUM_USER }}'
