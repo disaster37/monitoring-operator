@@ -1,4 +1,4 @@
-{{- if and (eq .Values.monitoring.plateform "centreon") .values.centreon }}
+{{- if and (eq .Values.monitoring.plateform "centreon") .Values.centreon }}
 ---
 apiVersion: monitor.k8s.webcenter.fr/v1alpha1
 kind: Centreon
@@ -8,5 +8,5 @@ metadata:
   labels:
     {{- include "monitoring-operator.labels" . | nindent 4 }}
 spec:
-  {{- toYaml .values.centreon  | nindent 2 }}
+  {{- toYaml .Values.centreon  | nindent 2 }}
 {{- end -}}
