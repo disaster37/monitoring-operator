@@ -2,7 +2,7 @@ MONITORING_URL ?= "http://localhost/centreon/api/index.php"
 MONITORING_USERNAME ?= "admin"
 MONITORING_PASSWORD ?= "admin"
 MONITORING_PLATEFORM ?= "centreon"
-OPERATOR_NAMESPACE ?= "default
+OPERATOR_NAMESPACE ?= "default"
 
 # VERSION defines the project version for the bundle.
 # Update this value when you upgrade the version of your project.
