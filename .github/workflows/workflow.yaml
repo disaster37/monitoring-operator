@@ -180,10 +180,6 @@ jobs:
         with:
           files: 'deploy/helm/monitoring-operator/Chart.yaml'
           replacements: "version=${{ steps.tagName.outputs.tag }},appVersion=${{ steps.tagName.outputs.tag }}"
-      - uses: datamonsters/replace-action
-        with:
-          files: 'deploy/helm/monitoring-operator/values.yaml'
-          replacements: "version=${{ steps.tagName.outputs.tag }},appVersion=${{ steps.tagName.outputs.tag }}"
       - uses: goodsmileduck/helm-push-action@v3.3.1
         env:
           SOURCE_DIR: '.'
