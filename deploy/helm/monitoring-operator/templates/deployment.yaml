@@ -1,4 +1,4 @@
-{{- $metricsPort := int .Values.metrics.port -}}
+{{- $metricsPort := int .Values.config.metricsPort -}}
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -37,6 +37,9 @@ spec:
         - /manager
         args:
         - --leader-elect
+        {{- if (gt $metricsPort 0) }}
+        - --metrics-bind-address :{{ .Values.config.metricsPort }}
+        {{- end }}
         image: "{{ .Values.image.repository }}:{{ default .Chart.AppVersion .Values.image.tag }}"
         name: manager
         {{- with .Values.securityContext }}
@@ -45,7 +48,7 @@ spec:
         {{- end }}
         {{- if (gt $metricsPort 0) }}
         ports:
-          - containerPort: {{ .Values.metrics.port }}
+          - containerPort: {{ .Values.config.metricsPort }}
             name: metrics
             protocol: TCP
         {{- end }}
