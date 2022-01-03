@@ -94,7 +94,7 @@ jobs:
       - name: Install chart
         run: |
           cd deploy/helm/monitoring-operator
-          helm install monitoring-operator . -n monitoring-operator --create-namespace --wait
+          helm install monitoring-operator . -n monitoring-operator --create-namespace --wait --set monitoring.url=http://localhost/centreon/api/index.php --set monitoring.secret.create=true --set monitoring.username=admin --set monitoring.password=admin
 
   release:
     needs: [build] # Only run this workflow when "build" workflow succeeds

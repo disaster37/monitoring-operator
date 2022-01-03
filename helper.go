@@ -3,7 +3,6 @@ package main
 import (
 	"os"
 	osruntime "runtime"
-	"strconv"
 	"time"
 
 	"github.com/go-logr/logr"
