@@ -18,7 +18,6 @@ package v1alpha1
 
 import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 )
 
 // EDIT THIS FILE!  THIS IS SCAFFOLDING FOR YOU TO OWN!
@@ -79,11 +78,6 @@ type CentreonStatus struct {
 	// INSERT ADDITIONAL STATUS FIELD - define observed state of cluster
 	// Important: Run "make" to regenerate code after modifying this file
 
-	// The date when item handle by operator the first time
-	CreatedAt string `json:"CreatedAt,omitempty"`
-
-	// The date when item is handle for update by operator
-	UpdatedAt string `json:"updatedAt,omitempty"`
 }
 
 //+kubebuilder:object:root=true
@@ -109,29 +103,4 @@ type CentreonList struct {
 
 func init() {
 	SchemeBuilder.Register(&Centreon{}, &CentreonList{})
-}
-
-// IsBeingDeleted returns true if a deletion timestamp is set
-func (c *Centreon) IsBeingDeleted() bool {
-	return !c.ObjectMeta.DeletionTimestamp.IsZero()
-}
-
-// HasFinalizer returns true if the item has the specified finalizer
-func (c *Centreon) HasFinalizer() bool {
-	return controllerutil.ContainsFinalizer(c, centreonServicedFinalizer)
-}
-
-// IsSubmitted return true if service has been submitted to Centreon
-func (c *Centreon) IsSubmitted() bool {
-	return c.Status.CreatedAt != ""
-}
-
-// AddFinalizer adds the specified finalizer
-func (c *Centreon) AddFinalizer() {
-	controllerutil.AddFinalizer(c, centreonServicedFinalizer)
-}
-
-// RemoveFinalizer removes the specified finalizer
-func (c *Centreon) RemoveFinalizer() {
-	controllerutil.RemoveFinalizer(c, centreonServicedFinalizer)
 }

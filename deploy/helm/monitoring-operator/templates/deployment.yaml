@@ -62,7 +62,7 @@ spec:
             value: {{ join "," .Values.managedNamespaces }}
           {{- end }}
           - name: LOG_LEVEL
-            value: {{ .Values.loglevel }}
+            value: {{ .Values.config.loglevel }}
           - name: MONITORING_PLATEFORM
             value: {{ .Values.monitoring.plateform }}
           - name: MONITORING_URL

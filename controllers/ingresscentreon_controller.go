@@ -22,7 +22,6 @@ import (
 	errorspkg "errors"
 	"fmt"
 	"regexp"
-	"sync/atomic"
 
 	"github.com/disaster37/monitoring-operator/api/v1alpha1"
 	monitorv1alpha1 "github.com/disaster37/monitoring-operator/api/v1alpha1"
@@ -50,13 +49,14 @@ const (
 // IngressReconciler reconciles a Ingress object
 type IngressCentreonReconciler struct {
 	client.Client
-	Scheme         *runtime.Scheme
-	Log            *logrus.Entry
-	Recorder       record.EventRecorder
-	CentreonConfig *atomic.Value
+	Scheme   *runtime.Scheme
+	Log      *logrus.Entry
+	Recorder record.EventRecorder
 }
 
 //+kubebuilder:rbac:groups=networking.k8s.io,resources=ingresses,verbs=get;list;watch
+//+kubebuilder:rbac:groups=monitor.k8s.webcenter.fr,resources=centreons,verbs=get;list;watch
+//+kubebuilder:rbac:groups=monitor.k8s.webcenter.fr,resources=centreonServices,verbs=get;list;watch;create;update;patch;delete
 
 // Reconcile is part of the main kubernetes reconciliation loop which aims to
 // move the current state of the cluster closer to the desired state.
@@ -93,12 +93,11 @@ func (r *IngressCentreonReconciler) Reconcile(ctx context.Context, req ctrl.Requ
 	}
 
 	// Reconcile
-	var centreonSpec *v1alpha1.CentreonSpec
-	if r.CentreonConfig != nil {
-		data := r.CentreonConfig.Load()
-		if data != nil {
-			centreonSpec = data.(*v1alpha1.CentreonSpec)
-		}
+	centreonSpec, err := getCentreonSpec(ctx, r.Client)
+	if err != nil {
+		r.Log.Errorf("Error when get CentreonSpec: %s", err.Error())
+		r.Recorder.Eventf(instance, corev1.EventTypeWarning, "Failed", "Error when reconcile: %s", err.Error())
+		return ctrl.Result{}, err
 	}
 	if centreonSpec == nil {
 		r.Log.Warning("It's recommanded to set some default values on custom resource called `Centreon` on the same operator namespace. It avoid to set on each ingress all Centreon service properties as annotations")

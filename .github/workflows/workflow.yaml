@@ -170,6 +170,10 @@ jobs:
             type=sha
       - uses: little-core-labs/get-git-tag@v3.0.1
         id: tagName
+      - name: Commit hash
+        id: git
+        run: |
+          echo ::set-output name=commit_hash::${GITHUB_SHA::8}
       - name: Build and push
         id: docker_build
         uses: docker/build-push-action@v2
@@ -180,7 +184,7 @@ jobs:
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
-          build-args: "version:${{ steps.tagName.outputs.tag }},commit: ${GITHUB_SHA::8}"
+          build-args: "version=${{ steps.tagName.outputs.tag }},commit=${{ steps.git.outputs.commit_hash }}"
 
   helm-chart-monitoring-operator:
     needs: [release_docker_image, helm-chart-monitoring-operator-crds]

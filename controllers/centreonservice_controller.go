@@ -19,7 +19,6 @@ package controllers
 import (
 	"context"
 	"fmt"
-	"sync/atomic"
 	"time"
 
 	"github.com/disaster37/monitoring-operator/api/v1alpha1"
@@ -36,11 +35,10 @@ import (
 // CentreonServiceReconciler reconciles a CentreonService object
 type CentreonServiceReconciler struct {
 	client.Client
-	Scheme         *runtime.Scheme
-	Recorder       record.EventRecorder
-	Log            *logrus.Entry
-	Service        CentreonService
-	CentreonConfig *atomic.Value
+	Scheme   *runtime.Scheme
+	Recorder record.EventRecorder
+	Log      *logrus.Entry
+	Service  CentreonService
 }
 
 //+kubebuilder:rbac:groups=monitor.k8s.webcenter.fr,resources=centreonservices,verbs=get;list;watch;create;update;patch;delete

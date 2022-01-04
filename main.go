@@ -19,7 +19,6 @@ package main
 import (
 	"flag"
 	"os"
-	"sync/atomic"
 
 	// Import all Kubernetes client auth plugins (e.g. Azure, GCP, OIDC, etc.)
 	// to ensure that exec-entrypoint and run can make use of them.
@@ -144,15 +143,11 @@ func main() {
 		}
 		centreonHandler := centreonhandler.NewCentreonHandler(centreonClient, logrus.NewEntry(log))
 
-		// Init CentreonConfig
-		var a atomic.Value
-
 		// Set controllers for Centreon resources
 		if err = (&controllers.CentreonServiceReconciler{
-			Client:         mgr.GetClient(),
-			Scheme:         mgr.GetScheme(),
-			Service:        controllers.NewCentreonService(centreonHandler),
-			CentreonConfig: &a,
+			Client:  mgr.GetClient(),
+			Scheme:  mgr.GetScheme(),
+			Service: controllers.NewCentreonService(centreonHandler),
 			Log: log.WithFields(logrus.Fields{
 				"type": "CentreonServiceController",
 			}),
@@ -163,28 +158,14 @@ func main() {
 		}
 
 		if err = (&controllers.IngressCentreonReconciler{
-			Client:         mgr.GetClient(),
-			Scheme:         mgr.GetScheme(),
-			CentreonConfig: &a,
-			Recorder:       mgr.GetEventRecorderFor("ingresscentreon-controller"),
+			Client:   mgr.GetClient(),
+			Scheme:   mgr.GetScheme(),
+			Recorder: mgr.GetEventRecorderFor("ingresscentreon-controller"),
 			Log: log.WithFields(logrus.Fields{
 				"type": "IngressCentreonControllers",
 			}),
 		}).SetupWithManager(mgr); err != nil {
 			setupLog.Error(err, "unable to create controller", "controller", "IngressCentreon")
-			os.Exit(1)
-		}
-
-		if err = (&controllers.CentreonReconciler{
-			Client:         mgr.GetClient(),
-			Scheme:         mgr.GetScheme(),
-			CentreonConfig: &a,
-			Recorder:       mgr.GetEventRecorderFor("centreon-controller"),
-			Log: log.WithFields(logrus.Fields{
-				"type": "CentreonControllers",
-			}),
-		}).SetupWithManager(mgr); err != nil {
-			setupLog.Error(err, "unable to create controller", "controller", "Centreon")
 			os.Exit(1)
 		}
 

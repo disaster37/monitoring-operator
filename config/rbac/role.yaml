@@ -9,7 +9,7 @@ rules:
 - apiGroups:
   - monitor.k8s.webcenter.fr
   resources:
-  - centreons
+  - centreonServices
   verbs:
   - create
   - delete
@@ -21,17 +21,11 @@ rules:
 - apiGroups:
   - monitor.k8s.webcenter.fr
   resources:
-  - centreons/finalizers
-  verbs:
-  - update
-- apiGroups:
-  - monitor.k8s.webcenter.fr
-  resources:
-  - centreons/status
+  - centreons
   verbs:
   - get
-  - patch
-  - update
+  - list
+  - watch
 - apiGroups:
   - monitor.k8s.webcenter.fr
   resources:

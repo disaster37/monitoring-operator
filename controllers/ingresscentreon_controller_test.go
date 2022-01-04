@@ -3,6 +3,7 @@ package controllers
 import (
 	"context"
 	"errors"
+	"os"
 	"testing"
 	"time"
 
@@ -885,31 +886,46 @@ func (t *ControllerTestSuite) TestIngressCentreonControllerWhenCentreonSpec() {
 		cs                      *v1alpha1.CentreonService
 		expectedCentreonService *v1alpha1.CentreonService
 		isTimeout               bool
-		centreon                *v1alpha1.CentreonSpec
+		centreon                *v1alpha1.Centreon
 	)
 	ingressName := "t-ingress-" + helpers.RandomString(10)
 	key := types.NamespacedName{
 		Name:      ingressName,
 		Namespace: "default",
 	}
+	keyCentreon := types.NamespacedName{
+		Name:      centreonResourceName,
+		Namespace: "default",
+	}
+
+	os.Setenv("OPERATOR_NAMESPACE", "default")
 
 	//Create new ingress
-	centreon = &v1alpha1.CentreonSpec{
-		Endpoints: &v1alpha1.CentreonSpecEndpoint{
-			Template:     "template",
-			DefaultHost:  "localhost",
-			NameTemplate: "ping",
-			Macros: map[string]string{
-				"mac1": "value1",
-				"mac2": "value2",
+	centreon = &v1alpha1.Centreon{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      keyCentreon.Name,
+			Namespace: keyCentreon.Namespace,
+		},
+		Spec: v1alpha1.CentreonSpec{
+			Endpoints: &v1alpha1.CentreonSpecEndpoint{
+				Template:     "template",
+				DefaultHost:  "localhost",
+				NameTemplate: "ping",
+				Macros: map[string]string{
+					"mac1": "value1",
+					"mac2": "value2",
+				},
+				Arguments:       []string{"arg1", "arg2"},
+				ActivateService: true,
+				ServiceGroups:   []string{"sg1"},
+				Categories:      []string{"cat1"},
 			},
-			Arguments:       []string{"arg1", "arg2"},
-			ActivateService: true,
-			ServiceGroups:   []string{"sg1"},
-			Categories:      []string{"cat1"},
 		},
 	}
-	t.a.Store(centreon)
+	if err = t.k8sClient.Create(context.Background(), centreon); err != nil {
+		t.T().Fatal(err)
+	}
+
 	pathType := networkv1.PathTypePrefix
 	toCreate := &networkv1.Ingress{
 		ObjectMeta: metav1.ObjectMeta{
@@ -1024,8 +1040,14 @@ func (t *ControllerTestSuite) TestIngressCentreonControllerWhenCentreonSpec() {
 	time.Sleep(10 * time.Second)
 
 	// Update Ingress
-	centreon.Endpoints.Arguments = []string{"arg1"}
-	t.a.Store(centreon)
+	if err = t.k8sClient.Get(context.Background(), keyCentreon, centreon); err != nil {
+		t.T().Fatal(err)
+	}
+	centreon.Spec.Endpoints.Arguments = []string{"arg1"}
+	if err = t.k8sClient.Update(context.Background(), centreon); err != nil {
+		t.T().Fatal(err)
+	}
+
 	fetched = &networkv1.Ingress{}
 	if err := t.k8sClient.Get(context.Background(), key, fetched); err != nil {
 		t.T().Fatal(err)

@@ -39,17 +39,17 @@ spec:
               endpoint:
                 description: The endpoint default setting
                 properties:
-                  activeService;omitempty:
+                  activeService:
                     description: By default, activate service when created it Default
                       to true
                     type: boolean
-                  args;omitempty:
+                  arguments:
                     description: The default command arguements to set when create
                       service You can use special tag to generate value on the flow
                     items:
                       type: string
                     type: array
-                  categories;omitempty:
+                  categories:
                     description: Default categories
                     items:
                       type: string
@@ -57,7 +57,7 @@ spec:
                   defaultHost:
                     description: The default host to attach service
                     type: string
-                  macros;omitempty:
+                  macros:
                     additionalProperties:
                       type: string
                     description: The default macro to set when create service You
@@ -67,7 +67,7 @@ spec:
                     description: The default template name when create service from
                       endpoint
                     type: string
-                  serviceGroups;omitempty:
+                  serviceGroups:
                     description: Default service groups
                     items:
                       type: string
@@ -85,13 +85,6 @@ spec:
             type: object
           status:
             description: CentreonStatus defines the observed state of Centreon
-            properties:
-              CreatedAt:
-                description: The date when item handle by operator the first time
-                type: string
-              updatedAt:
-                description: The date when item is handle for update by operator
-                type: string
             type: object
         type: object
     served: true
