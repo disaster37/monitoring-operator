@@ -29,6 +29,7 @@ import (
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
 	ctrl "sigs.k8s.io/controller-runtime"
+	"sigs.k8s.io/controller-runtime/pkg/cache"
 	"sigs.k8s.io/controller-runtime/pkg/healthz"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 
@@ -81,9 +82,20 @@ func main() {
 	log.SetLevel(getLogrusLogLevel())
 
 	watchNamespace, err := getWatchNamespace()
+	var namespace string
+	var multiNamespacesCached cache.NewCacheFunc
+
 	if err != nil {
-		setupLog.Error(err, "unable to get WatchNamespace, "+
-			"the manager will watch and manage resources in all namespaces")
+		setupLog.Info("WATCH_NAMESPACES env variable not setted, the manager will watch and manage resources in all namespaces")
+	} else {
+		setupLog.Info("Manager look only resources on namespaces %s", watchNamespace)
+		watchNamespaces := helpers.StringToSlice(watchNamespace, ",")
+		if len(watchNamespaces) == 1 {
+			namespace = watchNamespace
+		} else {
+			multiNamespacesCached = cache.MultiNamespacedCacheBuilder(watchNamespaces)
+		}
+
 	}
 
 	printVersion(ctrl.Log, metricsAddr, probeAddr)
@@ -104,7 +116,8 @@ func main() {
 		HealthProbeBindAddress: probeAddr,
 		LeaderElection:         enableLeaderElection,
 		LeaderElectionID:       "351cbbed.k8s.webcenter.fr",
-		Namespace:              watchNamespace,
+		Namespace:              namespace,
+		NewCache:               multiNamespacesCached,
 	})
 	if err != nil {
 		setupLog.Error(err, "unable to start manager")
