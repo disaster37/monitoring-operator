@@ -53,25 +53,25 @@ type CentreonSpecEndpoint struct {
 	// The default macro to set when create service
 	// You can use special tag to generate value on the flow
 	// +optional
-	Macros map[string]string `json:"macros;omitempty"`
+	Macros map[string]string `json:"macros,omitempty"`
 
 	// The default command arguements to set when create service
 	// You can use special tag to generate value on the flow
 	// +optional
-	Arguments []string `json:"args;omitempty"`
+	Arguments []string `json:"arguments,omitempty"`
 
 	// By default, activate service when created it
 	// Default to true
 	// +optional
-	ActivateService bool `json:"activeService;omitempty"`
+	ActivateService bool `json:"activeService,omitempty"`
 
 	// Default service groups
 	// +optional
-	ServiceGroups []string `json:"serviceGroups;omitempty"`
+	ServiceGroups []string `json:"serviceGroups,omitempty"`
 
 	// Default categories
 	// +optional
-	Categories []string `json:"categories;omitempty"`
+	Categories []string `json:"categories,omitempty"`
 }
 
 // CentreonStatus defines the observed state of Centreon
