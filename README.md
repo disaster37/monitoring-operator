@@ -1,13 +1,23 @@
 [![build](https://github.com/disaster37/monitoring-operator/actions/workflows/workflow.yaml/badge.svg)](https://github.com/disaster37/monitoring-operator/actions/workflows/workflow.yaml)
 [![GoDoc](https://godoc.org/github.com/disaster37/monitoring-operator?status.svg)](http://godoc.org/github.com/disaster37/monitoring-operator)
+[![Go Report Card](https://goreportcard.com/badge/github.com/disaster37/monitoring-operator)](https://goreportcard.com/report/github.com/disaster37/monitoring-operator)
 [![codecov](https://codecov.io/gh/disaster37/monitoring-operator/branch/main/graph/badge.svg)](https://codecov.io/gh/disaster37/monitoring-operator/branch/main)
 
 # monitoring-operator
 Kubernetes operator to manage monitoring resources
 
-## Notes
-List des annotations:
+It actually only support Centreon as monitoring plateform.
+
+## Supported fonctionnalities:
+  - Manage service from custom resource `CentreonService`
+  - Manage service from ingress annotations and custom resource `Centreon` (kind of global setting)
+  - Manage service from routes annotations and custom resource `Centreon` (kind of global setting)
+
+## List of annotations for Ingress / Route
+**Global annotations:**
   - monitor.k8s.webcenter.fr/discover : true to watch resource
+
+**Centreon annotations:**
   - centreon.monitor.k8s.webcenter.fr/name: the service name on centreon
   - centreon.monitor.k8s.webcenter.fr/template: the template name to affect on service on Centreon
   - centreon.monitor.k8s.webcenter.fr/host: the host to link with the service on Centreon
@@ -23,7 +33,7 @@ List des annotations:
   - centreon.monitor.k8s.webcenter.fr/active-check-enabled: (0, 1 or 2)
   - centreon.monitor.k8s.webcenter.fr/passive-check-enabled (0, 1 or 2)
   
- placeholders available:
+ placeholders available for macros, arguments, nameTemplate:
    - <rule.0.host> (the url)
    - <rule.0.scheme> (http or https)
    - <rule.0.path.0> (the path)

@@ -65,7 +65,39 @@ jobs:
         sleep 60
         make test-acc
 
-  helm-lint-test:
+  helm-lint-test-monitoring-operator-crds:
+    # The type of runner that the job will run on
+    runs-on: ubuntu-latest
+
+    # Steps represent a sequence of tasks that will be executed as part of the job
+    steps:
+      # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
+      - uses: actions/checkout@v2
+
+      - name: Set up Helm
+        uses: azure/setup-helm@v1
+        with:
+          version: v3.7.2
+      
+      - uses: actions/setup-python@v2
+        with:
+          python-version: 3.7
+      
+      - name: Lint chart
+        run: |
+          cd deploy/helm/monitoring-operator-crds
+          helm lint
+
+      - name: Create kind cluster
+        uses: helm/kind-action@v1.2.0
+
+      - name: Install chart
+        run: |
+          cd deploy/helm/monitoring-operator-crds
+          helm install monitoring-operatorcrds . -n monitoring-operator --create-namespace --wait
+
+  helm-lint-test-monitoring-operator:
+    needs: [helm-lint-test-monitoring-operator-crds]
     # The type of runner that the job will run on
     runs-on: ubuntu-latest
 
@@ -94,7 +126,8 @@ jobs:
       - name: Install chart
         run: |
           cd deploy/helm/monitoring-operator
-          helm install monitoring-operator . -n monitoring-operator --create-namespace --wait --set installCRDs=false --set monitoring.url=http://localhost/centreon/api/index.php --set monitoring.secret.create=true --set monitoring.username=admin --set monitoring.password=admin
+          helm dup update
+          helm install monitoring-operator . -n monitoring-operator --create-namespace --wait --set monitoring.url=http://localhost/centreon/api/index.php --set monitoring.secret.create=true --set monitoring.username=admin --set monitoring.password=admin
 
   release:
     needs: [build] # Only run this workflow when "build" workflow succeeds
@@ -169,7 +202,7 @@ jobs:
           build-args: "version:${{ steps.tagName.outputs.tag }},commit: ${GITHUB_SHA::8}"
   
   publish:
-    needs: [release_docker_image, helm-lint-test]
+    needs: [release_docker_image, helm-lint-test-monitoring-operator]
     runs-on: ubuntu-latest
     if: startsWith(github.ref, 'refs/tags/')
     steps:
