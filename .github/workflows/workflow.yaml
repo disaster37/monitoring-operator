@@ -94,7 +94,7 @@ jobs:
       - name: Install chart
         run: |
           cd deploy/helm/monitoring-operator
-          helm install monitoring-operator . -n monitoring-operator --create-namespace --wait --set monitoring.url=http://localhost/centreon/api/index.php --set monitoring.secret.create=true --set monitoring.username=admin --set monitoring.password=admin
+          helm install monitoring-operator . -n monitoring-operator --create-namespace --wait --set installCRDs=false --set monitoring.url=http://localhost/centreon/api/index.php --set monitoring.secret.create=true --set monitoring.username=admin --set monitoring.password=admin
 
   release:
     needs: [build] # Only run this workflow when "build" workflow succeeds
@@ -192,7 +192,17 @@ jobs:
           exclude: 'charts\/.*'
           flags: ''
           path: 'deploy/helm/monitoring-operator'
-      - uses: goodsmileduck/helm-push-action@v3.3.1
+      - name: Publish monitoring-operator-crds helm chart
+        uses: goodsmileduck/helm-push-action@v3.3.1
+        env:
+          SOURCE_DIR: 'deploy/helm'
+          CHART_FOLDER: 'monitoring-operator-crds'
+          FORCE: 'True'
+          CHARTMUSEUM_URL: 'https://charts.webcenter.fr'
+          CHARTMUSEUM_USER: '${{ secrets.CHARTMUSEUM_USER }}'
+          CHARTMUSEUM_PASSWORD: ${{ secrets.CHARTMUSEUM_PASSWORD }}
+      - name: Publish monitoring-operator helm chart
+        uses: goodsmileduck/helm-push-action@v3.3.1
         env:
           SOURCE_DIR: 'deploy/helm'
           CHART_FOLDER: 'monitoring-operator'

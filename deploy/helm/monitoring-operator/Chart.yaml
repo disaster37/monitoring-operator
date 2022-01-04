@@ -31,4 +31,5 @@ keywords:
 dependencies:
   - name: monitoring-operator-crds
     version: "0.0.1"
+    repository: https://charts.webcenter.fr
     condition: installCRDs
