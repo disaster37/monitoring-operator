@@ -258,9 +258,9 @@ func (h *CentreonHandlerImpl) DiffService(actual, expected *CentreonService) (di
 			diff.MacrosToSet = append(diff.MacrosToSet, expectedMacro)
 		}
 	}
-	// Remove indirect macro herited by templates
+	// Remove indirect macro herited by templates or command
 	for i, macro := range diff.MacrosToDelete {
-		if macro.Source != "direct" {
+		if macro.Source != "direct" && macro.Value != "" {
 			diff.MacrosToDelete = append(diff.MacrosToDelete[:i], diff.MacrosToDelete[i+1:]...)
 		}
 	}
