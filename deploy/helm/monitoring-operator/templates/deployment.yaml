@@ -72,7 +72,7 @@ spec:
           - name: MONITORING_CLIENT_TIMEOUT
             value: {{ .Values.config.monitoringClientTimeout }}
           - name: MONITORING_DISABLE_SSL_CHECK
-            value: {{ .Values.monitoring.disableSSLCheck }}
+            value: {{ .Values.monitoring.disableSSLCheck | quote }}
         envFrom:
         - secretRef:
             name: {{ include "monitoring-operator.secretName" . }}
