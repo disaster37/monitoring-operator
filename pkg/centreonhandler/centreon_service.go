@@ -177,7 +177,7 @@ func (h *CentreonHandlerImpl) DiffService(actual, expected *CentreonService) (di
 		IsDiff:         false,
 		ParamsToSet:    map[string]string{},
 		MacrosToSet:    make([]*models.Macro, 0),
-		MacrosToDelete: make([]*models.Macro, len(actual.Macros)),
+		MacrosToDelete: make([]*models.Macro, 0),
 	}
 
 	// Check params
@@ -229,10 +229,12 @@ func (h *CentreonHandlerImpl) DiffService(actual, expected *CentreonService) (di
 	if expected.Macros == nil {
 		expected.Macros = make([]*models.Macro, 0)
 	}
-	copy(diff.MacrosToDelete, actual.Macros)
+
+	macros := make([]*models.Macro, len(actual.Macros))
+	copy(macros, actual.Macros)
 	// The IsPassword macro with value "" or "0" is the same
 	// We mitigeate this behavior here
-	for _, macro := range diff.MacrosToDelete {
+	for _, macro := range macros {
 		if macro.IsPassword == "" {
 			macro.IsPassword = "0"
 		}
@@ -244,12 +246,12 @@ func (h *CentreonHandlerImpl) DiffService(actual, expected *CentreonService) (di
 	}
 	for _, expectedMacro := range expected.Macros {
 		isFound := false
-		for i, actualMacro := range diff.MacrosToDelete {
+		for i, actualMacro := range macros {
 			if actualMacro.Name == expectedMacro.Name {
 				if actualMacro.Value == expectedMacro.Value && actualMacro.IsPassword == expectedMacro.IsPassword {
 					isFound = true
 				}
-				diff.MacrosToDelete = append(diff.MacrosToDelete[:i], diff.MacrosToDelete[i+1:]...)
+				macros = append(macros[:i], macros[i+1:]...)
 				break
 			}
 		}
@@ -258,10 +260,11 @@ func (h *CentreonHandlerImpl) DiffService(actual, expected *CentreonService) (di
 			diff.MacrosToSet = append(diff.MacrosToSet, expectedMacro)
 		}
 	}
-	// Remove indirect macro herited by templates or command
-	for i, macro := range diff.MacrosToDelete {
-		if macro.Source != "direct" && macro.Value != "" {
-			diff.MacrosToDelete = append(diff.MacrosToDelete[:i], diff.MacrosToDelete[i+1:]...)
+	// Remove indirect macro herited by templates or command (direct and null value)
+	// There are no way to differentiate macro setted between service and command
+	for _, macro := range macros {
+		if macro.Source == "direct" && macro.Value != "" {
+			diff.MacrosToDelete = append(diff.MacrosToDelete, macro)
 		}
 	}
 
