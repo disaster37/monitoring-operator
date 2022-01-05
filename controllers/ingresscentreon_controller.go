@@ -209,6 +209,7 @@ func centreonServiceFromIngress(i *networkv1.Ingress, centreonSpec *v1alpha1.Cen
 func viewIngressWithMonitoringAnnotationPredicate() predicate.Predicate {
 	return predicate.Funcs{
 		UpdateFunc: func(e event.UpdateEvent) bool {
+
 			return isMonitoringAnnotation(e.ObjectOld.GetAnnotations()) || isMonitoringAnnotation(e.ObjectNew.GetAnnotations())
 		},
 		DeleteFunc: func(e event.DeleteEvent) bool {
