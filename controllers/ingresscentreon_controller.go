@@ -73,13 +73,12 @@ func (r *IngressCentreonReconciler) Reconcile(ctx context.Context, req ctrl.Requ
 
 	// Get instance
 	instance := &networkv1.Ingress{}
-	err := r.Get(ctx, req.NamespacedName, instance)
-	if err != nil {
+	if err := r.Get(ctx, req.NamespacedName, instance); err != nil {
 		if errors.IsNotFound(err) {
 			return ctrl.Result{}, nil
 		}
 		r.Log.Errorf("Error when get resource: %s", err.Error())
-		return ctrl.Result{}, err
+		return ctrl.Result{RequeueAfter: waitDurationWhenError}, err
 	}
 	r.Log = r.Log.WithFields(logrus.Fields{
 		"name":      instance.Name,
@@ -97,7 +96,7 @@ func (r *IngressCentreonReconciler) Reconcile(ctx context.Context, req ctrl.Requ
 	if err != nil {
 		r.Log.Errorf("Error when get CentreonSpec: %s", err.Error())
 		r.Recorder.Eventf(instance, corev1.EventTypeWarning, "Failed", "Error when reconcile: %s", err.Error())
-		return ctrl.Result{}, err
+		return ctrl.Result{RequeueAfter: waitDurationWhenError}, err
 	}
 	if centreonSpec == nil {
 		r.Log.Warning("It's recommanded to set some default values on custom resource called `Centreon` on the same operator namespace. It avoid to set on each ingress all Centreon service properties as annotations")
@@ -111,12 +110,12 @@ func (r *IngressCentreonReconciler) Reconcile(ctx context.Context, req ctrl.Requ
 		if err != nil {
 			r.Log.Errorf("Error when generate CentreonService from Ingress: %s", err.Error())
 			r.Recorder.Eventf(instance, corev1.EventTypeWarning, "Failed", "Error when reconcile: %s", err.Error())
-			return ctrl.Result{}, err
+			return ctrl.Result{RequeueAfter: waitDurationWhenError}, err
 		}
 		if err = r.Create(ctx, cs); err != nil {
 			r.Log.Errorf("Error when create CentreonService: %s", err.Error())
 			r.Recorder.Eventf(instance, corev1.EventTypeWarning, "Failed", "Error when reconcile: %s", err.Error())
-			return ctrl.Result{}, err
+			return ctrl.Result{RequeueAfter: waitDurationWhenError}, err
 		}
 
 		r.Log.Info("Create CentreonService successfully")
@@ -125,7 +124,7 @@ func (r *IngressCentreonReconciler) Reconcile(ctx context.Context, req ctrl.Requ
 	} else if err != nil {
 		r.Log.Errorf("Failed to get CentreonService: %s", err.Error())
 		r.Recorder.Eventf(instance, corev1.EventTypeWarning, "Failed", "Error when reconcile: %s", err.Error())
-		return ctrl.Result{}, err
+		return ctrl.Result{RequeueAfter: waitDurationWhenError}, err
 	}
 
 	// Update if needed
@@ -133,7 +132,7 @@ func (r *IngressCentreonReconciler) Reconcile(ctx context.Context, req ctrl.Requ
 	if err != nil {
 		r.Log.Errorf("Error when generate CentreonService from Ingress: %s", err.Error())
 		r.Recorder.Eventf(instance, corev1.EventTypeWarning, "Failed", "Error when reconcile: %s", err.Error())
-		return ctrl.Result{}, err
+		return ctrl.Result{RequeueAfter: waitDurationWhenError}, err
 	}
 
 	diffSpec := cmp.Diff(cs.Spec, expectedCs.Spec)
@@ -148,7 +147,7 @@ func (r *IngressCentreonReconciler) Reconcile(ctx context.Context, req ctrl.Requ
 		if err = r.Update(ctx, cs); err != nil {
 			r.Log.Errorf("Error when update CentreonService: %s", err.Error())
 			r.Recorder.Eventf(instance, corev1.EventTypeWarning, "Failed", "Error when reconcile: %s", err.Error())
-			return ctrl.Result{}, err
+			return ctrl.Result{RequeueAfter: waitDurationWhenError}, err
 		}
 		r.Log.Info("Update CentreonService successfully")
 		r.Recorder.Event(instance, corev1.EventTypeNormal, "Completed", "Centreon Service updated successfully")

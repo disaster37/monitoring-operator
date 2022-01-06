@@ -63,13 +63,12 @@ func (r *CentreonServiceReconciler) Reconcile(ctx context.Context, req ctrl.Requ
 
 	// Get instance
 	instance := &v1alpha1.CentreonService{}
-	err := r.Get(ctx, req.NamespacedName, instance)
-	if err != nil {
+	if err := r.Get(ctx, req.NamespacedName, instance); err != nil {
 		if errors.IsNotFound(err) {
 			return ctrl.Result{}, nil
 		}
 		r.Log.Errorf("Error when get resource: %s", err.Error())
-		return ctrl.Result{}, err
+		return ctrl.Result{RequeueAfter: waitDurationWhenError}, err
 	}
 	r.Log = r.Log.WithFields(logrus.Fields{
 		"name":      instance.Name,
@@ -85,7 +84,7 @@ func (r *CentreonServiceReconciler) Reconcile(ctx context.Context, req ctrl.Requ
 		if err := r.Update(ctx, instance); err != nil {
 			r.Log.Errorf("Error when add finalizer: %s", err.Error())
 			r.Recorder.Eventf(instance, corev1.EventTypeWarning, "Adding finalizer", "Failed to add finalizer: %s", err)
-			return ctrl.Result{}, err
+			return ctrl.Result{RequeueAfter: waitDurationWhenError}, err
 		}
 		r.Recorder.Event(instance, corev1.EventTypeNormal, "Added", "Object finalizer is added")
 		r.Log.Debug("Add finalizer successfully")
@@ -100,14 +99,14 @@ func (r *CentreonServiceReconciler) Reconcile(ctx context.Context, req ctrl.Requ
 			if err := r.Service.Delete(instance); err != nil {
 				r.Log.Errorf("Error when delete service on Centreon: %s", err.Error())
 				r.Recorder.Eventf(instance, corev1.EventTypeWarning, "Failed", "Error when delete service on Centreon: %s", err.Error())
-				return ctrl.Result{}, err
+				return ctrl.Result{RequeueAfter: waitDurationWhenError}, err
 			}
 
 			instance.RemoveFinalizer()
 			if err := r.Update(ctx, instance); err != nil {
 				r.Log.Errorf("Failed to remove finalizer: %s", err.Error())
 				r.Recorder.Eventf(instance, corev1.EventTypeWarning, "Failed", "Error when remove finalizer: %s", err.Error())
-				return ctrl.Result{}, err
+				return ctrl.Result{RequeueAfter: waitDurationWhenError}, err
 			}
 			r.Log.Debug("Remove finalizer successfully")
 		}
@@ -120,7 +119,7 @@ func (r *CentreonServiceReconciler) Reconcile(ctx context.Context, req ctrl.Requ
 	if err != nil {
 		r.Log.Errorf("Error when reconcile Centreon service: %s", err.Error())
 		r.Recorder.Eventf(instance, corev1.EventTypeWarning, "Failed", "Error when reconcile: %s", err.Error())
-		return ctrl.Result{}, err
+		return ctrl.Result{RequeueAfter: waitDurationWhenError}, err
 	}
 
 	if isCreated || isUpdated {
@@ -139,7 +138,7 @@ func (r *CentreonServiceReconciler) Reconcile(ctx context.Context, req ctrl.Requ
 		if err := r.Status().Update(ctx, instance); err != nil {
 			r.Log.Errorf("Failed to update status: %s", err.Error())
 			r.Recorder.Eventf(instance, corev1.EventTypeWarning, "Failed", "Error when update status: %s", err.Error())
-			return ctrl.Result{}, err
+			return ctrl.Result{RequeueAfter: waitDurationWhenError}, err
 		}
 	}
 
