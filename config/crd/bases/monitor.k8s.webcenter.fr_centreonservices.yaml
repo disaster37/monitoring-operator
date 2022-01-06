@@ -97,8 +97,14 @@ spec:
                 description: The date when service is created on Centreon by operator
                   It can stay empty if service will be created by external process
                 type: string
+              host:
+                description: The host affected to service on Centreon
+                type: string
               id:
                 description: The service ID on Centreon
+                type: string
+              serviceName:
+                description: The service name
                 type: string
               updatedAt:
                 description: The date when service is modified on Centreon by operator

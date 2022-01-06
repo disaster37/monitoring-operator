@@ -47,7 +47,21 @@ func (cs *CentreonServiceImpl) Delete(centreonService *v1alpha1.CentreonService)
 }
 
 func (cs *CentreonServiceImpl) Reconcile(centreonService *v1alpha1.CentreonService) (isCreate, isUpdate bool, err error) {
-	actualCS, err := cs.client.GetService(centreonService.Spec.Host, centreonService.Spec.Name)
+
+	// Check if the current service name and host is right before to search on Centreon
+	var (
+		host        string
+		serviceName string
+	)
+	if centreonService.Status.Host != "" && centreonService.Status.ServiceName != "" {
+		host = centreonService.Status.Host
+		serviceName = centreonService.Status.ServiceName
+	} else {
+		host = centreonService.Spec.Host
+		serviceName = centreonService.Spec.Name
+	}
+
+	actualCS, err := cs.client.GetService(host, serviceName)
 	if err != nil {
 		return false, false, err
 	}

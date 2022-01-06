@@ -95,6 +95,12 @@ type CentreonServiceStatus struct {
 	// The service ID on Centreon
 	ID string `json:"id,omitempty"`
 
+	// The host affected to service on Centreon
+	Host string `json:"host,omitempty"`
+
+	// The service name
+	ServiceName string `json:"serviceName,omitempty"`
+
 	// The date when service is created on Centreon by operator
 	// It can stay empty if service will be created by external process
 	CreatedAt string `json:"CreatedAt,omitempty"`

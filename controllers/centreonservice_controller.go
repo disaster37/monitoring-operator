@@ -30,6 +30,8 @@ import (
 	"k8s.io/client-go/tools/record"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/event"
+	"sigs.k8s.io/controller-runtime/pkg/predicate"
 )
 
 // CentreonServiceReconciler reconciles a CentreonService object
@@ -132,6 +134,8 @@ func (r *CentreonServiceReconciler) Reconcile(ctx context.Context, req ctrl.Requ
 			r.Recorder.Event(instance, corev1.EventTypeNormal, "Completed", "Service updated on Centreon")
 		}
 		instance.Status.ID = fmt.Sprintf("%s/%s", instance.Spec.Host, instance.Spec.Name)
+		instance.Status.Host = instance.Spec.Host
+		instance.Status.ServiceName = instance.Spec.Name
 		if err := r.Status().Update(ctx, instance); err != nil {
 			r.Log.Errorf("Failed to update status: %s", err.Error())
 			r.Recorder.Eventf(instance, corev1.EventTypeWarning, "Failed", "Error when update status: %s", err.Error())
@@ -148,4 +152,18 @@ func (r *CentreonServiceReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&v1alpha1.CentreonService{}).
 		Complete(r)
+}
+
+// Not used, i can be usefull to reconcile with Centreon if no performance issue detected...
+func centreonServicePredicate() predicate.Predicate {
+	return predicate.Funcs{
+		UpdateFunc: func(e event.UpdateEvent) bool {
+			// Ignore updates to CR status in which case metadata.Generation does not change
+			return e.ObjectOld.GetGeneration() != e.ObjectNew.GetGeneration()
+		},
+		DeleteFunc: func(e event.DeleteEvent) bool {
+			// Evaluates to false if the object has been confirmed deleted.
+			return !e.DeleteStateUnknown
+		},
+	}
 }

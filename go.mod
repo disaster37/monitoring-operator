@@ -3,7 +3,7 @@ module github.com/disaster37/monitoring-operator
 go 1.16
 
 require (
-	github.com/disaster37/go-centreon-rest/v21 v21.0.4
+	github.com/disaster37/go-centreon-rest/v21 v21.0.5
 	github.com/go-logr/logr v0.4.0
 	github.com/golang/mock v1.6.0
 	github.com/google/go-cmp v0.5.5

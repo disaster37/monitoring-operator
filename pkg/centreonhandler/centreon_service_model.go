@@ -35,6 +35,7 @@ type CentreonServiceDiff struct {
 	MacrosToSet        []*models.Macro
 	MacrosToDelete     []*models.Macro
 	ParamsToSet        map[string]string
+	HostToSet          string
 }
 
 func (cs *CentreonService) String() string {

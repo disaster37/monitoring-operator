@@ -107,6 +107,10 @@ func (h *CentreonHandlerImpl) UpdateService(serviceDiff *CentreonServiceDiff) (e
 				return err
 			}
 			h.log.Debugf("Update param %s from Centreon", param)
+			// Handle special param name "description". It change service name
+			if param == "description" {
+				serviceDiff.Name = value
+			}
 		}
 	}
 
@@ -162,6 +166,16 @@ func (h *CentreonHandlerImpl) UpdateService(serviceDiff *CentreonServiceDiff) (e
 		}
 	}
 
+	// Finnaly update host
+	if serviceDiff.HostToSet != "" {
+		if err = h.client.API.Service().SetHost(serviceDiff.Host, serviceDiff.Name, serviceDiff.HostToSet); err != nil {
+			return err
+		}
+		h.log.Debugf("Set host %s on service %s from Centreon", serviceDiff.HostToSet, serviceDiff.Name)
+
+		serviceDiff.Host = serviceDiff.HostToSet
+	}
+
 	return nil
 }
 
@@ -172,8 +186,8 @@ func (h *CentreonHandlerImpl) DeleteService(host, name string) (err error) {
 
 func (h *CentreonHandlerImpl) DiffService(actual, expected *CentreonService) (diff *CentreonServiceDiff, err error) {
 	diff = &CentreonServiceDiff{
-		Host:           expected.Host,
-		Name:           expected.Name,
+		Host:           actual.Host,
+		Name:           actual.Name,
 		IsDiff:         false,
 		ParamsToSet:    map[string]string{},
 		MacrosToSet:    make([]*models.Macro, 0),
@@ -181,6 +195,9 @@ func (h *CentreonHandlerImpl) DiffService(actual, expected *CentreonService) (di
 	}
 
 	// Check params
+	if actual.Name != expected.Name {
+		diff.ParamsToSet["description"] = expected.Name
+	}
 	if actual.Activated != expected.Activated {
 		diff.ParamsToSet["activate"] = expected.Activated
 	}
@@ -210,6 +227,11 @@ func (h *CentreonHandlerImpl) DiffService(actual, expected *CentreonService) (di
 	}
 	if actual.Comment != expected.Comment {
 		diff.ParamsToSet["comment"] = expected.Comment
+	}
+
+	// Check the host
+	if actual.Host != expected.Host {
+		diff.HostToSet = expected.Host
 	}
 
 	// Check the service groups
@@ -269,7 +291,7 @@ func (h *CentreonHandlerImpl) DiffService(actual, expected *CentreonService) (di
 	}
 
 	// Compute IsDiff
-	if len(diff.ParamsToSet) > 0 || len(diff.CategoriesToDelete) > 0 || len(diff.CategoriesToSet) > 0 || len(diff.GroupsToDelete) > 0 || len(diff.GroupsToSet) > 0 || len(diff.MacrosToDelete) > 0 || len(diff.MacrosToSet) > 0 {
+	if len(diff.ParamsToSet) > 0 || len(diff.CategoriesToDelete) > 0 || len(diff.CategoriesToSet) > 0 || len(diff.GroupsToDelete) > 0 || len(diff.GroupsToSet) > 0 || len(diff.MacrosToDelete) > 0 || len(diff.MacrosToSet) > 0 || diff.HostToSet != "" {
 		diff.IsDiff = true
 		h.log.Debugf("Some diff founds :%s", diff)
 	} else {

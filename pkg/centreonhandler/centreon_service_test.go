@@ -106,9 +106,11 @@ func (t *CentreonHandlerTestSuite) TestUpdateService() {
 		MacrosToSet:        []*models.Macro{macro2},
 		MacrosToDelete:     []*models.Macro{macro1},
 		ParamsToSet: map[string]string{
-			"param1": "value1",
-			"param2": "value2",
+			"param1":      "value1",
+			"param2":      "value2",
+			"description": "ping2",
 		},
+		HostToSet: "central2",
 	}
 
 	// Mock set params on Centreon
@@ -118,29 +120,37 @@ func (t *CentreonHandlerTestSuite) TestUpdateService() {
 	t.mockService.EXPECT().
 		SetParam(gomock.Eq("central"), gomock.Eq("ping"), gomock.Eq("param2"), gomock.Eq("value2")).
 		Return(nil)
+	t.mockService.EXPECT().
+		SetParam(gomock.Eq("central"), gomock.Eq("ping"), gomock.Eq("description"), gomock.Eq("ping2")).
+		Return(nil)
 
 		// Mock set service groups
 	t.mockService.EXPECT().
-		SetServiceGroups(gomock.Eq("central"), gomock.Eq("ping"), gomock.Eq([]string{"sg2"})).
+		SetServiceGroups(gomock.Eq("central"), gomock.Eq("ping2"), gomock.Eq([]string{"sg2"})).
 		Return(nil)
 	t.mockService.EXPECT().
-		DeleteServiceGroups(gomock.Eq("central"), gomock.Eq("ping"), gomock.Eq([]string{"sg1"})).
+		DeleteServiceGroups(gomock.Eq("central"), gomock.Eq("ping2"), gomock.Eq([]string{"sg1"})).
 		Return(nil)
 
 	// Mock set categories
 	t.mockService.EXPECT().
-		SetCategories(gomock.Eq("central"), gomock.Eq("ping"), gomock.Eq([]string{"cat2"})).
+		SetCategories(gomock.Eq("central"), gomock.Eq("ping2"), gomock.Eq([]string{"cat2"})).
 		Return(nil)
 	t.mockService.EXPECT().
-		DeleteCategories(gomock.Eq("central"), gomock.Eq("ping"), gomock.Eq([]string{"cat1"})).
+		DeleteCategories(gomock.Eq("central"), gomock.Eq("ping2"), gomock.Eq([]string{"cat1"})).
 		Return(nil)
 
 	//Mock set macros
 	t.mockService.EXPECT().
-		SetMacro(gomock.Eq("central"), gomock.Eq("ping"), gomock.Eq(macro2)).
+		SetMacro(gomock.Eq("central"), gomock.Eq("ping2"), gomock.Eq(macro2)).
 		Return(nil)
 	t.mockService.EXPECT().
-		DeleteMacro(gomock.Eq("central"), gomock.Eq("ping"), gomock.Eq(macro1.Name)).
+		DeleteMacro(gomock.Eq("central"), gomock.Eq("ping2"), gomock.Eq(macro1.Name)).
+		Return(nil)
+
+	// Mock set host
+	t.mockService.EXPECT().
+		SetHost(gomock.Eq("central"), gomock.Eq("ping2"), gomock.Eq("central2")).
 		Return(nil)
 
 	err := t.client.UpdateService(toUpdate)
