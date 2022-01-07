@@ -24,9 +24,9 @@ import (
 	"github.com/disaster37/monitoring-operator/api/v1alpha1"
 	monitorv1alpha1 "github.com/disaster37/monitoring-operator/api/v1alpha1"
 	"github.com/google/go-cmp/cmp"
+	routev1 "github.com/openshift/api/route/v1"
 	"github.com/sirupsen/logrus"
 	corev1 "k8s.io/api/core/v1"
-	networkv1 "k8s.io/api/networking/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -36,33 +36,33 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
-// IngressReconciler reconciles a Ingress object
-type IngressCentreonReconciler struct {
+// RouteReconciler reconciles a Route object
+type RouteCentreonReconciler struct {
 	client.Client
 	Scheme   *runtime.Scheme
 	Log      *logrus.Entry
 	Recorder record.EventRecorder
 }
 
-//+kubebuilder:rbac:groups=networking.k8s.io,resources=ingresses,verbs=get;list;watch
+//+kubebuilder:rbac:groups=route.openshift.io,resources=routes,verbs=get;list;watch
 //+kubebuilder:rbac:groups=monitor.k8s.webcenter.fr,resources=centreons,verbs=get;list;watch
 //+kubebuilder:rbac:groups=monitor.k8s.webcenter.fr,resources=centreonServices,verbs=get;list;watch;create;update;patch;delete
 
 // Reconcile is part of the main kubernetes reconciliation loop which aims to
 // move the current state of the cluster closer to the desired state.
 // TODO(user): Modify the Reconcile function to compare the state specified by
-// the Ingress object against the actual cluster state, and then
+// the Route object against the actual cluster state, and then
 // perform operations to make the cluster state reflect the state specified by
 // the user.
 //
 // For more details, check Reconcile and its Result here:
 // - https://pkg.go.dev/sigs.k8s.io/controller-runtime@v0.10.0/pkg/reconcile
-func (r *IngressCentreonReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
+func (r *RouteCentreonReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	r.Log.Infof("Starting reconcile loop for %v", req.NamespacedName)
 	defer r.Log.Infof("Finish reconcile loop for %v", req.NamespacedName)
 
 	// Get instance
-	instance := &networkv1.Ingress{}
+	instance := &routev1.Route{}
 	if err := r.Get(ctx, req.NamespacedName, instance); err != nil {
 		if errors.IsNotFound(err) {
 			return ctrl.Result{}, nil
@@ -77,7 +77,7 @@ func (r *IngressCentreonReconciler) Reconcile(ctx context.Context, req ctrl.Requ
 
 	// Delete
 	if !instance.ObjectMeta.DeletionTimestamp.IsZero() {
-		r.Log.Info("Ingress is being deleted, auto delete CentreonService if exist")
+		r.Log.Info("Route is being deleted, auto delete CentreonService if exist")
 		return ctrl.Result{}, nil
 	}
 
@@ -89,21 +89,21 @@ func (r *IngressCentreonReconciler) Reconcile(ctx context.Context, req ctrl.Requ
 		return ctrl.Result{RequeueAfter: waitDurationWhenError}, err
 	}
 	if centreonSpec == nil {
-		r.Log.Warning("It's recommanded to set some default values on custom resource called `Centreon` on the same operator namespace. It avoid to set on each ingress all Centreon service properties as annotations")
+		r.Log.Warning("It's recommanded to set some default values on custom resource called `Centreon` on the same operator namespace. It avoid to set on each route all Centreon service properties as annotations")
 	}
 
 	cs := &v1alpha1.CentreonService{}
 	err = r.Get(ctx, types.NamespacedName{Name: instance.Name, Namespace: instance.Namespace}, cs)
 	if err != nil && errors.IsNotFound(err) {
 		//Create
-		cs, err = centreonServiceFromIngress(instance, centreonSpec, r.Scheme)
+		cs, err = centreonServiceFromRoute(instance, centreonSpec, r.Scheme)
 		if err != nil {
-			r.Log.Errorf("Error when generate CentreonService from Ingress: %s", err.Error())
+			r.Log.Errorf("Error when generate CentreonService from route: %s", err.Error())
 			r.Recorder.Eventf(instance, corev1.EventTypeWarning, "Failed", "Error when reconcile: %s", err.Error())
 			return ctrl.Result{RequeueAfter: waitDurationWhenError}, err
 		}
 		if err = r.Create(ctx, cs); err != nil {
-			r.Log.Errorf("Error when create CentreonService: %s", err.Error())
+			r.Log.Errorf("Error when create CentreonService from route: %s", err.Error())
 			r.Recorder.Eventf(instance, corev1.EventTypeWarning, "Failed", "Error when reconcile: %s", err.Error())
 			return ctrl.Result{RequeueAfter: waitDurationWhenError}, err
 		}
@@ -118,9 +118,9 @@ func (r *IngressCentreonReconciler) Reconcile(ctx context.Context, req ctrl.Requ
 	}
 
 	// Update if needed
-	expectedCs, err := centreonServiceFromIngress(instance, centreonSpec, r.Scheme)
+	expectedCs, err := centreonServiceFromRoute(instance, centreonSpec, r.Scheme)
 	if err != nil {
-		r.Log.Errorf("Error when generate CentreonService from Ingress: %s", err.Error())
+		r.Log.Errorf("Error when generate CentreonService from route: %s", err.Error())
 		r.Recorder.Eventf(instance, corev1.EventTypeWarning, "Failed", "Error when reconcile: %s", err.Error())
 		return ctrl.Result{RequeueAfter: waitDurationWhenError}, err
 	}
@@ -147,40 +147,40 @@ func (r *IngressCentreonReconciler) Reconcile(ctx context.Context, req ctrl.Requ
 }
 
 // SetupWithManager sets up the controller with the Manager.
-func (r *IngressCentreonReconciler) SetupWithManager(mgr ctrl.Manager) error {
+func (r *RouteCentreonReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
 		// Uncomment the following line adding a pointer to an instance of the controlled resource as an argument
-		For(&networkv1.Ingress{}).
+		For(&routev1.Route{}).
 		Owns(&monitorv1alpha1.CentreonService{}).
 		WithEventFilter(viewResourceWithMonitoringAnnotationPredicate()).
 		Complete(r)
 }
 
-// It compute the expected CentreonServiceSpec from ingress and CentreonSpec
-func centreonServiceFromIngress(i *networkv1.Ingress, centreonSpec *v1alpha1.CentreonSpec, scheme *runtime.Scheme) (cs *v1alpha1.CentreonService, err error) {
+// It compute the expected CentreonServiceSpec from route and CentreonSpec
+func centreonServiceFromRoute(r *routev1.Route, centreonSpec *v1alpha1.CentreonSpec, scheme *runtime.Scheme) (cs *v1alpha1.CentreonService, err error) {
 
-	if i == nil {
-		return nil, errorspkg.New("Ingress must be provided")
+	if r == nil {
+		return nil, errorspkg.New("Route must be provided")
 	}
 	if scheme == nil {
 		return nil, errorspkg.New("Scheme must be provided")
 	}
 	cs = &v1alpha1.CentreonService{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:        i.Name,
-			Namespace:   i.Namespace,
-			Labels:      i.GetLabels(),
-			Annotations: i.GetAnnotations(),
+			Name:        r.Name,
+			Namespace:   r.Namespace,
+			Labels:      r.GetLabels(),
+			Annotations: r.GetAnnotations(),
 		},
 		Spec: monitorv1alpha1.CentreonServiceSpec{},
 	}
 
 	// Generate placeholders
-	placeholders := generatePlaceholdersIngressCentreonService(i)
+	placeholders := generatePlaceholdersRouteCentreonService(r)
 	initCentreonServiceDefaultValue(centreonSpec, cs, placeholders)
 
 	// Then, init with annotations
-	if err = initCentreonServiceFromAnnotations(i.GetAnnotations(), cs); err != nil {
+	if err = initCentreonServiceFromAnnotations(r.GetAnnotations(), cs); err != nil {
 		return nil, err
 	}
 
@@ -189,51 +189,44 @@ func centreonServiceFromIngress(i *networkv1.Ingress, centreonSpec *v1alpha1.Cen
 		return nil, fmt.Errorf("Generated CentreonService is not valid: %+v", cs.Spec)
 	}
 
-	// Set ingress instance as the owner
-	ctrl.SetControllerReference(i, cs, scheme)
+	// Set route instance as the owner
+	ctrl.SetControllerReference(r, cs, scheme)
 
 	return cs, nil
 }
 
 // It generate map of placeholders from route spec
-func generatePlaceholdersIngressCentreonService(i *networkv1.Ingress) (placeholders map[string]string) {
+func generatePlaceholdersRouteCentreonService(r *routev1.Route) (placeholders map[string]string) {
 	placeholders = map[string]string{}
-	if i == nil {
+	if r == nil {
 		return placeholders
 	}
 
 	//Main properties
-	placeholders["name"] = i.Name
-	placeholders["namespace"] = i.Namespace
+	placeholders["name"] = r.Name
+	placeholders["namespace"] = r.Namespace
 
 	// Labels properties
-	for key, value := range i.GetLabels() {
+	for key, value := range r.GetLabels() {
 		placeholders[fmt.Sprintf("label.%s", key)] = value
 	}
 
 	// Annotations properties
-	for key, value := range i.GetAnnotations() {
+	for key, value := range r.GetAnnotations() {
 		placeholders[fmt.Sprintf("annotation.%s", key)] = value
 	}
 
-	// Ingress properties
-	for j, rule := range i.Spec.Rules {
-		placeholders[fmt.Sprintf("rule.%d.host", j)] = rule.Host
-
-		// Check if scheme is http or https
-		placeholders[fmt.Sprintf("rule.%d.scheme", j)] = "http"
-		for _, tls := range i.Spec.TLS {
-			for _, host := range tls.Hosts {
-				if host == rule.Host {
-					placeholders[fmt.Sprintf("rule.%d.scheme", j)] = "https"
-				}
-			}
-		}
-
-		// Add path
-		for k, path := range rule.HTTP.Paths {
-			placeholders[fmt.Sprintf("rule.%d.path.%d", j, k)] = path.Path
-		}
+	// Route properties
+	placeholders["rule.host"] = r.Spec.Host
+	if r.Spec.Path != "" {
+		placeholders["rule.path"] = r.Spec.Path
+	} else {
+		placeholders["rule.path"] = "/"
+	}
+	if r.Spec.TLS != nil && r.Spec.TLS.Termination != "" {
+		placeholders["rule.scheme"] = "https"
+	} else {
+		placeholders["rule.scheme"] = "http"
 	}
 
 	return placeholders

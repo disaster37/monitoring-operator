@@ -128,15 +128,15 @@ func main() {
 	switch monitoringType {
 	case MONITORING_CENTREON:
 		// Init Centreon API client
-		cfg, err := helpers.GetCentreonConfig()
+		centreonCFG, err := helpers.GetCentreonConfig()
 		if err != nil {
 			setupLog.Error(err, "unable to get Centreon config")
 			os.Exit(1)
 		}
 		if log.GetLevel() == logrus.DebugLevel {
-			cfg.Debug = true
+			centreonCFG.Debug = true
 		}
-		centreonClient, err := centreon.NewClient(cfg)
+		centreonClient, err := centreon.NewClient(centreonCFG)
 		if err != nil {
 			setupLog.Error(err, "unable to get Centreon client")
 			os.Exit(1)
@@ -167,6 +167,25 @@ func main() {
 		}).SetupWithManager(mgr); err != nil {
 			setupLog.Error(err, "unable to create controller", "controller", "IngressCentreon")
 			os.Exit(1)
+		}
+
+		isRouteCRD, err := controllers.IsRouteCRD(cfg)
+		if err != nil {
+			setupLog.Error(err, "unable to check API groups")
+			os.Exit(1)
+		}
+		if isRouteCRD {
+			if err = (&controllers.RouteCentreonReconciler{
+				Client:   mgr.GetClient(),
+				Scheme:   mgr.GetScheme(),
+				Recorder: mgr.GetEventRecorderFor("routecentreon-controller"),
+				Log: log.WithFields(logrus.Fields{
+					"type": "RouteCentreonControllers",
+				}),
+			}).SetupWithManager(mgr); err != nil {
+				setupLog.Error(err, "unable to create controller", "controller", "RouteCentreon")
+				os.Exit(1)
+			}
 		}
 
 		break

@@ -33,14 +33,23 @@ It actually only support Centreon as monitoring plateform.
   - centreon.monitor.k8s.webcenter.fr/active-check-enabled: (0, 1 or 2)
   - centreon.monitor.k8s.webcenter.fr/passive-check-enabled (0, 1 or 2)
   
- placeholders available for macros, arguments, nameTemplate:
+ placeholders available for macros, arguments and nameTemplate from Ingress:
    - <rule.0.host> (the url)
    - <rule.0.scheme> (http or https)
    - <rule.0.path.0> (the path)
    - <name> ingress name
-   - <namespace> ingress namespace
-   - <label.key>
-   - <annotation.key>
+   - <namespace>: ingress namespace
+   - <label.key>: labels
+   - <annotation.key>: annotations
+
+placeholders available for macros, arguments and nameTemplate from Route:
+   - <rule.host> : the url
+   - <rule.scheme>: the scheme - http or https
+   - <rule.path>: the path
+   - <name>: route name
+   - <namespace>: route namespace
+   - <label.key>: labels
+   - <annotation.key>: annotations
 
 ## Initialise project for memory
 

@@ -8,9 +8,11 @@ import (
 	"github.com/disaster37/monitoring-operator/pkg/mocks"
 	"github.com/golang/mock/gomock"
 	"github.com/onsi/gomega/gexec"
+	routev1 "github.com/openshift/api/route/v1"
 	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/suite"
 	"k8s.io/client-go/kubernetes/scheme"
+	"k8s.io/client-go/rest"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/envtest"
@@ -30,6 +32,7 @@ type ControllerTestSuite struct {
 	mockCentreonService *mocks.MockCentreonService
 	mockCtrl            *gomock.Controller
 	service             CentreonService
+	cfg                 *rest.Config
 }
 
 func TestControllerSuite(t *testing.T) {
@@ -51,7 +54,10 @@ func (t *ControllerTestSuite) SetupSuite() {
 
 	// Setup testenv
 	testEnv = &envtest.Environment{
-		CRDDirectoryPaths:       []string{filepath.Join("..", "config", "crd", "bases")},
+		CRDDirectoryPaths: []string{
+			filepath.Join("..", "config", "crd", "bases"),
+			filepath.Join("..", "config", "crd", "openshift"),
+		},
 		ErrorIfCRDPathMissing:   true,
 		ControlPlaneStopTimeout: 120 * time.Second,
 	}
@@ -59,6 +65,7 @@ func (t *ControllerTestSuite) SetupSuite() {
 	if err != nil {
 		panic(err)
 	}
+	t.cfg = cfg
 
 	// Add CRD sheme
 	err = scheme.AddToScheme(scheme.Scheme)
@@ -66,6 +73,10 @@ func (t *ControllerTestSuite) SetupSuite() {
 		panic(err)
 	}
 	err = monitorv1alpha1.AddToScheme(scheme.Scheme)
+	if err != nil {
+		panic(err)
+	}
+	err = routev1.AddToScheme(scheme.Scheme)
 	if err != nil {
 		panic(err)
 	}
@@ -98,6 +109,17 @@ func (t *ControllerTestSuite) SetupSuite() {
 		Recorder: k8sManager.GetEventRecorderFor("ingresscentreon-controller"),
 		Log: logrus.WithFields(logrus.Fields{
 			"type": "ingressCentreonController",
+		}),
+		Scheme: scheme.Scheme,
+	}).SetupWithManager(k8sManager)
+	if err != nil {
+		panic(err)
+	}
+	err = (&RouteCentreonReconciler{
+		Client:   k8sClient,
+		Recorder: k8sManager.GetEventRecorderFor("routecentreon-controller"),
+		Log: logrus.WithFields(logrus.Fields{
+			"type": "routeCentreonController",
 		}),
 		Scheme: scheme.Scheme,
 	}).SetupWithManager(k8sManager)

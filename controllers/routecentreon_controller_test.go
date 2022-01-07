@@ -9,27 +9,28 @@ import (
 
 	"github.com/disaster37/monitoring-operator/api/v1alpha1"
 	"github.com/disaster37/monitoring-operator/pkg/helpers"
+	routev1 "github.com/openshift/api/route/v1"
 	"github.com/stretchr/testify/assert"
-	networkv1 "k8s.io/api/networking/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/apimachinery/pkg/util/intstr"
 )
 
-func TestGeneratePlaceholdersIngressCentreonService(t *testing.T) {
+func TestGeneratePlaceholdersRouteCentreonService(t *testing.T) {
 
 	var (
-		ingress    *networkv1.Ingress
+		route      *routev1.Route
 		ph         map[string]string
 		expectedPh map[string]string
 	)
 
-	// When ingress is nil
-	ph = generatePlaceholdersIngressCentreonService(nil)
+	// When route is nil
+	ph = generatePlaceholdersRouteCentreonService(nil)
 	assert.Empty(t, ph)
 
-	// When all properties
-	ingress = &networkv1.Ingress{
+	// When all no path
+	route = &routev1.Route{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "test",
 			Namespace: "default",
@@ -42,40 +43,77 @@ func TestGeneratePlaceholdersIngressCentreonService(t *testing.T) {
 				"anno2": "value2",
 			},
 		},
-		Spec: networkv1.IngressSpec{
-			Rules: []networkv1.IngressRule{
-				{
-					Host: "front.local.local",
-					IngressRuleValue: networkv1.IngressRuleValue{
-						HTTP: &networkv1.HTTPIngressRuleValue{
-							Paths: []networkv1.HTTPIngressPath{
-								{
-									Path: "/",
-								},
-								{
-									Path: "/api",
-								},
-							},
-						},
-					},
-				},
-				{
-					Host: "back.local.local",
-					IngressRuleValue: networkv1.IngressRuleValue{
-						HTTP: &networkv1.HTTPIngressRuleValue{
-							Paths: []networkv1.HTTPIngressPath{
-								{
-									Path: "/",
-								},
-							},
-						},
-					},
-				},
+		Spec: routev1.RouteSpec{
+			Host: "front.local.local",
+		},
+	}
+
+	expectedPh = map[string]string{
+		"name":             "test",
+		"namespace":        "default",
+		"rule.host":        "front.local.local",
+		"rule.scheme":      "http",
+		"rule.path":        "/",
+		"label.app":        "appTest",
+		"label.env":        "dev",
+		"annotation.anno1": "value1",
+		"annotation.anno2": "value2",
+	}
+
+	// When all properties without tls
+	route = &routev1.Route{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "test",
+			Namespace: "default",
+			Labels: map[string]string{
+				"app": "appTest",
+				"env": "dev",
 			},
-			TLS: []networkv1.IngressTLS{
-				{
-					Hosts: []string{"back.local.local"},
-				},
+			Annotations: map[string]string{
+				"anno1": "value1",
+				"anno2": "value2",
+			},
+		},
+		Spec: routev1.RouteSpec{
+			Host: "front.local.local",
+			Path: "/",
+		},
+	}
+
+	expectedPh = map[string]string{
+		"name":             "test",
+		"namespace":        "default",
+		"rule.host":        "front.local.local",
+		"rule.scheme":      "http",
+		"rule.path":        "/",
+		"label.app":        "appTest",
+		"label.env":        "dev",
+		"annotation.anno1": "value1",
+		"annotation.anno2": "value2",
+	}
+
+	ph = generatePlaceholdersRouteCentreonService(route)
+	assert.Equal(t, expectedPh, ph)
+
+	// When all properties with tls
+	route = &routev1.Route{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "test",
+			Namespace: "default",
+			Labels: map[string]string{
+				"app": "appTest",
+				"env": "dev",
+			},
+			Annotations: map[string]string{
+				"anno1": "value1",
+				"anno2": "value2",
+			},
+		},
+		Spec: routev1.RouteSpec{
+			Host: "front.local.local",
+			Path: "/",
+			TLS: &routev1.TLSConfig{
+				Termination: routev1.TLSTerminationEdge,
 			},
 		},
 	}
@@ -83,28 +121,24 @@ func TestGeneratePlaceholdersIngressCentreonService(t *testing.T) {
 	expectedPh = map[string]string{
 		"name":             "test",
 		"namespace":        "default",
-		"rule.0.host":      "front.local.local",
-		"rule.0.scheme":    "http",
-		"rule.0.path.0":    "/",
-		"rule.0.path.1":    "/api",
-		"rule.1.host":      "back.local.local",
-		"rule.1.scheme":    "https",
-		"rule.1.path.0":    "/",
+		"rule.host":        "front.local.local",
+		"rule.scheme":      "https",
+		"rule.path":        "/",
 		"label.app":        "appTest",
 		"label.env":        "dev",
 		"annotation.anno1": "value1",
 		"annotation.anno2": "value2",
 	}
 
-	ph = generatePlaceholdersIngressCentreonService(ingress)
+	ph = generatePlaceholdersRouteCentreonService(route)
 	assert.Equal(t, expectedPh, ph)
 
 }
 
-func TestCentreonServiceFromIngress(t *testing.T) {
+func TestCentreonServiceFromRoute(t *testing.T) {
 
 	var (
-		ingress      *networkv1.Ingress
+		route        *routev1.Route
 		cs           *v1alpha1.CentreonService
 		expectedCs   *v1alpha1.CentreonService
 		centreonSpec *v1alpha1.CentreonSpec
@@ -116,7 +150,7 @@ func TestCentreonServiceFromIngress(t *testing.T) {
 	assert.Error(t, err)
 
 	// When no centreonSpec and not all annotations
-	ingress = &networkv1.Ingress{
+	route = &routev1.Route{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "test",
 			Namespace: "default",
@@ -129,48 +163,16 @@ func TestCentreonServiceFromIngress(t *testing.T) {
 				"anno2": "value2",
 			},
 		},
-		Spec: networkv1.IngressSpec{
-			Rules: []networkv1.IngressRule{
-				{
-					Host: "front.local.local",
-					IngressRuleValue: networkv1.IngressRuleValue{
-						HTTP: &networkv1.HTTPIngressRuleValue{
-							Paths: []networkv1.HTTPIngressPath{
-								{
-									Path: "/",
-								},
-								{
-									Path: "/api",
-								},
-							},
-						},
-					},
-				},
-				{
-					Host: "back.local.local",
-					IngressRuleValue: networkv1.IngressRuleValue{
-						HTTP: &networkv1.HTTPIngressRuleValue{
-							Paths: []networkv1.HTTPIngressPath{
-								{
-									Path: "/",
-								},
-							},
-						},
-					},
-				},
-			},
-			TLS: []networkv1.IngressTLS{
-				{
-					Hosts: []string{"back.local.local"},
-				},
-			},
+		Spec: routev1.RouteSpec{
+			Host: "front.local.local",
+			Path: "/",
 		},
 	}
-	_, err = centreonServiceFromIngress(ingress, nil, runtime.NewScheme())
+	_, err = centreonServiceFromRoute(route, nil, runtime.NewScheme())
 	assert.Error(t, err)
 
 	// When no centreonSpec and all annotations
-	ingress = &networkv1.Ingress{
+	route = &routev1.Route{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "test",
 			Namespace: "default",
@@ -194,41 +196,9 @@ func TestCentreonServiceFromIngress(t *testing.T) {
 				"centreon.monitor.k8s.webcenter.fr/passive-check-enabled": "2",
 			},
 		},
-		Spec: networkv1.IngressSpec{
-			Rules: []networkv1.IngressRule{
-				{
-					Host: "front.local.local",
-					IngressRuleValue: networkv1.IngressRuleValue{
-						HTTP: &networkv1.HTTPIngressRuleValue{
-							Paths: []networkv1.HTTPIngressPath{
-								{
-									Path: "/",
-								},
-								{
-									Path: "/api",
-								},
-							},
-						},
-					},
-				},
-				{
-					Host: "back.local.local",
-					IngressRuleValue: networkv1.IngressRuleValue{
-						HTTP: &networkv1.HTTPIngressRuleValue{
-							Paths: []networkv1.HTTPIngressPath{
-								{
-									Path: "/",
-								},
-							},
-						},
-					},
-				},
-			},
-			TLS: []networkv1.IngressTLS{
-				{
-					Hosts: []string{"back.local.local"},
-				},
-			},
+		Spec: routev1.RouteSpec{
+			Host: "front.local.local",
+			Path: "/",
 		},
 	}
 	expectedCs = &v1alpha1.CentreonService{
@@ -272,12 +242,12 @@ func TestCentreonServiceFromIngress(t *testing.T) {
 			MaxCheckAttempts:    "5",
 		},
 	}
-	cs, err = centreonServiceFromIngress(ingress, nil, runtime.NewScheme())
+	cs, err = centreonServiceFromRoute(route, nil, runtime.NewScheme())
 	assert.NoError(t, err)
 	assert.Equal(t, expectedCs, cs)
 
 	// When centreonSpec and all annotations, priority to annotations
-	ingress = &networkv1.Ingress{
+	route = &routev1.Route{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "test",
 			Namespace: "default",
@@ -301,41 +271,9 @@ func TestCentreonServiceFromIngress(t *testing.T) {
 				"centreon.monitor.k8s.webcenter.fr/passive-check-enabled": "2",
 			},
 		},
-		Spec: networkv1.IngressSpec{
-			Rules: []networkv1.IngressRule{
-				{
-					Host: "front.local.local",
-					IngressRuleValue: networkv1.IngressRuleValue{
-						HTTP: &networkv1.HTTPIngressRuleValue{
-							Paths: []networkv1.HTTPIngressPath{
-								{
-									Path: "/",
-								},
-								{
-									Path: "/api",
-								},
-							},
-						},
-					},
-				},
-				{
-					Host: "back.local.local",
-					IngressRuleValue: networkv1.IngressRuleValue{
-						HTTP: &networkv1.HTTPIngressRuleValue{
-							Paths: []networkv1.HTTPIngressPath{
-								{
-									Path: "/",
-								},
-							},
-						},
-					},
-				},
-			},
-			TLS: []networkv1.IngressTLS{
-				{
-					Hosts: []string{"back.local.local"},
-				},
-			},
+		Spec: routev1.RouteSpec{
+			Host: "front.local.local",
+			Path: "/",
 		},
 	}
 	centreonSpec = &v1alpha1.CentreonSpec{
@@ -393,12 +331,12 @@ func TestCentreonServiceFromIngress(t *testing.T) {
 			MaxCheckAttempts:    "5",
 		},
 	}
-	cs, err = centreonServiceFromIngress(ingress, centreonSpec, runtime.NewScheme())
+	cs, err = centreonServiceFromRoute(route, centreonSpec, runtime.NewScheme())
 	assert.NoError(t, err)
 	assert.Equal(t, expectedCs, cs)
 
 	// When centreonSpec without annotations
-	ingress = &networkv1.Ingress{
+	route = &routev1.Route{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "test",
 			Namespace: "default",
@@ -407,41 +345,9 @@ func TestCentreonServiceFromIngress(t *testing.T) {
 				"env": "dev",
 			},
 		},
-		Spec: networkv1.IngressSpec{
-			Rules: []networkv1.IngressRule{
-				{
-					Host: "front.local.local",
-					IngressRuleValue: networkv1.IngressRuleValue{
-						HTTP: &networkv1.HTTPIngressRuleValue{
-							Paths: []networkv1.HTTPIngressPath{
-								{
-									Path: "/",
-								},
-								{
-									Path: "/api",
-								},
-							},
-						},
-					},
-				},
-				{
-					Host: "back.local.local",
-					IngressRuleValue: networkv1.IngressRuleValue{
-						HTTP: &networkv1.HTTPIngressRuleValue{
-							Paths: []networkv1.HTTPIngressPath{
-								{
-									Path: "/",
-								},
-							},
-						},
-					},
-				},
-			},
-			TLS: []networkv1.IngressTLS{
-				{
-					Hosts: []string{"back.local.local"},
-				},
-			},
+		Spec: routev1.RouteSpec{
+			Host: "front.local.local",
+			Path: "/",
 		},
 	}
 	centreonSpec = &v1alpha1.CentreonSpec{
@@ -452,8 +358,8 @@ func TestCentreonServiceFromIngress(t *testing.T) {
 			ActivateService: true,
 			ServiceGroups:   []string{"sg1"},
 			Macros: map[string]string{
-				"SCHEME": "<rule.0.scheme>",
-				"URL":    "<rule.0.host><rule.0.path.0>",
+				"SCHEME": "<rule.scheme>",
+				"URL":    "<rule.host><rule.path>",
 			},
 		},
 	}
@@ -478,30 +384,29 @@ func TestCentreonServiceFromIngress(t *testing.T) {
 			Groups:    []string{"sg1"},
 		},
 	}
-	cs, err = centreonServiceFromIngress(ingress, centreonSpec, runtime.NewScheme())
+	cs, err = centreonServiceFromRoute(route, centreonSpec, runtime.NewScheme())
 	assert.NoError(t, err)
 	assert.Equal(t, expectedCs, cs)
 
 }
 
-func (t *ControllerTestSuite) TestIngressCentreonControllerWhenNoCentreonSpec() {
+func (t *ControllerTestSuite) TestRouteCentreonControllerWhenNoCentreonSpec() {
 
 	var (
 		err                     error
-		fetched                 *networkv1.Ingress
+		fetched                 *routev1.Route
 		cs                      *v1alpha1.CentreonService
 		expectedCentreonService *v1alpha1.CentreonService
 		isTimeout               bool
 	)
-	ingressName := "t-ingress-" + helpers.RandomString(10)
+	routeName := "t-route-" + helpers.RandomString(10)
 	key := types.NamespacedName{
-		Name:      ingressName,
+		Name:      routeName,
 		Namespace: "default",
 	}
 
-	//Create new ingress
-	pathType := networkv1.PathTypePrefix
-	toCreate := &networkv1.Ingress{
+	//Create new route
+	toCreate := &routev1.Route{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      key.Name,
 			Namespace: key.Namespace,
@@ -526,61 +431,15 @@ func (t *ControllerTestSuite) TestIngressCentreonControllerWhenNoCentreonSpec() 
 				"centreon.monitor.k8s.webcenter.fr/passive-check-enabled": "2",
 			},
 		},
-		Spec: networkv1.IngressSpec{
-			Rules: []networkv1.IngressRule{
-				{
-					Host: "front.local.local",
-					IngressRuleValue: networkv1.IngressRuleValue{
-						HTTP: &networkv1.HTTPIngressRuleValue{
-							Paths: []networkv1.HTTPIngressPath{
-								{
-									Path:     "/",
-									PathType: &pathType,
-									Backend: networkv1.IngressBackend{
-										Service: &networkv1.IngressServiceBackend{
-											Name: "test",
-											Port: networkv1.ServiceBackendPort{Number: 80},
-										},
-									},
-								},
-								{
-									Path:     "/api",
-									PathType: &pathType,
-									Backend: networkv1.IngressBackend{
-										Service: &networkv1.IngressServiceBackend{
-											Name: "test",
-											Port: networkv1.ServiceBackendPort{Number: 80},
-										},
-									},
-								},
-							},
-						},
-					},
-				},
-				{
-					Host: "back.local.local",
-					IngressRuleValue: networkv1.IngressRuleValue{
-						HTTP: &networkv1.HTTPIngressRuleValue{
-							Paths: []networkv1.HTTPIngressPath{
-								{
-									Path:     "/",
-									PathType: &pathType,
-									Backend: networkv1.IngressBackend{
-										Service: &networkv1.IngressServiceBackend{
-											Name: "test",
-											Port: networkv1.ServiceBackendPort{Number: 80},
-										},
-									},
-								},
-							},
-						},
-					},
-				},
+		Spec: routev1.RouteSpec{
+			Host: "front.local.local",
+			Path: "/",
+			To: routev1.RouteTargetReference{
+				Kind: "Service",
+				Name: "fake",
 			},
-			TLS: []networkv1.IngressTLS{
-				{
-					Hosts: []string{"back.local.local"},
-				},
+			Port: &routev1.RoutePort{
+				TargetPort: intstr.FromString("8080"),
 			},
 		},
 	}
@@ -643,8 +502,8 @@ func (t *ControllerTestSuite) TestIngressCentreonControllerWhenNoCentreonSpec() 
 	assert.Equal(t.T(), expectedCentreonService.GetAnnotations(), cs.GetAnnotations())
 	time.Sleep(10 * time.Second)
 
-	// Update Ingress
-	fetched = &networkv1.Ingress{}
+	// Update route
+	fetched = &routev1.Route{}
 	if err := t.k8sClient.Get(context.Background(), key, fetched); err != nil {
 		t.T().Fatal(err)
 	}
@@ -706,49 +565,21 @@ func (t *ControllerTestSuite) TestIngressCentreonControllerWhenNoCentreonSpec() 
 	assert.Equal(t.T(), expectedCentreonService.GetAnnotations(), cs.GetAnnotations())
 	time.Sleep(10 * time.Second)
 
-	// Delete ingress
-	// Not working, maybee the envtest not include garbage orphan
-	/*
-		fetched = &networkv1.Ingress{}
-		if err := t.k8sClient.Get(context.Background(), key, fetched); err != nil {
-			t.T().Fatal(err)
-		}
-		logrus.Info("Delete ingress on unit test")
-		policy := metav1.DeletePropagationForeground
-		gracePeriod := int64(0)
-		if err := t.k8sClient.Delete(context.Background(), fetched, &client.DeleteOptions{
-			GracePeriodSeconds: &gracePeriod,
-			PropagationPolicy:  &policy,
-		}); err != nil {
-			t.T().Fatal(err)
-		}
-		time.Sleep(30 * time.Second)
-
-		fetched = &networkv1.Ingress{}
-		if err := t.k8sClient.Get(context.Background(), key, fetched); err != nil {
-			if !k8serrors.IsNotFound(err) {
-				t.T().Fatal(err)
-			}
-		} else {
-			t.T().Fatal("Ingress not deleted")
-		}
-	*/
-
 }
 
-func (t *ControllerTestSuite) TestIngressCentreonControllerWhenCentreonSpec() {
+func (t *ControllerTestSuite) TestRouteCentreonControllerWhenCentreonSpec() {
 
 	var (
 		err                     error
-		fetched                 *networkv1.Ingress
+		fetched                 *routev1.Route
 		cs                      *v1alpha1.CentreonService
 		expectedCentreonService *v1alpha1.CentreonService
 		isTimeout               bool
 		centreon                *v1alpha1.Centreon
 	)
-	ingressName := "t-ingress-" + helpers.RandomString(10)
+	routeName := "t-route-" + helpers.RandomString(10)
 	key := types.NamespacedName{
-		Name:      ingressName,
+		Name:      routeName,
 		Namespace: "default",
 	}
 	keyCentreon := types.NamespacedName{
@@ -758,7 +589,7 @@ func (t *ControllerTestSuite) TestIngressCentreonControllerWhenCentreonSpec() {
 
 	os.Setenv("OPERATOR_NAMESPACE", "default")
 
-	//Create new ingress
+	//Create new route
 	centreon = &v1alpha1.Centreon{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      keyCentreon.Name,
@@ -784,8 +615,8 @@ func (t *ControllerTestSuite) TestIngressCentreonControllerWhenCentreonSpec() {
 		t.T().Fatal(err)
 	}
 
-	pathType := networkv1.PathTypePrefix
-	toCreate := &networkv1.Ingress{
+	//Create new route
+	toCreate := &routev1.Route{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      key.Name,
 			Namespace: key.Namespace,
@@ -797,61 +628,15 @@ func (t *ControllerTestSuite) TestIngressCentreonControllerWhenCentreonSpec() {
 				"monitor.k8s.webcenter.fr/discover": "true",
 			},
 		},
-		Spec: networkv1.IngressSpec{
-			Rules: []networkv1.IngressRule{
-				{
-					Host: "front.local.local",
-					IngressRuleValue: networkv1.IngressRuleValue{
-						HTTP: &networkv1.HTTPIngressRuleValue{
-							Paths: []networkv1.HTTPIngressPath{
-								{
-									Path:     "/",
-									PathType: &pathType,
-									Backend: networkv1.IngressBackend{
-										Service: &networkv1.IngressServiceBackend{
-											Name: "test",
-											Port: networkv1.ServiceBackendPort{Number: 80},
-										},
-									},
-								},
-								{
-									Path:     "/api",
-									PathType: &pathType,
-									Backend: networkv1.IngressBackend{
-										Service: &networkv1.IngressServiceBackend{
-											Name: "test",
-											Port: networkv1.ServiceBackendPort{Number: 80},
-										},
-									},
-								},
-							},
-						},
-					},
-				},
-				{
-					Host: "back.local.local",
-					IngressRuleValue: networkv1.IngressRuleValue{
-						HTTP: &networkv1.HTTPIngressRuleValue{
-							Paths: []networkv1.HTTPIngressPath{
-								{
-									Path:     "/",
-									PathType: &pathType,
-									Backend: networkv1.IngressBackend{
-										Service: &networkv1.IngressServiceBackend{
-											Name: "test",
-											Port: networkv1.ServiceBackendPort{Number: 80},
-										},
-									},
-								},
-							},
-						},
-					},
-				},
+		Spec: routev1.RouteSpec{
+			Host: "front.local.local",
+			Path: "/",
+			To: routev1.RouteTargetReference{
+				Kind: "Service",
+				Name: "fake",
 			},
-			TLS: []networkv1.IngressTLS{
-				{
-					Hosts: []string{"back.local.local"},
-				},
+			Port: &routev1.RoutePort{
+				TargetPort: intstr.FromString("8080"),
 			},
 		},
 	}
@@ -897,7 +682,7 @@ func (t *ControllerTestSuite) TestIngressCentreonControllerWhenCentreonSpec() {
 	assert.Equal(t.T(), expectedCentreonService.GetAnnotations(), cs.GetAnnotations())
 	time.Sleep(10 * time.Second)
 
-	// Update Ingress
+	// Update route
 	if err = t.k8sClient.Get(context.Background(), keyCentreon, centreon); err != nil {
 		t.T().Fatal(err)
 	}
@@ -906,7 +691,7 @@ func (t *ControllerTestSuite) TestIngressCentreonControllerWhenCentreonSpec() {
 		t.T().Fatal(err)
 	}
 
-	fetched = &networkv1.Ingress{}
+	fetched = &routev1.Route{}
 	if err := t.k8sClient.Get(context.Background(), key, fetched); err != nil {
 		t.T().Fatal(err)
 	}

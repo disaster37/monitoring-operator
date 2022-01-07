@@ -13,25 +13,18 @@ on:
         - v1alpha1
 
 jobs:
-  # The "build" workflow
   build:
-    # The type of runner that the job will run on
     runs-on: ubuntu-latest
-    # Steps represent a sequence of tasks that will be executed as part of the job
     steps:
-    # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
     - uses: actions/checkout@v2
-    # Setup Go
     - name: Setup Go
       uses: actions/setup-go@v2
       with:
         go-version: '1.16' # The Go version to download (if necessary) and use.
-    # Setup operator-sdk
     - name: Setup operator-sdk
       uses: jpkrohling/setup-operator-sdk@v1.1.0
       with:
         operator-sdk-version: v1.15.0
-    # Run build of the application
     - name: Run build
       run: make build
     - name: Run unit tests
@@ -41,6 +34,21 @@ jobs:
         files: cover.out
         flags: unittests
         fail_ci_if_error: true
+    
+  
+  acctest-k8s:
+    runs-on: ubuntu-latest
+    needs: [build]
+    steps:
+    - uses: actions/checkout@v2
+    - name: Setup Go
+      uses: actions/setup-go@v2
+      with:
+        go-version: '1.16'
+    - name: Setup operator-sdk
+      uses: jpkrohling/setup-operator-sdk@v1.1.0
+      with:
+        operator-sdk-version: v1.15.0
     - name: Setup Minikube
       uses: manusa/actions-setup-minikube@v2.4.2
       with:
@@ -52,7 +60,39 @@ jobs:
       run: |
         #!/bin/bash
         set -e
-
+        docker run --name centreon -d --privileged -t -p 80:80 disaster/centreon:21.10-configured
+        until $(curl --output /dev/null --silent --head --fail http://localhost/centreon/index.php); do sleep 5; done
+    - name: Run acceptance tests
+      run: |
+        #!/bin/bash
+        set -e
+        minikube status
+        make install
+        make run &
+        sleep 60
+        make test-acc
+  
+  acctest-openshift:
+    runs-on: ubuntu-latest
+    needs: [build]
+    steps:
+    - uses: actions/checkout@v2
+    - name: Setup Go
+      uses: actions/setup-go@v2
+      with:
+        go-version: '1.16'
+    - name: Setup operator-sdk
+      uses: jpkrohling/setup-operator-sdk@v1.1.0
+      with:
+        operator-sdk-version: v1.15.0
+    - name: Setup Microshift
+      uses: container-tools/microshift-action@v0.2.1
+      with:
+        version: '4.8.0'
+    - name: Setup Centreon
+      run: |
+        #!/bin/bash
+        set -e
         docker run --name centreon -d --privileged -t -p 80:80 disaster/centreon:21.10-configured
         until $(curl --output /dev/null --silent --head --fail http://localhost/centreon/index.php); do sleep 5; done
     - name: Run acceptance tests
@@ -66,12 +106,8 @@ jobs:
         make test-acc
 
   helm-chart-monitoring-operator-crds:
-    # The type of runner that the job will run on
     runs-on: ubuntu-latest
-
-    # Steps represent a sequence of tasks that will be executed as part of the job
     steps:
-      # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
       - uses: actions/checkout@v2
       - name: Set up Helm
         uses: azure/setup-helm@v1
@@ -111,7 +147,7 @@ jobs:
           CHARTMUSEUM_PASSWORD: ${{ secrets.CHARTMUSEUM_PASSWORD }}
 
   release:
-    needs: [build] # Only run this workflow when "build" workflow succeeds
+    needs: [acctest-openshift, acctest-k8s]
     runs-on: ubuntu-latest
     if: startsWith(github.ref, 'refs/tags/')
     steps:
@@ -132,7 +168,7 @@ jobs:
 
 
   release_docker_image:
-    needs: [build] # Only run this workflow when "build" workflow succeeds
+    needs: [acctest-openshift, acctest-k8s]
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -189,12 +225,8 @@ jobs:
   helm-chart-monitoring-operator:
     needs: [release_docker_image, helm-chart-monitoring-operator-crds]
     if: startsWith(github.ref, 'refs/tags/')
-    # The type of runner that the job will run on
     runs-on: ubuntu-latest
-
-    # Steps represent a sequence of tasks that will be executed as part of the job
     steps:
-      # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
       - uses: actions/checkout@v2
       - name: Set up Helm
         uses: azure/setup-helm@v1
