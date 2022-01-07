@@ -101,7 +101,6 @@ jobs:
       run: |
         #!/bin/bash
         set -e
-        minikube status
         make install
         make run &
         sleep 60
