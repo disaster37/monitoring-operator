@@ -101,6 +101,7 @@ jobs:
       run: |
         #!/bin/bash
         set -e
+        kubectl config use-context microshift
         make install
         make run &
         sleep 60
