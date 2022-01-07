@@ -12,6 +12,7 @@ import (
 	"github.com/stretchr/testify/suite"
 	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
 )
 
@@ -20,6 +21,7 @@ type AccTestSuite struct {
 	k8sclient    dynamic.Interface
 	k8sclientStd kubernetes.Interface
 	centreon     centreonhandler.CentreonHandler
+	config       *rest.Config
 }
 
 func TestSuite(t *testing.T) {
@@ -40,6 +42,7 @@ func (t *AccTestSuite) SetupSuite() {
 	if err != nil {
 		panic(err)
 	}
+	t.config = config
 	client, err := dynamic.NewForConfig(config)
 	if err != nil {
 		panic(err)

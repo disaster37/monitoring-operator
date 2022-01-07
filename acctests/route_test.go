@@ -6,6 +6,7 @@ import (
 
 	"github.com/disaster37/go-centreon-rest/v21/models"
 	"github.com/disaster37/monitoring-operator/api/v1alpha1"
+	"github.com/disaster37/monitoring-operator/controllers"
 	"github.com/disaster37/monitoring-operator/pkg/centreonhandler"
 	routev1 "github.com/openshift/api/route/v1"
 	"github.com/stretchr/testify/assert"
@@ -28,6 +29,14 @@ func (t *AccTestSuite) TestRoute() {
 		uRoute    *unstructured.Unstructured
 		err       error
 	)
+
+	isRouteCRD, err := controllers.IsRouteCRD(t.config)
+	if err != nil {
+		assert.Fail(t.T(), err.Error())
+	}
+	if !isRouteCRD {
+		t.T().Skip("Not Openshift cluster, skit it")
+	}
 
 	centreonServiceGVR := schema.GroupVersionResource{
 		Group:    "monitor.k8s.webcenter.fr",
