@@ -93,7 +93,7 @@ jobs:
       run: |
         #!/bin/bash
         set -e
-        ufw disable
+        sudo ufw disable
         docker run --name centreon -d --privileged -t -p 80:80 disaster/centreon:21.10-configured
         until $(curl --output /dev/null --silent --head --fail http://localhost/centreon/index.php); do sleep 5; done
     - name: Run acceptance tests
