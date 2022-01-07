@@ -98,7 +98,7 @@ mock-gen:
 
 
 test: manifests generate mock-gen fmt envtest ## Run tests.
-	KUBEBUILDER_ASSETS="$(shell $(ENVTEST) use $(ENVTEST_K8S_VERSION) -p path)" go test ./api/... ./pkg/... ./controllers/...  -v -coverprofile cover.out $(TESTARGS) -timeout 600s
+	KUBEBUILDER_ASSETS="$(shell $(ENVTEST) use $(ENVTEST_K8S_VERSION) -p path)" go test ./api/... ./pkg/... ./controllers/...  -v -coverprofile cover.out $(TESTARGS) -timeout 600s -v -count 1 -parallel 1
 
 test-acc:
 	MONITORING_URL=$(MONITORING_URL) MONITORING_USERNAME=$(MONITORING_USERNAME) MONITORING_PASSWORD=$(MONITORING_PASSWORD) go test ./acctests/... -v $(TESTARGS) -timeout 600s

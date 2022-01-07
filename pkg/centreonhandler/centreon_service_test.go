@@ -115,10 +115,10 @@ func (t *CentreonHandlerTestSuite) TestUpdateService() {
 
 	// Mock set params on Centreon
 	t.mockService.EXPECT().
-		SetParam(gomock.Eq("central"), gomock.Eq("ping"), gomock.Eq("param1"), gomock.Eq("value1")).
+		SetParam(gomock.Eq("central"), gomock.Any(), gomock.Eq("param1"), gomock.Eq("value1")).
 		Return(nil)
 	t.mockService.EXPECT().
-		SetParam(gomock.Eq("central"), gomock.Eq("ping"), gomock.Eq("param2"), gomock.Eq("value2")).
+		SetParam(gomock.Eq("central"), gomock.Any(), gomock.Eq("param2"), gomock.Eq("value2")).
 		Return(nil)
 	t.mockService.EXPECT().
 		SetParam(gomock.Eq("central"), gomock.Eq("ping"), gomock.Eq("description"), gomock.Eq("ping2")).

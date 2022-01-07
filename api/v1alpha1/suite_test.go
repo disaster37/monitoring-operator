@@ -3,6 +3,7 @@ package v1alpha1
 import (
 	"path/filepath"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/suite"
 	"k8s.io/client-go/kubernetes/scheme"
@@ -29,7 +30,9 @@ func (t *V1alpha1TestSuite) SetupSuite() {
 
 	// Setup testenv
 	testEnv = &envtest.Environment{
-		CRDDirectoryPaths: []string{filepath.Join("..", "..", "config", "crd", "bases")},
+		CRDDirectoryPaths:        []string{filepath.Join("..", "..", "config", "crd", "bases")},
+		ControlPlaneStartTimeout: 120 * time.Second,
+		ControlPlaneStopTimeout:  120 * time.Second,
 	}
 
 	err := SchemeBuilder.AddToScheme(scheme.Scheme)

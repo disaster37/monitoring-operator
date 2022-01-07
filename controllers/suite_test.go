@@ -58,8 +58,9 @@ func (t *ControllerTestSuite) SetupSuite() {
 			filepath.Join("..", "config", "crd", "bases"),
 			filepath.Join("..", "config", "crd", "openshift"),
 		},
-		ErrorIfCRDPathMissing:   true,
-		ControlPlaneStopTimeout: 120 * time.Second,
+		ErrorIfCRDPathMissing:    true,
+		ControlPlaneStopTimeout:  120 * time.Second,
+		ControlPlaneStartTimeout: 120 * time.Second,
 	}
 	cfg, err := testEnv.Start()
 	if err != nil {
