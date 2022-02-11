@@ -13,6 +13,213 @@ It actually only support Centreon as monitoring plateform.
   - Manage service from ingress annotations and custom resource `Centreon` (kind of global setting)
   - Manage service from routes annotations and custom resource `Centreon` (kind of global setting)
 
+## Deploy operator with helm
+
+The project provide 2 helm chart:
+  - monitoring-operator-crds: it only contain the CRD needed by operator
+  - monitoring-operator: it deploy operator as deployement
+
+You can deploy the 2 separately, if you not have full right on cluster (CRD is installed by admin cluster). Or only deploy `monitoring-operator` and ask to install CRD on values.yaml.
+
+1. Create custome `values.yaml`
+
+Sample of values.yaml:
+```yaml
+---
+replicaCount: 1
+installCRDs: true
+config:
+  loglevel: info
+monitoring:
+  secret:
+    name: 'monitoring-operator-credentials'
+  plateform: 'centreon'
+  url: 'https://centreon.domain.com/centreon/api/index.php'
+  disableSSLCheck: true
+
+centreon:
+  endpoint:
+    template: 'TS_App-Protocol-HTTP-MultiCheck'
+    nameTemplate: 'App_<namespace>_URL'
+    defaultHost: 'HOST_KUBERNETES'
+    activeService: true
+    macros:
+      PROTOCOL: '<rule.0.scheme>'
+      CRITICALCONTENT: '%{code} != 200 or ${code} != 401'
+      URLPATH: '<rule.0.path.0>'
+    arguments:
+      - '<rule.0.host>'
+```
+
+2. Create secret with credantial to access on Centreon API
+
+> The section of `centreon.endpoint` permit to set some global setting when you shoud monitor ingress automatically. It avoid to set all annotations on each ingress.
+
+And secret specified here with name `monitoring-operator-credentials`, need to have credential to access on Centreon:
+
+```yaml
+apiVersion: v1
+metadata:
+  name: monitoring-operator-credentials
+type: Opaque
+data:
+  MONITORING_PASSWORD: bzQwcFdINy4zNnhs
+  MONITORING_USERNAME: Y3MuY2xhcGk=
+kind: Secret
+```
+
+3. Deploy with helm
+
+Add repository
+```bash
+helm repo add webcenter https://charts.webcenter.fr
+```
+
+Install chart
+```bash
+helm install monitoring-operator webcenter/monitoring-operator --version 0.0.1
+```
+
+## Custom ressources
+
+### Centreon
+
+This custom resource permit to set global setting used by operator.
+
+
+#### Global setting for endpoints
+
+You can use this global setting when you should to auto discover / monitor your ingress / Route:
+
+```yaml
+apiVersion: monitor.k8s.webcenter.fr/v1alpha1
+kind: Centreon
+metadata:
+  name: monitoring-operator
+spec:
+  endpoint:
+    # It enable service when it create it
+    # Optional
+    activeService: true
+
+    # The name template to use when it generate service name
+    # You can use placeholders
+    # Optional
+    nameTemplate: App_<namespace>_URL
+
+    # The service template to affect on service
+    # Optional
+    template: TS_App-Protocol-HTTP-MultiCheck
+
+    # The default host to link service on it
+    # Optional
+    defaultHost: HOST_KUBERNETES_HM-HPD
+
+    # The list service's arguments
+    # You can use placeholders
+    # Optional
+    arguments:
+    - <rule.0.host>
+
+    # The list of service's macros
+    # You can use placeholders
+    # Optional
+    macros:
+      CRITICALCONTENT: '%{code} != 200 or ${code} != 401'
+      PROTOCOL: <rule.0.scheme>
+      URLPATH: <rule.0.path.0>
+    
+    # The list of service's groups
+    # Optional
+    serviceGroups:
+    - SG_K8S_INGRESS
+
+    # The list of service's categories
+    # Optional
+    categories:
+    - Endpoint
+```
+
+> It avoid to set each time all annotations in Ingress / Route
+> Annotation have always the priority on this settings
+> You can use some placeholders to get properties from Ingress / Routes described in the next section
+
+### CentreonService
+
+This custom resource permit to handle service on Centreon.
+
+You can use this properties to set service:
+```yaml
+apiVersion: monitor.k8s.webcenter.fr/v1alpha1
+kind: CentreonService
+metadata:
+  name: monitor-workloads
+spec:
+  # Optional
+  # It enable service
+  activate: true
+  
+  # The host to link service on it
+  host: HOST_KUBERNETES_HM-HPD
+
+  # The service name
+  name: App_Rancher_hm-hpd_logmanagement-rec_workloads
+
+  # The service's template
+  # Optional
+  template: TS_App_Rancher
+
+  # The service's macro
+  # Optional
+  macros:
+    APIHOST: k8s.domain.com
+    APITOKEN: my_token_secret
+    APIUSER: my_token_access
+    CHECKTYPE: workload
+    EXTRAOPTIONS: -sS
+    NAMESPACE: my-app
+
+  # The service's arguments
+  # Optional
+  arguments:
+  - arg1
+
+  # The service's group
+  # Optional
+  groups:
+  - SG_K8S_WORKLOAD
+
+  # The service's categories
+  # Optional
+  categories:
+  - Workload
+
+  # The service's check command
+  # Optional
+  checkCommand:
+
+  # The service's normal check interval
+  # Optional
+  normalCheckInterval:
+
+  # The service's retry check interval
+  # Optional
+  retryCheckInterval:
+
+  # The service's check attempts
+  # Optional
+  maxCheckAttempts:
+
+  # It enable active check
+  # Optional
+  activeChecksEnabled:
+
+  # It enable passive check
+  # Optional
+  passiveChecksEnabled:
+```
+
+
 ## List of annotations for Ingress / Route
 **Global annotations:**
   - monitor.k8s.webcenter.fr/discover : true to watch resource
@@ -51,74 +258,23 @@ placeholders available for macros, arguments and nameTemplate from Route:
    - <label.key>: labels
    - <annotation.key>: annotations
 
-## Initialise project for memory
+## Deploy Centreon for test purpose
 
-1. Create new project
-```bash
-operator-sdk init --domain=k8s.webcenter.fr --repo=github.com/disaster37/monitoring-operator
-```
-
-2. Create APIs
-
-To manage Centreon configs
-```bash
-operator-sdk create api --group monitor --version v1alpha1 --kind Centreon --resource
-```
-
-To manage service on Centreon
-```bash
-operator-sdk create api --group monitor --version v1alpha1 --kind CentreonService --resource --controller
-```
-
-To watch ingress
-```bash
-operator-sdk create api --group networking.k8s.io --version v1 --kind Ingress --controller
-```
-
-3. Change some default value
-
-Edit the folliwng files:
-- `config/default/kustomization.yaml`
-- `config/samples/monitor_v1alpha1_centreon.yaml`
-- `config/samples/monitor_v1alpha1_centreonservice.yaml`
-- `config/samples/networking.k8s.io_v1_ingress.yaml`
-
-4. Generate some Go codes like controllers
-
-> Need each time you change `*_types.go`
+If you haven't Centreon ready, and you should to test operator, you can deploy it (only for quick test):
 
 ```bash
-make generate
+kubectl apply -n default -f sample/centreon/
 ```
 
-5. Generate CRDs
-
-> Need each time you change `*_types.go` or add some comment annotations in controllers
-
+Get the public port
 ```bash
-make manifests
+kubectl get svc/centreon-test -n default -o go-template='{{range .spec.ports}}{{if .nodePort}}{{.nodePort}}{{"\n"}}{{end}}{{end}}'
 ```
-6. Unit test
 
+You can now access on centreon with this port.
+> Login are admin / admin
+
+When you have finhished your test:
 ```bash
-go get github.com/onsi/ginkgo/ginkgo
-
+kubectl delete -n default -f sample/centreon/
 ```
-
-7. Test
-
-```bash
-docker run --name centreon -d -t --privileged -p 80:80 disaster/centreon:21.10-installed 
-
-export KUBECONFIG=/home/theia/.kube/config
-make install run
-make instal-sample
-```
-
-https://github.com/Azure/azure-databricks-operator/blob/0f722a710fea06b86ecdccd9455336ca712bf775/controllers/secretscope_controller.go
-
-https://redhat-scholars.github.io/operators-sdk-tutorial/template-tutorial/index.html
-
-Quand on crée des sous item dans kube, il faut ajouter dans les metas data le OwnerReference
-
-SI on veut surveiller des sous items, il faut créer un watcher sur les sous ressources (les types)

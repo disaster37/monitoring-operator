@@ -1,0 +1,38 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: centreon-test
+spec:
+  replicas: 1
+  serviceName: centreon-test
+  selector:
+    matchLabels:
+      app.kubernetes.io/instance: centreon-test
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/instance: centreon-test
+    spec:
+      containers:
+      - image: disaster/centreon:21.10-configured
+        imagePullPolicy: IfNotPresent
+        name: centreon
+        tty: true
+        ports:
+        - containerPort: 80
+          name: http
+          protocol: TCP
+        resources:
+          requests:
+            cpu: 200m
+            memory: 256Mi
+          limits:
+            cpu: 500m
+            memory: 512Mi
+        securityContext:
+          allowPrivilegeEscalation: true
+          privileged: true
+      restartPolicy: Always
+      terminationGracePeriodSeconds: 30
+  updateStrategy:
+    type: RollingUpdate
