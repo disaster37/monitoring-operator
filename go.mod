@@ -1,6 +1,6 @@
 module github.com/disaster37/monitoring-operator
 
-go 1.16
+go 1.18
 
 require (
 	github.com/disaster37/go-centreon-rest/v21 v21.0.5

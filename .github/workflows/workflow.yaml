@@ -20,7 +20,7 @@ jobs:
     - name: Setup Go
       uses: actions/setup-go@v2
       with:
-        go-version: '1.16' # The Go version to download (if necessary) and use.
+        go-version: '1.18' # The Go version to download (if necessary) and use.
     - name: Setup operator-sdk
       uses: jpkrohling/setup-operator-sdk@v1.1.0
       with:
@@ -44,7 +44,7 @@ jobs:
     - name: Setup Go
       uses: actions/setup-go@v2
       with:
-        go-version: '1.16'
+        go-version: '1.18'
     - name: Setup operator-sdk
       uses: jpkrohling/setup-operator-sdk@v1.1.0
       with:
@@ -80,7 +80,7 @@ jobs:
     - name: Setup Go
       uses: actions/setup-go@v2
       with:
-        go-version: '1.16'
+        go-version: '1.18'
     - name: Setup operator-sdk
       uses: jpkrohling/setup-operator-sdk@v1.1.0
       with:
@@ -121,7 +121,7 @@ jobs:
       - name: Setup Go
         uses: actions/setup-go@v2
         with:
-          go-version: '1.16'
+          go-version: '1.18'
       - name: Update crds
         run: |
           set -e
@@ -158,7 +158,7 @@ jobs:
       - name: Setup Go
         uses: actions/setup-go@v2
         with:
-          go-version: '1.16'
+          go-version: '1.18'
       - name: Run GoReleaser
         uses: goreleaser/goreleaser-action@v2
         with:
