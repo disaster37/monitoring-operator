@@ -95,15 +95,15 @@ spec:
       serviceAccountName: {{ include "monitoring-operator.serviceAccountName" . }}
       terminationGracePeriodSeconds: 10
     
-    {{- with .Values.nodeSelector }}
-    nodeSelector:
-      {{- toYaml . | nindent 10 }}
-    {{- end }}
-    {{- with .Values.affinity }}
-    affinity:
-      {{- toYaml . | nindent 10 }}
-    {{- end }}
-    {{- with .Values.tolerations }}
-    tolerations:
-      {{- toYaml . | nindent 10 }}
-    {{- end }}
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 10 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 10 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 10 }}
+      {{- end }}
