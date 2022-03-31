@@ -38,7 +38,7 @@ spec:
         args:
         - --leader-elect
         {{- if (gt $metricsPort 0) }}
-        - --metrics-bind-address :{{ .Values.config.metricsPort }}
+        - --metrics-bind-address={{ .Values.config.metricsPort }}
         {{- end }}
         image: "{{ .Values.image.repository }}:{{ default .Chart.AppVersion .Values.image.tag }}"
         name: manager
