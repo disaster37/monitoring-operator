@@ -4,8 +4,12 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/disaster37/monitoring-operator/pkg/centreonhandler"
+	"github.com/disaster37/operator-sdk-extra/pkg/controller"
+	"github.com/sirupsen/logrus"
 	"k8s.io/client-go/discovery"
 	"k8s.io/client-go/rest"
+	"k8s.io/client-go/tools/record"
 	"sigs.k8s.io/controller-runtime/pkg/event"
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
 )
@@ -13,11 +17,31 @@ import (
 const (
 	monitoringAnnotationKey         = "monitor.k8s.webcenter.fr"
 	centreonMonitoringAnnotationKey = "centreon.monitor.k8s.webcenter.fr"
+	waitDurationWhenError           = 1 * time.Minute
 )
 
-var (
-	waitDurationWhenError time.Duration = 1 * time.Minute
-)
+type Reconciler struct {
+	recorder   record.EventRecorder
+	log        *logrus.Entry
+	reconciler controller.Reconciler
+	client     centreonhandler.CentreonHandler
+}
+
+func (r *Reconciler) SetLogger(log *logrus.Entry) {
+	r.log = log
+}
+
+func (r *Reconciler) SetRecorder(recorder record.EventRecorder) {
+	r.recorder = recorder
+}
+
+func (r *Reconciler) SetReconsiler(reconciler controller.Reconciler) {
+	r.reconciler = reconciler
+}
+
+func (r *Reconciler) SetClient(client centreonhandler.CentreonHandler) {
+	r.client = client
+}
 
 // Handle only resources that have the monitoring annotation
 func viewResourceWithMonitoringAnnotationPredicate() predicate.Predicate {
@@ -48,20 +72,6 @@ func isMonitoringAnnotation(annotations map[string]string) bool {
 		}
 	}
 	return false
-}
-
-// Only spec update and finalizer predicate
-func centreonServicePredicate() predicate.Predicate {
-	return predicate.Funcs{
-		UpdateFunc: func(e event.UpdateEvent) bool {
-			// Ignore updates to CR status in which case metadata.Generation does not change
-			return e.ObjectOld.GetGeneration() != e.ObjectNew.GetGeneration()
-		},
-		DeleteFunc: func(e event.DeleteEvent) bool {
-			// Evaluates to false if the object has been confirmed deleted.
-			return !e.DeleteStateUnknown
-		},
-	}
 }
 
 // IsRouteCRD check if apiGroup called "route.openshift.io" exist on cluster.

@@ -8,13 +8,410 @@ import (
 	"time"
 
 	"github.com/disaster37/monitoring-operator/api/v1alpha1"
+	"github.com/disaster37/monitoring-operator/pkg/centreonhandler"
 	"github.com/disaster37/monitoring-operator/pkg/helpers"
+	"github.com/disaster37/monitoring-operator/pkg/mocks"
+	"github.com/disaster37/operator-sdk-extra/pkg/test"
+	"github.com/golang/mock/gomock"
+	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
 	networkv1 "k8s.io/api/networking/v1"
+	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 )
+
+func (t *ControllerTestSuite) TestIngressCentreonController() {
+	key := types.NamespacedName{
+		Name:      "t-ingress-" + helpers.RandomString(10),
+		Namespace: "default",
+	}
+	ingress := &networkv1.Ingress{}
+	data := map[string]any{}
+
+	testCase := test.NewTestCase(t.T(), t.k8sClient, key, ingress, 5*time.Second, data)
+	testCase.Steps = []test.TestStep{
+		doCreateIngressStep(),
+		doUpdateIngressStep(),
+		doDeleteIngressStep(),
+	}
+	testCase.PreTest = doMockIngress(t.mockCentreonHandler)
+
+	os.Setenv("OPERATOR_NAMESPACE", "default")
+
+	testCase.Run()
+
+}
+
+func doMockIngress(mockCS *mocks.MockCentreonHandler) func(stepName *string, data map[string]any) error {
+	return func(stepName *string, data map[string]any) (err error) {
+
+		mockCS.EXPECT().GetService(gomock.Any(), gomock.Any()).AnyTimes().Return(nil, nil)
+
+		mockCS.EXPECT().DiffService(gomock.Any(), gomock.Any()).AnyTimes().Return(&centreonhandler.CentreonServiceDiff{
+			IsDiff: false,
+		}, nil)
+
+		mockCS.EXPECT().CreateService(gomock.Any()).AnyTimes().Return(nil)
+
+		mockCS.EXPECT().UpdateService(gomock.Any()).AnyTimes().Return(nil)
+
+		mockCS.EXPECT().DeleteService(gomock.Any(), gomock.Any()).AnyTimes().Return(nil)
+
+		return nil
+	}
+}
+
+func doCreateIngressStep() test.TestStep {
+	return test.TestStep{
+		Name: "create",
+		Pre: func(c client.Client, data map[string]any) (err error) {
+
+			// Delete CentreonSpec if already exist
+			// Maybee it created by others tests
+			centreon := &v1alpha1.Centreon{}
+			if err = c.Get(context.Background(), types.NamespacedName{Namespace: "default", Name: CentreonResourceName}, centreon); err != nil {
+				if !k8serrors.IsNotFound(err) {
+					return err
+				}
+				centreon = nil
+			}
+
+			if centreon != nil {
+				wait := int64(0)
+				if err = c.Delete(context.Background(), centreon, &client.DeleteOptions{GracePeriodSeconds: &wait}); err != nil {
+					return err
+				}
+			}
+
+			return nil
+		},
+		Do: func(c client.Client, key types.NamespacedName, o client.Object, data map[string]any) (err error) {
+			logrus.Infof("=== Add new Ingress %s/%s ===", key.Namespace, key.Name)
+
+			//Create Centreon
+			centreon := &v1alpha1.Centreon{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      CentreonResourceName,
+					Namespace: "default",
+				},
+				Spec: v1alpha1.CentreonSpec{
+					Endpoints: &v1alpha1.CentreonSpecEndpoint{
+						Template:     "template",
+						DefaultHost:  "localhost",
+						NameTemplate: "ping",
+						Macros: map[string]string{
+							"mac1": "value1",
+							"mac2": "value2",
+						},
+						Arguments:       []string{"arg1", "arg2"},
+						ActivateService: true,
+						ServiceGroups:   []string{"sg1"},
+						Categories:      []string{"cat1"},
+					},
+				},
+			}
+			if err = c.Create(context.Background(), centreon); err != nil {
+				return err
+			}
+
+			// Create ingress without annotations
+			pathType := networkv1.PathTypePrefix
+			ingress := &networkv1.Ingress{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      key.Name,
+					Namespace: key.Namespace,
+					Labels: map[string]string{
+						"app": "appTest",
+						"env": "dev",
+					},
+					Annotations: map[string]string{
+						"monitor.k8s.webcenter.fr/discover": "true",
+					},
+				},
+				Spec: networkv1.IngressSpec{
+					Rules: []networkv1.IngressRule{
+						{
+							Host: "front.local.local",
+							IngressRuleValue: networkv1.IngressRuleValue{
+								HTTP: &networkv1.HTTPIngressRuleValue{
+									Paths: []networkv1.HTTPIngressPath{
+										{
+											Path:     "/",
+											PathType: &pathType,
+											Backend: networkv1.IngressBackend{
+												Service: &networkv1.IngressServiceBackend{
+													Name: "test",
+													Port: networkv1.ServiceBackendPort{Number: 80},
+												},
+											},
+										},
+										{
+											Path:     "/api",
+											PathType: &pathType,
+											Backend: networkv1.IngressBackend{
+												Service: &networkv1.IngressServiceBackend{
+													Name: "test",
+													Port: networkv1.ServiceBackendPort{Number: 80},
+												},
+											},
+										},
+									},
+								},
+							},
+						},
+						{
+							Host: "back.local.local",
+							IngressRuleValue: networkv1.IngressRuleValue{
+								HTTP: &networkv1.HTTPIngressRuleValue{
+									Paths: []networkv1.HTTPIngressPath{
+										{
+											Path:     "/",
+											PathType: &pathType,
+											Backend: networkv1.IngressBackend{
+												Service: &networkv1.IngressServiceBackend{
+													Name: "test",
+													Port: networkv1.ServiceBackendPort{Number: 80},
+												},
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+					TLS: []networkv1.IngressTLS{
+						{
+							Hosts: []string{"back.local.local"},
+						},
+					},
+				},
+			}
+
+			if err = c.Create(context.Background(), ingress); err != nil {
+				return err
+			}
+
+			return nil
+		},
+		Check: func(t *testing.T, c client.Client, key types.NamespacedName, o client.Object, data map[string]any) (err error) {
+			cs := &v1alpha1.CentreonService{}
+
+			isTimeout, err := RunWithTimeout(func() error {
+				if err := c.Get(context.Background(), key, cs); err != nil {
+					if k8serrors.IsNotFound(err) {
+						return errors.New("Not yet created")
+					}
+					t.Fatalf("Error when get Centreon service: %s", err.Error())
+				}
+				return nil
+			}, time.Second*30, time.Second*1)
+			if err != nil || isTimeout {
+				t.Fatalf("Failed to get Centreon service: %s", err.Error())
+			}
+
+			expectedCS := &v1alpha1.CentreonService{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      key.Name,
+					Namespace: key.Namespace,
+					Labels: map[string]string{
+						"app": "appTest",
+						"env": "dev",
+					},
+					Annotations: map[string]string{
+						"monitor.k8s.webcenter.fr/discover": "true",
+					},
+				},
+				Spec: v1alpha1.CentreonServiceSpec{
+					Host:     "localhost",
+					Name:     "ping",
+					Template: "template",
+					Macros: map[string]string{
+						"mac1": "value1",
+						"mac2": "value2",
+					},
+					Arguments:  []string{"arg1", "arg2"},
+					Activated:  true,
+					Groups:     []string{"sg1"},
+					Categories: []string{"cat1"},
+				},
+			}
+
+			assert.Equal(t, expectedCS.Labels, cs.Labels)
+			assert.Equal(t, expectedCS.Annotations, cs.Annotations)
+			assert.Equal(t, expectedCS.Spec, cs.Spec)
+			assert.NotEmpty(t, cs.OwnerReferences)
+			return nil
+		},
+	}
+}
+
+func doUpdateIngressStep() test.TestStep {
+	return test.TestStep{
+		Name: "update",
+		Do: func(c client.Client, key types.NamespacedName, o client.Object, data map[string]any) (err error) {
+			logrus.Infof("=== Update Ingress %s/%s ===", key.Namespace, key.Name)
+
+			if o == nil {
+				return errors.New("Ingress is null")
+			}
+			ingress := o.(*networkv1.Ingress)
+
+			ingress.Annotations = map[string]string{
+				"monitor.k8s.webcenter.fr/discover":                       "true",
+				"centreon.monitor.k8s.webcenter.fr/name":                  "ping",
+				"centreon.monitor.k8s.webcenter.fr/template":              "template2",
+				"centreon.monitor.k8s.webcenter.fr/host":                  "localhost",
+				"centreon.monitor.k8s.webcenter.fr/macros":                `{"mac1": "value11", "mac2": "value22"}`,
+				"centreon.monitor.k8s.webcenter.fr/arguments":             "arg11, arg22",
+				"centreon.monitor.k8s.webcenter.fr/activated":             "0",
+				"centreon.monitor.k8s.webcenter.fr/groups":                "sg2",
+				"centreon.monitor.k8s.webcenter.fr/categories":            "cat2",
+				"centreon.monitor.k8s.webcenter.fr/normal-check-interval": "30",
+				"centreon.monitor.k8s.webcenter.fr/retry-check-interval":  "10",
+				"centreon.monitor.k8s.webcenter.fr/max-check-attempts":    "5",
+				"centreon.monitor.k8s.webcenter.fr/active-check-enabled":  "1",
+				"centreon.monitor.k8s.webcenter.fr/passive-check-enabled": "1",
+			}
+
+			// Get version of current CentreonService object
+			cs := &v1alpha1.CentreonService{}
+			if err := c.Get(context.Background(), key, cs); err != nil {
+				return err
+			}
+
+			data["version"] = cs.ResourceVersion
+
+			if err = c.Update(context.Background(), ingress); err != nil {
+				return err
+			}
+
+			return nil
+		},
+		Check: func(t *testing.T, c client.Client, key types.NamespacedName, o client.Object, data map[string]any) (err error) {
+			cs := &v1alpha1.CentreonService{}
+
+			activate := true
+
+			version := data["version"].(string)
+
+			isTimeout, err := RunWithTimeout(func() error {
+				if err := c.Get(context.Background(), key, cs); err != nil {
+					t.Fatalf("Error when get Centreon service: %s", err.Error())
+				}
+
+				if cs.ResourceVersion == version {
+					return errors.New("Not yet updated")
+				}
+
+				return nil
+
+			}, time.Second*30, time.Second*1)
+			if err != nil || isTimeout {
+				t.Fatalf("Failed to get Centreon service: %s", err.Error())
+			}
+
+			expectedCS := &v1alpha1.CentreonService{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      key.Name,
+					Namespace: key.Namespace,
+					Labels: map[string]string{
+						"app": "appTest",
+						"env": "dev",
+					},
+					Annotations: map[string]string{
+						"monitor.k8s.webcenter.fr/discover":                       "true",
+						"centreon.monitor.k8s.webcenter.fr/name":                  "ping",
+						"centreon.monitor.k8s.webcenter.fr/template":              "template2",
+						"centreon.monitor.k8s.webcenter.fr/host":                  "localhost",
+						"centreon.monitor.k8s.webcenter.fr/macros":                `{"mac1": "value11", "mac2": "value22"}`,
+						"centreon.monitor.k8s.webcenter.fr/arguments":             "arg11, arg22",
+						"centreon.monitor.k8s.webcenter.fr/activated":             "0",
+						"centreon.monitor.k8s.webcenter.fr/groups":                "sg2",
+						"centreon.monitor.k8s.webcenter.fr/categories":            "cat2",
+						"centreon.monitor.k8s.webcenter.fr/normal-check-interval": "30",
+						"centreon.monitor.k8s.webcenter.fr/retry-check-interval":  "10",
+						"centreon.monitor.k8s.webcenter.fr/max-check-attempts":    "5",
+						"centreon.monitor.k8s.webcenter.fr/active-check-enabled":  "1",
+						"centreon.monitor.k8s.webcenter.fr/passive-check-enabled": "1",
+					},
+				},
+				Spec: v1alpha1.CentreonServiceSpec{
+					Host:     "localhost",
+					Name:     "ping",
+					Template: "template2",
+					Macros: map[string]string{
+						"mac1": "value11",
+						"mac2": "value22",
+					},
+					Arguments:           []string{"arg11", "arg22"},
+					Activated:           false,
+					Groups:              []string{"sg2"},
+					Categories:          []string{"cat2"},
+					NormalCheckInterval: "30",
+					RetryCheckInterval:  "10",
+					MaxCheckAttempts:    "5",
+					ActiveCheckEnabled:  &activate,
+					PassiveCheckEnabled: &activate,
+				},
+			}
+
+			assert.Equal(t, expectedCS.Labels, cs.Labels)
+			assert.Equal(t, expectedCS.Annotations, cs.Annotations)
+			assert.Equal(t, expectedCS.Spec, cs.Spec)
+			return nil
+		},
+	}
+}
+
+func doDeleteIngressStep() test.TestStep {
+	return test.TestStep{
+		Name: "delete",
+		Do: func(c client.Client, key types.NamespacedName, o client.Object, data map[string]any) (err error) {
+			logrus.Infof("=== Delete Ingress %s/%s ===", key.Namespace, key.Name)
+			if o == nil {
+				return errors.New("Ingress is null")
+			}
+			ingress := o.(*networkv1.Ingress)
+
+			wait := int64(0)
+			if err = c.Delete(context.Background(), ingress, &client.DeleteOptions{GracePeriodSeconds: &wait}); err != nil {
+				return err
+			}
+
+			return nil
+		},
+		Check: func(t *testing.T, c client.Client, key types.NamespacedName, o client.Object, data map[string]any) (err error) {
+			ingress := &networkv1.Ingress{}
+			isDeleted := false
+
+			// We can't test in envtest that the children is deleted
+			// https://stackoverflow.com/questions/64821970/operator-controller-could-not-delete-correlated-resources
+
+			// Object can be deleted or marked as deleted
+			isTimeout, err := RunWithTimeout(func() error {
+				if err = c.Get(context.Background(), key, ingress); err != nil {
+					if k8serrors.IsNotFound(err) {
+						isDeleted = true
+						return nil
+					}
+					t.Fatal(err)
+				}
+
+				return nil
+
+			}, time.Second*30, time.Second*1)
+
+			if err != nil || isTimeout {
+				t.Fatalf("Ingress not deleted: %s", err.Error())
+			}
+			assert.True(t, isDeleted)
+
+			return nil
+		},
+	}
+}
 
 func TestGeneratePlaceholdersIngressCentreonService(t *testing.T) {
 
@@ -100,6 +497,8 @@ func TestGeneratePlaceholdersIngressCentreonService(t *testing.T) {
 	assert.Equal(t, expectedPh, ph)
 
 }
+
+/*
 
 func TestCentreonServiceFromIngress(t *testing.T) {
 
@@ -484,479 +883,4 @@ func TestCentreonServiceFromIngress(t *testing.T) {
 
 }
 
-func (t *ControllerTestSuite) TestIngressCentreonControllerWhenNoCentreonSpec() {
-
-	var (
-		err                     error
-		fetched                 *networkv1.Ingress
-		cs                      *v1alpha1.CentreonService
-		expectedCentreonService *v1alpha1.CentreonService
-		isTimeout               bool
-	)
-	ingressName := "t-ingress-" + helpers.RandomString(10)
-	key := types.NamespacedName{
-		Name:      ingressName,
-		Namespace: "default",
-	}
-
-	//Create new ingress
-	pathType := networkv1.PathTypePrefix
-	toCreate := &networkv1.Ingress{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      key.Name,
-			Namespace: key.Namespace,
-			Labels: map[string]string{
-				"app": "appTest",
-				"env": "dev",
-			},
-			Annotations: map[string]string{
-				"monitor.k8s.webcenter.fr/discover":                       "true",
-				"centreon.monitor.k8s.webcenter.fr/name":                  "ping",
-				"centreon.monitor.k8s.webcenter.fr/template":              "template",
-				"centreon.monitor.k8s.webcenter.fr/host":                  "localhost",
-				"centreon.monitor.k8s.webcenter.fr/macros":                `{"mac1": "value1", "mac2": "value2"}`,
-				"centreon.monitor.k8s.webcenter.fr/arguments":             "arg1, arg2",
-				"centreon.monitor.k8s.webcenter.fr/activated":             "1",
-				"centreon.monitor.k8s.webcenter.fr/groups":                "sg1",
-				"centreon.monitor.k8s.webcenter.fr/categories":            "cat1",
-				"centreon.monitor.k8s.webcenter.fr/normal-check-interval": "30",
-				"centreon.monitor.k8s.webcenter.fr/retry-check-interval":  "10",
-				"centreon.monitor.k8s.webcenter.fr/max-check-attempts":    "5",
-				"centreon.monitor.k8s.webcenter.fr/active-check-enabled":  "2",
-				"centreon.monitor.k8s.webcenter.fr/passive-check-enabled": "2",
-			},
-		},
-		Spec: networkv1.IngressSpec{
-			Rules: []networkv1.IngressRule{
-				{
-					Host: "front.local.local",
-					IngressRuleValue: networkv1.IngressRuleValue{
-						HTTP: &networkv1.HTTPIngressRuleValue{
-							Paths: []networkv1.HTTPIngressPath{
-								{
-									Path:     "/",
-									PathType: &pathType,
-									Backend: networkv1.IngressBackend{
-										Service: &networkv1.IngressServiceBackend{
-											Name: "test",
-											Port: networkv1.ServiceBackendPort{Number: 80},
-										},
-									},
-								},
-								{
-									Path:     "/api",
-									PathType: &pathType,
-									Backend: networkv1.IngressBackend{
-										Service: &networkv1.IngressServiceBackend{
-											Name: "test",
-											Port: networkv1.ServiceBackendPort{Number: 80},
-										},
-									},
-								},
-							},
-						},
-					},
-				},
-				{
-					Host: "back.local.local",
-					IngressRuleValue: networkv1.IngressRuleValue{
-						HTTP: &networkv1.HTTPIngressRuleValue{
-							Paths: []networkv1.HTTPIngressPath{
-								{
-									Path:     "/",
-									PathType: &pathType,
-									Backend: networkv1.IngressBackend{
-										Service: &networkv1.IngressServiceBackend{
-											Name: "test",
-											Port: networkv1.ServiceBackendPort{Number: 80},
-										},
-									},
-								},
-							},
-						},
-					},
-				},
-			},
-			TLS: []networkv1.IngressTLS{
-				{
-					Hosts: []string{"back.local.local"},
-				},
-			},
-		},
-	}
-	expectedCentreonService = &v1alpha1.CentreonService{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "test",
-			Namespace: "default",
-			Labels: map[string]string{
-				"app": "appTest",
-				"env": "dev",
-			},
-			Annotations: map[string]string{
-				"monitor.k8s.webcenter.fr/discover":                       "true",
-				"centreon.monitor.k8s.webcenter.fr/name":                  "ping",
-				"centreon.monitor.k8s.webcenter.fr/template":              "template",
-				"centreon.monitor.k8s.webcenter.fr/host":                  "localhost",
-				"centreon.monitor.k8s.webcenter.fr/macros":                `{"mac1": "value1", "mac2": "value2"}`,
-				"centreon.monitor.k8s.webcenter.fr/arguments":             "arg1, arg2",
-				"centreon.monitor.k8s.webcenter.fr/activated":             "1",
-				"centreon.monitor.k8s.webcenter.fr/groups":                "sg1",
-				"centreon.monitor.k8s.webcenter.fr/categories":            "cat1",
-				"centreon.monitor.k8s.webcenter.fr/normal-check-interval": "30",
-				"centreon.monitor.k8s.webcenter.fr/retry-check-interval":  "10",
-				"centreon.monitor.k8s.webcenter.fr/max-check-attempts":    "5",
-				"centreon.monitor.k8s.webcenter.fr/active-check-enabled":  "2",
-				"centreon.monitor.k8s.webcenter.fr/passive-check-enabled": "2",
-			},
-		},
-		Spec: v1alpha1.CentreonServiceSpec{
-			Host:     "localhost",
-			Name:     "ping",
-			Template: "template",
-			Macros: map[string]string{
-				"mac1": "value1",
-				"mac2": "value2",
-			},
-			Arguments:           []string{"arg1", "arg2"},
-			Activated:           true,
-			Groups:              []string{"sg1"},
-			Categories:          []string{"cat1"},
-			NormalCheckInterval: "30",
-			RetryCheckInterval:  "10",
-			MaxCheckAttempts:    "5",
-		},
-	}
-	if err = t.k8sClient.Create(context.Background(), toCreate); err != nil {
-		t.T().Fatal(err)
-	}
-	isTimeout, err = RunWithTimeout(func() error {
-		cs = &v1alpha1.CentreonService{}
-		if err := t.k8sClient.Get(context.Background(), key, cs); err != nil {
-			return errors.New("Not yet created")
-		}
-		return nil
-	}, time.Second*30, time.Second*1)
-	assert.NoError(t.T(), err)
-	assert.False(t.T(), isTimeout)
-	assert.Equal(t.T(), expectedCentreonService.Spec, cs.Spec)
-	assert.Equal(t.T(), expectedCentreonService.GetLabels(), cs.GetLabels())
-	assert.Equal(t.T(), expectedCentreonService.GetAnnotations(), cs.GetAnnotations())
-	time.Sleep(10 * time.Second)
-
-	// Update Ingress
-	fetched = &networkv1.Ingress{}
-	if err := t.k8sClient.Get(context.Background(), key, fetched); err != nil {
-		t.T().Fatal(err)
-	}
-
-	fetched.ObjectMeta.Annotations["centreon.monitor.k8s.webcenter.fr/max-check-attempts"] = "6"
-
-	expectedCentreonService = &v1alpha1.CentreonService{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "test",
-			Namespace: "default",
-			Labels: map[string]string{
-				"app": "appTest",
-				"env": "dev",
-			},
-			Annotations: map[string]string{
-				"monitor.k8s.webcenter.fr/discover":                       "true",
-				"centreon.monitor.k8s.webcenter.fr/name":                  "ping",
-				"centreon.monitor.k8s.webcenter.fr/template":              "template",
-				"centreon.monitor.k8s.webcenter.fr/host":                  "localhost",
-				"centreon.monitor.k8s.webcenter.fr/macros":                `{"mac1": "value1", "mac2": "value2"}`,
-				"centreon.monitor.k8s.webcenter.fr/arguments":             "arg1, arg2",
-				"centreon.monitor.k8s.webcenter.fr/activated":             "1",
-				"centreon.monitor.k8s.webcenter.fr/groups":                "sg1",
-				"centreon.monitor.k8s.webcenter.fr/categories":            "cat1",
-				"centreon.monitor.k8s.webcenter.fr/normal-check-interval": "30",
-				"centreon.monitor.k8s.webcenter.fr/retry-check-interval":  "10",
-				"centreon.monitor.k8s.webcenter.fr/max-check-attempts":    "6",
-				"centreon.monitor.k8s.webcenter.fr/active-check-enabled":  "2",
-				"centreon.monitor.k8s.webcenter.fr/passive-check-enabled": "2",
-			},
-		},
-		Spec: v1alpha1.CentreonServiceSpec{
-			Host:     "localhost",
-			Name:     "ping",
-			Template: "template",
-			Macros: map[string]string{
-				"mac1": "value1",
-				"mac2": "value2",
-			},
-			Arguments:           []string{"arg1", "arg2"},
-			Activated:           true,
-			Groups:              []string{"sg1"},
-			Categories:          []string{"cat1"},
-			NormalCheckInterval: "30",
-			RetryCheckInterval:  "10",
-			MaxCheckAttempts:    "6",
-		},
-	}
-	if err = t.k8sClient.Update(context.Background(), fetched); err != nil {
-		t.T().Fatal(err)
-	}
-	time.Sleep(30 * time.Second)
-	cs = &v1alpha1.CentreonService{}
-	if err := t.k8sClient.Get(context.Background(), key, cs); err != nil {
-		t.T().Fatal(err)
-	}
-	assert.Equal(t.T(), expectedCentreonService.Spec, cs.Spec)
-	assert.Equal(t.T(), expectedCentreonService.GetLabels(), cs.GetLabels())
-	assert.Equal(t.T(), expectedCentreonService.GetAnnotations(), cs.GetAnnotations())
-	time.Sleep(10 * time.Second)
-
-	// Delete ingress
-	// Not working, maybee the envtest not include garbage orphan
-	/*
-		fetched = &networkv1.Ingress{}
-		if err := t.k8sClient.Get(context.Background(), key, fetched); err != nil {
-			t.T().Fatal(err)
-		}
-		logrus.Info("Delete ingress on unit test")
-		policy := metav1.DeletePropagationForeground
-		gracePeriod := int64(0)
-		if err := t.k8sClient.Delete(context.Background(), fetched, &client.DeleteOptions{
-			GracePeriodSeconds: &gracePeriod,
-			PropagationPolicy:  &policy,
-		}); err != nil {
-			t.T().Fatal(err)
-		}
-		time.Sleep(30 * time.Second)
-
-		fetched = &networkv1.Ingress{}
-		if err := t.k8sClient.Get(context.Background(), key, fetched); err != nil {
-			if !k8serrors.IsNotFound(err) {
-				t.T().Fatal(err)
-			}
-		} else {
-			t.T().Fatal("Ingress not deleted")
-		}
-	*/
-
-}
-
-func (t *ControllerTestSuite) TestIngressCentreonControllerWhenCentreonSpec() {
-
-	var (
-		err                     error
-		fetched                 *networkv1.Ingress
-		cs                      *v1alpha1.CentreonService
-		expectedCentreonService *v1alpha1.CentreonService
-		isTimeout               bool
-		centreon                *v1alpha1.Centreon
-	)
-	ingressName := "t-ingress-" + helpers.RandomString(10)
-	key := types.NamespacedName{
-		Name:      ingressName,
-		Namespace: "default",
-	}
-	keyCentreon := types.NamespacedName{
-		Name:      centreonResourceName,
-		Namespace: "default",
-	}
-
-	os.Setenv("OPERATOR_NAMESPACE", "default")
-
-	//Create new ingress
-	centreon = &v1alpha1.Centreon{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      keyCentreon.Name,
-			Namespace: keyCentreon.Namespace,
-		},
-		Spec: v1alpha1.CentreonSpec{
-			Endpoints: &v1alpha1.CentreonSpecEndpoint{
-				Template:     "template",
-				DefaultHost:  "localhost",
-				NameTemplate: "ping",
-				Macros: map[string]string{
-					"mac1": "value1",
-					"mac2": "value2",
-				},
-				Arguments:       []string{"arg1", "arg2"},
-				ActivateService: true,
-				ServiceGroups:   []string{"sg1"},
-				Categories:      []string{"cat1"},
-			},
-		},
-	}
-	if err = t.k8sClient.Create(context.Background(), centreon); err != nil {
-		t.T().Fatal(err)
-	}
-
-	pathType := networkv1.PathTypePrefix
-	toCreate := &networkv1.Ingress{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      key.Name,
-			Namespace: key.Namespace,
-			Labels: map[string]string{
-				"app": "appTest",
-				"env": "dev",
-			},
-			Annotations: map[string]string{
-				"monitor.k8s.webcenter.fr/discover": "true",
-			},
-		},
-		Spec: networkv1.IngressSpec{
-			Rules: []networkv1.IngressRule{
-				{
-					Host: "front.local.local",
-					IngressRuleValue: networkv1.IngressRuleValue{
-						HTTP: &networkv1.HTTPIngressRuleValue{
-							Paths: []networkv1.HTTPIngressPath{
-								{
-									Path:     "/",
-									PathType: &pathType,
-									Backend: networkv1.IngressBackend{
-										Service: &networkv1.IngressServiceBackend{
-											Name: "test",
-											Port: networkv1.ServiceBackendPort{Number: 80},
-										},
-									},
-								},
-								{
-									Path:     "/api",
-									PathType: &pathType,
-									Backend: networkv1.IngressBackend{
-										Service: &networkv1.IngressServiceBackend{
-											Name: "test",
-											Port: networkv1.ServiceBackendPort{Number: 80},
-										},
-									},
-								},
-							},
-						},
-					},
-				},
-				{
-					Host: "back.local.local",
-					IngressRuleValue: networkv1.IngressRuleValue{
-						HTTP: &networkv1.HTTPIngressRuleValue{
-							Paths: []networkv1.HTTPIngressPath{
-								{
-									Path:     "/",
-									PathType: &pathType,
-									Backend: networkv1.IngressBackend{
-										Service: &networkv1.IngressServiceBackend{
-											Name: "test",
-											Port: networkv1.ServiceBackendPort{Number: 80},
-										},
-									},
-								},
-							},
-						},
-					},
-				},
-			},
-			TLS: []networkv1.IngressTLS{
-				{
-					Hosts: []string{"back.local.local"},
-				},
-			},
-		},
-	}
-	expectedCentreonService = &v1alpha1.CentreonService{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "test",
-			Namespace: "default",
-			Labels: map[string]string{
-				"app": "appTest",
-				"env": "dev",
-			},
-			Annotations: map[string]string{
-				"monitor.k8s.webcenter.fr/discover": "true",
-			},
-		},
-		Spec: v1alpha1.CentreonServiceSpec{
-			Host:     "localhost",
-			Name:     "ping",
-			Template: "template",
-			Macros: map[string]string{
-				"mac1": "value1",
-				"mac2": "value2",
-			},
-			Arguments:  []string{"arg1", "arg2"},
-			Activated:  true,
-			Groups:     []string{"sg1"},
-			Categories: []string{"cat1"},
-		},
-	}
-	err = t.k8sClient.Create(context.Background(), toCreate)
-	assert.NoError(t.T(), err)
-	isTimeout, err = RunWithTimeout(func() error {
-		cs = &v1alpha1.CentreonService{}
-		if err := t.k8sClient.Get(context.Background(), key, cs); err != nil {
-			return errors.New("Not yet created")
-		}
-		return nil
-	}, time.Second*30, time.Second*1)
-	assert.NoError(t.T(), err)
-	assert.False(t.T(), isTimeout)
-	assert.Equal(t.T(), expectedCentreonService.Spec, cs.Spec)
-	assert.Equal(t.T(), expectedCentreonService.GetLabels(), cs.GetLabels())
-	assert.Equal(t.T(), expectedCentreonService.GetAnnotations(), cs.GetAnnotations())
-	time.Sleep(10 * time.Second)
-
-	// Update Ingress
-	if err = t.k8sClient.Get(context.Background(), keyCentreon, centreon); err != nil {
-		t.T().Fatal(err)
-	}
-	centreon.Spec.Endpoints.Arguments = []string{"arg1"}
-	if err = t.k8sClient.Update(context.Background(), centreon); err != nil {
-		t.T().Fatal(err)
-	}
-
-	fetched = &networkv1.Ingress{}
-	if err := t.k8sClient.Get(context.Background(), key, fetched); err != nil {
-		t.T().Fatal(err)
-	}
-	fetched.ObjectMeta.Annotations["foo"] = "bar"
-
-	expectedCentreonService = &v1alpha1.CentreonService{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "test",
-			Namespace: "default",
-			Labels: map[string]string{
-				"app": "appTest",
-				"env": "dev",
-			},
-			Annotations: map[string]string{
-				"monitor.k8s.webcenter.fr/discover": "true",
-				"foo":                               "bar",
-			},
-		},
-		Spec: v1alpha1.CentreonServiceSpec{
-			Host:     "localhost",
-			Name:     "ping",
-			Template: "template",
-			Macros: map[string]string{
-				"mac1": "value1",
-				"mac2": "value2",
-			},
-			Arguments:  []string{"arg1"},
-			Activated:  true,
-			Groups:     []string{"sg1"},
-			Categories: []string{"cat1"},
-		},
-	}
-	err = t.k8sClient.Update(context.Background(), fetched)
-	assert.NoError(t.T(), err)
-	time.Sleep(30 * time.Second)
-	cs = &v1alpha1.CentreonService{}
-	if err := t.k8sClient.Get(context.Background(), key, cs); err != nil {
-		t.T().Fatal(err)
-	}
-	assert.Equal(t.T(), expectedCentreonService.Spec, cs.Spec)
-	assert.Equal(t.T(), expectedCentreonService.GetLabels(), cs.GetLabels())
-	assert.Equal(t.T(), expectedCentreonService.GetAnnotations(), cs.GetAnnotations())
-	time.Sleep(10 * time.Second)
-
-	// Clean centreon CR
-	if err = t.k8sClient.Get(context.Background(), keyCentreon, centreon); err != nil {
-		t.T().Fatal(err)
-	}
-	if err = t.k8sClient.Delete(context.Background(), centreon); err != nil {
-		t.T().Fatal(err)
-	}
-
-}
+*/

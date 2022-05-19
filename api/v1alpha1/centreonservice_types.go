@@ -17,11 +17,13 @@ limitations under the License.
 package v1alpha1
 
 import (
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
-)
+	"strings"
 
-const centreonServicedFinalizer = "service.monitor.k8s.webcenter.fr/finalizer"
+	"github.com/disaster37/go-centreon-rest/v21/models"
+	"github.com/disaster37/monitoring-operator/pkg/centreonhandler"
+	"github.com/disaster37/monitoring-operator/pkg/helpers"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+)
 
 // EDIT THIS FILE!  THIS IS SCAFFOLDING FOR YOU TO OWN!
 // NOTE: json tags are required.  Any new fields you add must have json tags for the fields to be serialized.
@@ -92,21 +94,13 @@ type CentreonServiceStatus struct {
 	// INSERT ADDITIONAL STATUS FIELD - define observed state of cluster
 	// Important: Run "make" to regenerate code after modifying this file
 
-	// The service ID on Centreon
-	ID string `json:"id,omitempty"`
-
 	// The host affected to service on Centreon
 	Host string `json:"host,omitempty"`
 
 	// The service name
 	ServiceName string `json:"serviceName,omitempty"`
 
-	// The date when service is created on Centreon by operator
-	// It can stay empty if service will be created by external process
-	CreatedAt string `json:"CreatedAt,omitempty"`
-
-	// The date when service is modified on Centreon by operator
-	UpdatedAt string `json:"updatedAt,omitempty"`
+	Conditions []metav1.Condition `json:"conditions"`
 }
 
 //+kubebuilder:object:root=true
@@ -134,31 +128,6 @@ func init() {
 	SchemeBuilder.Register(&CentreonService{}, &CentreonServiceList{})
 }
 
-// IsBeingDeleted returns true if a deletion timestamp is set
-func (c *CentreonService) IsBeingDeleted() bool {
-	return !c.ObjectMeta.DeletionTimestamp.IsZero()
-}
-
-// HasFinalizer returns true if the item has the specified finalizer
-func (c *CentreonService) HasFinalizer() bool {
-	return controllerutil.ContainsFinalizer(c, centreonServicedFinalizer)
-}
-
-// IsSubmitted return true if service has been submitted to Centreon
-func (c *CentreonService) IsSubmitted() bool {
-	return c.Status.ID != ""
-}
-
-// AddFinalizer adds the specified finalizer
-func (c *CentreonService) AddFinalizer() {
-	controllerutil.AddFinalizer(c, centreonServicedFinalizer)
-}
-
-// RemoveFinalizer removes the specified finalizer
-func (c *CentreonService) RemoveFinalizer() {
-	controllerutil.RemoveFinalizer(c, centreonServicedFinalizer)
-}
-
 // IsValid check Centreon service is valid for Centreon
 func (c *CentreonService) IsValid() bool {
 	if c.Spec.Host == "" || c.Spec.Name == "" || c.Spec.Template == "" {
@@ -166,4 +135,35 @@ func (c *CentreonService) IsValid() bool {
 	}
 
 	return true
+}
+
+func (h *CentreonService) ToCentreoonService() (*centreonhandler.CentreonService, error) {
+	cs := &centreonhandler.CentreonService{
+		Host:                h.Spec.Host,
+		Name:                h.Spec.Name,
+		CheckCommand:        h.Spec.CheckCommand,
+		CheckCommandArgs:    helpers.CheckArgumentsToString(h.Spec.Arguments),
+		NormalCheckInterval: h.Spec.NormalCheckInterval,
+		RetryCheckInterval:  h.Spec.RetryCheckInterval,
+		MaxCheckAttempts:    h.Spec.MaxCheckAttempts,
+		ActiveCheckEnabled:  helpers.BoolToString(h.Spec.ActiveCheckEnabled),
+		PassiveCheckEnabled: helpers.BoolToString(h.Spec.PassiveCheckEnabled),
+		Activated:           helpers.BoolToString(&h.Spec.Activated),
+		Template:            h.Spec.Template,
+		Comment:             "Managed by monitoring-operator",
+		Groups:              h.Spec.Groups,
+		Categories:          h.Spec.Categories,
+		Macros:              make([]*models.Macro, 0, len(h.Spec.Macros)),
+	}
+	for name, value := range h.Spec.Macros {
+		macro := &models.Macro{
+			Name:       strings.ToUpper(name),
+			Value:      value,
+			IsPassword: "0",
+		}
+		cs.Macros = append(cs.Macros, macro)
+	}
+
+	return cs, nil
+
 }

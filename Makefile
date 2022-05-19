@@ -94,7 +94,6 @@ vet: ## Run go vet against code.
 mock-gen:
 	go install github.com/golang/mock/mockgen@v1.6.0
 	mockgen --build_flags=--mod=mod -destination=pkg/mocks/centreon.go -package=mocks github.com/disaster37/monitoring-operator/pkg/centreonhandler CentreonHandler
-	mockgen --build_flags=--mod=mod -destination=pkg/mocks/centreon_service.go -package=mocks github.com/disaster37/monitoring-operator/controllers CentreonService
 
 
 test: manifests generate mock-gen fmt envtest ## Run tests.
@@ -123,7 +122,7 @@ docker-build: test ## Build docker image with the manager.
 docker-push: ## Push docker image with the manager.
 	docker push ${IMG}
 
-  
+
 
 ##@ Deployment
 

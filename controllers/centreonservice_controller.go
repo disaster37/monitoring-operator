@@ -19,31 +19,36 @@ package controllers
 import (
 	"context"
 	"fmt"
-	"time"
 
 	"github.com/disaster37/monitoring-operator/api/v1alpha1"
-	"github.com/sirupsen/logrus"
-
-	corev1 "k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/api/errors"
+	"github.com/disaster37/monitoring-operator/pkg/centreonhandler"
+	"github.com/disaster37/operator-sdk-extra/pkg/controller"
+	"github.com/disaster37/operator-sdk-extra/pkg/helper"
+	"github.com/pkg/errors"
+	core "k8s.io/api/core/v1"
+	condition "k8s.io/apimachinery/pkg/api/meta"
+	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/client-go/tools/record"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
+const (
+	centreonServicedFinalizer = "service.monitor.k8s.webcenter.fr/finalizer"
+	centreonServiceCondition  = "UpdateCentreonService"
+)
+
 // CentreonServiceReconciler reconciles a CentreonService object
 type CentreonServiceReconciler struct {
+	Reconciler
 	client.Client
-	Scheme   *runtime.Scheme
-	Recorder record.EventRecorder
-	Log      *logrus.Entry
-	Service  CentreonService
+	Scheme *runtime.Scheme
 }
 
 //+kubebuilder:rbac:groups=monitor.k8s.webcenter.fr,resources=centreonservices,verbs=get;list;watch;create;update;patch;delete
 //+kubebuilder:rbac:groups=monitor.k8s.webcenter.fr,resources=centreonservices/status,verbs=get;update;patch
 //+kubebuilder:rbac:groups=monitor.k8s.webcenter.fr,resources=centreonservices/finalizers,verbs=update
+//+kubebuilder:rbac:groups="",resources=events,verbs=patch;get;create
 
 // Reconcile is part of the main kubernetes reconciliation loop which aims to
 // move the current state of the cluster closer to the desired state.
@@ -55,93 +60,15 @@ type CentreonServiceReconciler struct {
 // For more details, check Reconcile and its Result here:
 // - https://pkg.go.dev/sigs.k8s.io/controller-runtime@v0.10.0/pkg/reconcile
 func (r *CentreonServiceReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
-
-	r.Log.Infof("Starting reconcile loop for %v", req.NamespacedName)
-	defer r.Log.Infof("Finish reconcile loop for %v", req.NamespacedName)
-
-	// Get instance
-	instance := &v1alpha1.CentreonService{}
-	if err := r.Get(ctx, req.NamespacedName, instance); err != nil {
-		if errors.IsNotFound(err) {
-			return ctrl.Result{}, nil
-		}
-		r.Log.Errorf("Error when get resource: %s", err.Error())
-		return ctrl.Result{RequeueAfter: waitDurationWhenError}, err
-	}
-	r.Log = r.Log.WithFields(logrus.Fields{
-		"name":      instance.Name,
-		"namespace": instance.Namespace,
-		"host":      instance.Spec.Host,
-		"service":   instance.Spec.Name,
-	})
-
-	// Add finalizer
-	// Requeue if add finalizer to avoid lock resource
-	if !instance.HasFinalizer() {
-		instance.AddFinalizer()
-		if err := r.Update(ctx, instance); err != nil {
-			r.Log.Errorf("Error when add finalizer: %s", err.Error())
-			r.Recorder.Eventf(instance, corev1.EventTypeWarning, "Adding finalizer", "Failed to add finalizer: %s", err)
-			return ctrl.Result{RequeueAfter: waitDurationWhenError}, err
-		}
-		r.Recorder.Event(instance, corev1.EventTypeNormal, "Added", "Object finalizer is added")
-		r.Log.Debug("Add finalizer successfully")
-		return ctrl.Result{Requeue: true}, nil
-	}
-
-	r.Service.SetLogger(r.Log)
-
-	// Delete
-	if instance.IsBeingDeleted() {
-		if instance.HasFinalizer() {
-			if err := r.Service.Delete(instance); err != nil {
-				r.Log.Errorf("Error when delete service on Centreon: %s", err.Error())
-				r.Recorder.Eventf(instance, corev1.EventTypeWarning, "Failed", "Error when delete service on Centreon: %s", err.Error())
-				return ctrl.Result{RequeueAfter: waitDurationWhenError}, err
-			}
-
-			instance.RemoveFinalizer()
-			if err := r.Update(ctx, instance); err != nil {
-				r.Log.Errorf("Failed to remove finalizer: %s", err.Error())
-				r.Recorder.Eventf(instance, corev1.EventTypeWarning, "Failed", "Error when remove finalizer: %s", err.Error())
-				return ctrl.Result{RequeueAfter: waitDurationWhenError}, err
-			}
-			r.Log.Debug("Remove finalizer successfully")
-		}
-		r.Log.Info("Delete Centreon service successfully")
-		return ctrl.Result{}, nil
-	}
-
-	// Reconcile
-	isCreated, isUpdated, err := r.Service.Reconcile(instance)
+	reconciler, err := controller.NewStdReconciler(r.Client, centreonServicedFinalizer, r.reconciler, r.log, r.recorder, waitDurationWhenError)
 	if err != nil {
-		r.Log.Errorf("Error when reconcile Centreon service: %s", err.Error())
-		r.Recorder.Eventf(instance, corev1.EventTypeWarning, "Failed", "Error when reconcile: %s", err.Error())
-		return ctrl.Result{RequeueAfter: waitDurationWhenError}, err
+		return ctrl.Result{}, err
 	}
 
-	if isCreated || isUpdated {
-		if isCreated {
-			instance.Status.CreatedAt = time.Now().Format(time.RFC3339)
-			r.Log.Info("Create service on Centreon successfully")
-			r.Recorder.Event(instance, corev1.EventTypeNormal, "Completed", "Service created on Centreon")
-		} else {
-			instance.Status.UpdatedAt = time.Now().Format(time.RFC3339)
-			r.Log.Info("Update service on Centreon successfully")
-			r.Recorder.Event(instance, corev1.EventTypeNormal, "Completed", "Service updated on Centreon")
-		}
-		instance.Status.ID = fmt.Sprintf("%s/%s", instance.Spec.Host, instance.Spec.Name)
-		instance.Status.Host = instance.Spec.Host
-		instance.Status.ServiceName = instance.Spec.Name
-		if err := r.Status().Update(ctx, instance); err != nil {
-			r.Log.Errorf("Failed to update status: %s", err.Error())
-			r.Recorder.Eventf(instance, corev1.EventTypeWarning, "Failed", "Error when update status: %s", err.Error())
-			return ctrl.Result{RequeueAfter: waitDurationWhenError}, err
-		}
-	}
+	cs := &v1alpha1.CentreonService{}
+	data := map[string]any{}
 
-	return ctrl.Result{}, nil
-
+	return reconciler.Reconcile(ctx, req, cs, data)
 }
 
 // SetupWithManager sets up the controller with the Manager.
@@ -149,4 +76,209 @@ func (r *CentreonServiceReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&v1alpha1.CentreonService{}).
 		Complete(r)
+}
+
+// Configure permit to init condition
+func (r *CentreonServiceReconciler) Configure(ctx context.Context, req ctrl.Request, resource client.Object) (meta any, err error) {
+	cs := resource.(*v1alpha1.CentreonService)
+
+	// Init condition status if not exist
+	if condition.FindStatusCondition(cs.Status.Conditions, centreonServiceCondition) == nil {
+		condition.SetStatusCondition(&cs.Status.Conditions, v1.Condition{
+			Type:   centreonServiceCondition,
+			Status: v1.ConditionFalse,
+			Reason: "Initialize",
+		})
+	}
+
+	return r.client, nil
+}
+
+// Read permit to get current service from Centreon
+func (r *CentreonServiceReconciler) Read(ctx context.Context, resource client.Object, data map[string]any, meta any) (res ctrl.Result, err error) {
+	cs := resource.(*v1alpha1.CentreonService)
+	cHandler := meta.(centreonhandler.CentreonHandler)
+
+	// Check if the current service name and host is right before to search on Centreon
+	var (
+		host        string
+		serviceName string
+	)
+	if cs.Status.Host != "" && cs.Status.ServiceName != "" {
+		host = cs.Status.Host
+		serviceName = cs.Status.ServiceName
+	} else {
+		host = cs.Spec.Host
+		serviceName = cs.Spec.Name
+	}
+
+	actualCS, err := cHandler.GetService(host, serviceName)
+	if err != nil {
+		return res, errors.Wrap(err, "Unable to get Service from Centreon")
+	}
+
+	data["currentService"] = actualCS
+	return res, nil
+}
+
+// Create add new Service on Centreon
+func (r *CentreonServiceReconciler) Create(ctx context.Context, resource client.Object, data map[string]interface{}, meta interface{}) (res ctrl.Result, err error) {
+	cHandler := meta.(centreonhandler.CentreonHandler)
+	cs := resource.(*v1alpha1.CentreonService)
+
+	// Create service on Centreon
+	expectedCS, err := cs.ToCentreoonService()
+	if err != nil {
+		return res, errors.Wrap(err, "Error when convert to Centreon Service")
+	}
+	if err = cHandler.CreateService(expectedCS); err != nil {
+		return res, errors.Wrap(err, "Error when create service on Centreoon")
+	}
+
+	cs.Status.Host = cs.Spec.Host
+	cs.Status.ServiceName = cs.Spec.Name
+
+	return res, nil
+}
+
+// Update permit to update service on Centreon
+func (r *CentreonServiceReconciler) Update(ctx context.Context, resource client.Object, data map[string]interface{}, meta interface{}) (res ctrl.Result, err error) {
+	cHandler := meta.(centreonhandler.CentreonHandler)
+	cs := resource.(*v1alpha1.CentreonService)
+	var d any
+
+	d, err = helper.Get(data, "expectedService")
+	if err != nil {
+		return res, err
+	}
+	expectedService := d.(*centreonhandler.CentreonServiceDiff)
+
+	if err = cHandler.UpdateService(expectedService); err != nil {
+		return res, errors.Wrap(err, "Error when create service on Centreoon")
+	}
+
+	cs.Status.Host = cs.Spec.Host
+	cs.Status.ServiceName = cs.Spec.Name
+
+	return res, nil
+}
+
+// Delete permit to delete service from Centreon
+func (r *CentreonServiceReconciler) Delete(ctx context.Context, resource client.Object, data map[string]interface{}, meta interface{}) (err error) {
+	cHandler := meta.(centreonhandler.CentreonHandler)
+	cs := resource.(*v1alpha1.CentreonService)
+
+	actualCS, err := cHandler.GetService(cs.Spec.Host, cs.Spec.Name)
+	if err != nil {
+		return err
+	}
+
+	if actualCS == nil {
+		r.log.Info("Service already deleted on Centreon by external process, skip it")
+		return nil
+	}
+
+	if err = cHandler.DeleteService(cs.Spec.Host, cs.Spec.Name); err != nil {
+		return errors.Wrap(err, "Error when delete service from Centreon")
+	}
+
+	return nil
+
+}
+
+// Diff permit to check if diff between actual and expected Centreon service exist
+func (r *CentreonServiceReconciler) Diff(resource client.Object, data map[string]interface{}, meta interface{}) (diff controller.Diff, err error) {
+	cHandler := meta.(centreonhandler.CentreonHandler)
+	cs := resource.(*v1alpha1.CentreonService)
+	var d any
+
+	expectedCS, err := cs.ToCentreoonService()
+	if err != nil {
+		return diff, errors.Wrap(err, "Error when convert to Centreon Service")
+	}
+
+	d, err = helper.Get(data, "currentService")
+	if err != nil {
+		return diff, err
+	}
+	currentService := d.(*centreonhandler.CentreonService)
+
+	diff = controller.Diff{
+		NeedCreate: false,
+		NeedUpdate: false,
+	}
+	if currentService == nil {
+		diff.NeedCreate = true
+		diff.Diff = "Service not exist on Centreon"
+		return diff, nil
+	}
+
+	currentDiff, err := cHandler.DiffService(currentService, expectedCS)
+	if err != nil {
+		return diff, errors.Wrap(err, "Error when diff Centreon service")
+	}
+	if currentDiff.IsDiff {
+		diff.NeedUpdate = true
+		diff.Diff = currentDiff.String()
+	}
+
+	data["expectedService"] = currentDiff
+
+	return
+}
+
+// OnError permit to set status condition on the right state and record error
+func (r *CentreonServiceReconciler) OnError(ctx context.Context, resource client.Object, data map[string]any, meta any, err error) {
+	cs := resource.(*v1alpha1.CentreonService)
+
+	r.log.Error(err)
+	r.recorder.Event(resource, core.EventTypeWarning, "Failed", err.Error())
+
+	condition.SetStatusCondition(&cs.Status.Conditions, v1.Condition{
+		Type:    centreonServiceCondition,
+		Status:  v1.ConditionFalse,
+		Reason:  "Failed",
+		Message: err.Error(),
+	})
+}
+
+// OnSuccess permit to set status condition on the right state is everithink is good
+func (r *CentreonServiceReconciler) OnSuccess(ctx context.Context, resource client.Object, data map[string]any, meta any, diff controller.Diff) (err error) {
+	cs := resource.(*v1alpha1.CentreonService)
+
+	if diff.NeedCreate {
+		condition.SetStatusCondition(&cs.Status.Conditions, v1.Condition{
+			Type:    centreonServiceCondition,
+			Status:  v1.ConditionTrue,
+			Reason:  "Success",
+			Message: fmt.Sprintf("Service %s/%s successfully created on Centreon", cs.Spec.Host, cs.Spec.Name),
+		})
+
+		return nil
+	}
+
+	if diff.NeedUpdate {
+		condition.SetStatusCondition(&cs.Status.Conditions, v1.Condition{
+			Type:    centreonServiceCondition,
+			Status:  v1.ConditionTrue,
+			Reason:  "Success",
+			Message: fmt.Sprintf("Service %s/%s successfully updated on Centreon", cs.Spec.Host, cs.Spec.Name),
+		})
+
+		return nil
+	}
+
+	// Update condition status if needed
+	if condition.IsStatusConditionPresentAndEqual(cs.Status.Conditions, centreonServiceCondition, v1.ConditionFalse) {
+		condition.SetStatusCondition(&cs.Status.Conditions, v1.Condition{
+			Type:    centreonServiceCondition,
+			Reason:  "Success",
+			Status:  v1.ConditionTrue,
+			Message: fmt.Sprintf("Service %s/%s already exit on Centreon", cs.Spec.Host, cs.Spec.Name),
+		})
+
+		r.recorder.Event(resource, core.EventTypeNormal, "Completed", "Service already exit on Centreon")
+	}
+
+	return nil
 }

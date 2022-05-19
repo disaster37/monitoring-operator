@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/disaster37/monitoring-operator/pkg/mocks"
+	"github.com/disaster37/operator-sdk-extra/pkg/mock"
 	"github.com/golang/mock/gomock"
 	"github.com/onsi/gomega/gexec"
 	routev1 "github.com/openshift/api/route/v1"
@@ -29,9 +30,7 @@ type ControllerTestSuite struct {
 	suite.Suite
 	k8sClient           client.Client
 	mockCentreonHandler *mocks.MockCentreonHandler
-	mockCentreonService *mocks.MockCentreonService
 	mockCtrl            *gomock.Controller
-	service             CentreonService
 	cfg                 *rest.Config
 }
 
@@ -43,8 +42,6 @@ func (t *ControllerTestSuite) SetupSuite() {
 	// Init Centreon mock
 	t.mockCtrl = gomock.NewController(t.T())
 	t.mockCentreonHandler = mocks.NewMockCentreonHandler(t.mockCtrl)
-	t.service = NewCentreonService(t.mockCentreonHandler)
-	t.mockCentreonService = mocks.NewMockCentreonService(t.mockCtrl)
 
 	logf.SetLogger(zap.New(zap.UseDevMode(true)))
 	logrus.SetLevel(logrus.DebugLevel)
@@ -93,38 +90,42 @@ func (t *ControllerTestSuite) SetupSuite() {
 	t.k8sClient = k8sClient
 
 	// Init controlles
-	err = (&CentreonServiceReconciler{
-		Client:   k8sClient,
-		Recorder: k8sManager.GetEventRecorderFor("centreonservice-controller"),
-		Scheme:   scheme.Scheme,
-		Log: logrus.WithFields(logrus.Fields{
-			"type": "centreonServiceController",
-		}),
-		Service: t.mockCentreonService,
-	}).SetupWithManager(k8sManager)
-	if err != nil {
+	centreonServiceReconsiler := &CentreonServiceReconciler{
+		Client: k8sClient,
+		Scheme: scheme.Scheme,
+	}
+	centreonServiceReconsiler.SetLogger(logrus.WithFields(logrus.Fields{
+		"type": "centreonServiceController",
+	}))
+	centreonServiceReconsiler.SetRecorder(k8sManager.GetEventRecorderFor("centreonservice-controller"))
+	centreonServiceReconsiler.SetReconsiler(mock.NewMockReconciler(centreonServiceReconsiler, t.mockCentreonHandler))
+	if err = centreonServiceReconsiler.SetupWithManager(k8sManager); err != nil {
 		panic(err)
 	}
-	err = (&IngressCentreonReconciler{
-		Client:   k8sClient,
-		Recorder: k8sManager.GetEventRecorderFor("ingresscentreon-controller"),
-		Log: logrus.WithFields(logrus.Fields{
-			"type": "ingressCentreonController",
-		}),
+
+	ingressReconsiler := &IngressCentreonReconciler{
+		Client: k8sClient,
 		Scheme: scheme.Scheme,
-	}).SetupWithManager(k8sManager)
-	if err != nil {
+	}
+	ingressReconsiler.SetLogger(logrus.WithFields(logrus.Fields{
+		"type": "ingressCentreonController",
+	}))
+	ingressReconsiler.SetRecorder(k8sManager.GetEventRecorderFor("ingresscentreon-controller"))
+	ingressReconsiler.SetReconsiler(mock.NewMockReconciler(ingressReconsiler, t.mockCentreonHandler))
+	if err = ingressReconsiler.SetupWithManager(k8sManager); err != nil {
 		panic(err)
 	}
-	err = (&RouteCentreonReconciler{
-		Client:   k8sClient,
-		Recorder: k8sManager.GetEventRecorderFor("routecentreon-controller"),
-		Log: logrus.WithFields(logrus.Fields{
-			"type": "routeCentreonController",
-		}),
+
+	routeReconsiler := &RouteCentreonReconciler{
+		Client: k8sClient,
 		Scheme: scheme.Scheme,
-	}).SetupWithManager(k8sManager)
-	if err != nil {
+	}
+	routeReconsiler.SetLogger(logrus.WithFields(logrus.Fields{
+		"type": "routeCentreonController",
+	}))
+	routeReconsiler.SetRecorder(k8sManager.GetEventRecorderFor("routecentreon-controller"))
+	routeReconsiler.SetReconsiler(mock.NewMockReconciler(routeReconsiler, t.mockCentreonHandler))
+	if err = routeReconsiler.SetupWithManager(k8sManager); err != nil {
 		panic(err)
 	}
 
@@ -149,7 +150,6 @@ func (t *ControllerTestSuite) TearDownSuite() {
 }
 
 func (t *ControllerTestSuite) BeforeTest(suiteName, testName string) {
-	t.mockCentreonService.EXPECT().SetLogger(gomock.Any()).AnyTimes().Return()
 }
 
 func (t *ControllerTestSuite) AfterTest(suiteName, testName string) {

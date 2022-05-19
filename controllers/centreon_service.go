@@ -12,7 +12,7 @@ import (
 
 const (
 	namespaceOperator    = "monitoring-operator"
-	centreonResourceName = "monitoring-operator"
+	CentreonResourceName = "monitoring-operator"
 )
 
 func getCentreonSpec(ctx context.Context, client client.Client) (spec *v1alpha1.CentreonSpec, err error) {
@@ -23,7 +23,7 @@ func getCentreonSpec(ctx context.Context, client client.Client) (spec *v1alpha1.
 	}
 
 	namespaced := types.NamespacedName{
-		Name:      centreonResourceName,
+		Name:      CentreonResourceName,
 		Namespace: ns,
 	}
 

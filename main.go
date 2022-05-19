@@ -146,27 +146,32 @@ func main() {
 		centreonHandler := centreonhandler.NewCentreonHandler(centreonClient, logrus.NewEntry(log))
 
 		// Set controllers for Centreon resources
-		if err = (&controllers.CentreonServiceReconciler{
-			Client:  mgr.GetClient(),
-			Scheme:  mgr.GetScheme(),
-			Service: controllers.NewCentreonService(centreonHandler),
-			Log: log.WithFields(logrus.Fields{
-				"type": "CentreonServiceController",
-			}),
-			Recorder: mgr.GetEventRecorderFor("centreonservice-controller"),
-		}).SetupWithManager(mgr); err != nil {
+		centreonServiceController := &controllers.CentreonServiceReconciler{
+			Client: mgr.GetClient(),
+			Scheme: mgr.GetScheme(),
+		}
+		centreonServiceController.SetLogger(log.WithFields(logrus.Fields{
+			"type": "CentreonServiceController",
+		}))
+		centreonServiceController.SetRecorder(mgr.GetEventRecorderFor("centreonservice-controller"))
+		centreonServiceController.SetReconsiler(centreonServiceController)
+		centreonServiceController.SetClient(centreonHandler)
+		if err = centreonServiceController.SetupWithManager(mgr); err != nil {
 			setupLog.Error(err, "unable to create controller", "controller", "CentreonService")
 			os.Exit(1)
 		}
 
-		if err = (&controllers.IngressCentreonReconciler{
-			Client:   mgr.GetClient(),
-			Scheme:   mgr.GetScheme(),
-			Recorder: mgr.GetEventRecorderFor("ingresscentreon-controller"),
-			Log: log.WithFields(logrus.Fields{
-				"type": "IngressCentreonControllers",
-			}),
-		}).SetupWithManager(mgr); err != nil {
+		ingressController := &controllers.IngressCentreonReconciler{
+			Client: mgr.GetClient(),
+			Scheme: mgr.GetScheme(),
+		}
+		ingressController.SetLogger(log.WithFields(logrus.Fields{
+			"type": "IngressCentreonController",
+		}))
+		ingressController.SetRecorder(mgr.GetEventRecorderFor("ingresscentreon-controller"))
+		ingressController.SetReconsiler(ingressController)
+		ingressController.SetClient(centreonHandler)
+		if err = ingressController.SetupWithManager(mgr); err != nil {
 			setupLog.Error(err, "unable to create controller", "controller", "IngressCentreon")
 			os.Exit(1)
 		}
@@ -177,14 +182,17 @@ func main() {
 			os.Exit(1)
 		}
 		if isRouteCRD {
-			if err = (&controllers.RouteCentreonReconciler{
-				Client:   mgr.GetClient(),
-				Scheme:   mgr.GetScheme(),
-				Recorder: mgr.GetEventRecorderFor("routecentreon-controller"),
-				Log: log.WithFields(logrus.Fields{
-					"type": "RouteCentreonControllers",
-				}),
-			}).SetupWithManager(mgr); err != nil {
+			routeController := &controllers.RouteCentreonReconciler{
+				Client: mgr.GetClient(),
+				Scheme: mgr.GetScheme(),
+			}
+			routeController.SetLogger(log.WithFields(logrus.Fields{
+				"type": "RouteCentreonController",
+			}))
+			routeController.SetRecorder(mgr.GetEventRecorderFor("routecentreon-controller"))
+			routeController.SetReconsiler(routeController)
+			routeController.SetClient(centreonHandler)
+			if err = routeController.SetupWithManager(mgr); err != nil {
 				setupLog.Error(err, "unable to create controller", "controller", "RouteCentreon")
 				os.Exit(1)
 			}

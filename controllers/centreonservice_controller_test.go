@@ -3,162 +3,375 @@ package controllers
 import (
 	"context"
 	"errors"
+	"testing"
 	"time"
 
+	"github.com/disaster37/go-centreon-rest/v21/models"
 	"github.com/disaster37/monitoring-operator/api/v1alpha1"
+	"github.com/disaster37/monitoring-operator/pkg/centreonhandler"
 	"github.com/disaster37/monitoring-operator/pkg/helpers"
+	"github.com/disaster37/monitoring-operator/pkg/mocks"
+	"github.com/disaster37/operator-sdk-extra/pkg/test"
 	"github.com/golang/mock/gomock"
+	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
+	condition "k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 func (t *ControllerTestSuite) TestCentreonServiceController() {
-	var (
-		err       error
-		step      *string
-		fetched   *v1alpha1.CentreonService
-		isTimeout bool
-		isCreated bool = false
-		isUpdated bool = false
-	)
-	activated := true
-	centreonServiceName := "t-centreon-service-" + helpers.RandomString(10)
 	key := types.NamespacedName{
-		Name:      centreonServiceName,
+		Name:      "t-cs-" + helpers.RandomString(10),
 		Namespace: "default",
 	}
+	cs := &v1alpha1.CentreonService{}
+	data := map[string]any{}
 
-	t.mockCentreonService.EXPECT().
-		Reconcile(gomock.Any()).AnyTimes().DoAndReturn(func(instance *v1alpha1.CentreonService) (bool, bool, error) {
+	testCase := test.NewTestCase(t.T(), t.k8sClient, key, cs, 5*time.Second, data)
+	testCase.Steps = []test.TestStep{
+		doCreateCentreonServiceStep(),
+		doUpdateCentreonServiceStep(),
+		doDeleteCentreonServiceStep(),
+	}
+	testCase.PreTest = doMockCentreonService(t.mockCentreonHandler)
 
-		if *step == "create" {
-			if !isCreated {
-				isCreated = true
-				return true, false, nil
-			}
+	testCase.Run()
 
-			return false, false, nil
-		}
+}
 
-		if *step == "update" {
-			if !isUpdated {
-				isUpdated = true
-				return false, true, nil
-			}
-			return false, false, nil
-		}
+func doMockCentreonService(mockCS *mocks.MockCentreonHandler) func(stepName *string, data map[string]any) error {
+	return func(stepName *string, data map[string]any) (err error) {
+		isCreated := false
+		isUpdated := false
 
-		return false, false, nil
-
-	})
-	t.mockCentreonService.EXPECT().
-		Delete(gomock.Any()).AnyTimes().Return(nil)
-
-	//Create new CR ServiceCentreon
-	create := "create"
-	step = &create
-	toCreate := &v1alpha1.CentreonService{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      key.Name,
-			Namespace: key.Namespace,
-		},
-		Spec: v1alpha1.CentreonServiceSpec{
-			Name:         "ping",
-			Host:         "central",
-			Template:     "my-template",
-			CheckCommand: "ping",
-			Arguments:    []string{"arg1"},
-			Groups:       []string{"sg1"},
-			Categories:   []string{"cat1"},
-			Macros: map[string]string{
-				"macro1": "value",
-			},
-			Activated:           true,
+		serviceToCreate := &centreonhandler.CentreonService{
+			Host:                "central",
+			Name:                "ping",
+			Template:            "template1",
 			NormalCheckInterval: "30s",
-			RetryCheckInterval:  "1s",
+			CheckCommand:        "check_ping",
+			CheckCommandArgs:    "!arg1",
+			RetryCheckInterval:  "5s",
 			MaxCheckAttempts:    "3",
-			ActiveCheckEnabled:  &activated,
-			PassiveCheckEnabled: &activated,
+			ActiveCheckEnabled:  "1",
+			PassiveCheckEnabled: "1",
+			Activated:           "1",
+			Comment:             "Managed by monitoring-operator",
+			Groups:              []string{"sg1"},
+			Categories:          []string{"cat1"},
+			Macros: []*models.Macro{
+				{
+					Name:       "MACRO1",
+					Value:      "value1",
+					IsPassword: "0",
+				},
+			},
+		}
+
+		serviceToUpdate := &centreonhandler.CentreonServiceDiff{
+			IsDiff: true,
+			Host:   "central",
+			Name:   "ping",
+			ParamsToSet: map[string]string{
+				"template": "template2",
+			},
+		}
+
+		mockCS.EXPECT().GetService(gomock.Any(), gomock.Any()).AnyTimes().DoAndReturn(func(host, name string) (service *centreonhandler.CentreonService, err error) {
+			switch *stepName {
+			case "create":
+				if !isCreated {
+					return nil, nil
+				} else {
+					return &centreonhandler.CentreonService{
+						Host:                "central",
+						Name:                "ping",
+						Template:            "template1",
+						NormalCheckInterval: "30s",
+						CheckCommand:        "check_ping",
+						CheckCommandArgs:    "!arg1",
+						RetryCheckInterval:  "5s",
+						MaxCheckAttempts:    "3",
+						ActiveCheckEnabled:  "1",
+						PassiveCheckEnabled: "1",
+						Activated:           "1",
+						Comment:             "Managed by monitoring-operator",
+						Groups:              []string{"sg1"},
+						Categories:          []string{"cat1"},
+						Macros: []*models.Macro{
+							{
+								Name:       "MACRO1",
+								Value:      "value1",
+								IsPassword: "0",
+							},
+						},
+					}, nil
+				}
+			case "update":
+				if !isUpdated {
+					return &centreonhandler.CentreonService{
+						Host:                "central",
+						Name:                "ping",
+						Template:            "template1",
+						NormalCheckInterval: "30s",
+						CheckCommand:        "check_ping",
+						CheckCommandArgs:    "!arg1",
+						RetryCheckInterval:  "5s",
+						MaxCheckAttempts:    "3",
+						ActiveCheckEnabled:  "1",
+						PassiveCheckEnabled: "1",
+						Activated:           "1",
+						Comment:             "Managed by monitoring-operator",
+						Groups:              []string{"sg1"},
+						Categories:          []string{"cat1"},
+						Macros: []*models.Macro{
+							{
+								Name:       "MACRO1",
+								Value:      "value1",
+								IsPassword: "0",
+							},
+						},
+					}, nil
+				} else {
+					return &centreonhandler.CentreonService{
+						Host:                "central",
+						Name:                "ping",
+						Template:            "template2",
+						NormalCheckInterval: "30s",
+						CheckCommand:        "check_ping",
+						CheckCommandArgs:    "!arg1",
+						RetryCheckInterval:  "5s",
+						MaxCheckAttempts:    "3",
+						ActiveCheckEnabled:  "1",
+						PassiveCheckEnabled: "1",
+						Activated:           "1",
+						Comment:             "Managed by monitoring-operator",
+						Groups:              []string{"sg1"},
+						Categories:          []string{"cat1"},
+						Macros: []*models.Macro{
+							{
+								Name:       "MACRO1",
+								Value:      "value1",
+								IsPassword: "0",
+							},
+						},
+					}, nil
+				}
+			}
+			return nil, nil
+		})
+
+		mockCS.EXPECT().DiffService(gomock.Any(), gomock.Any()).AnyTimes().DoAndReturn(func(actual, expected *centreonhandler.CentreonService) (diff *centreonhandler.CentreonServiceDiff, err error) {
+			switch *stepName {
+			case "create":
+				if !isCreated {
+					return &centreonhandler.CentreonServiceDiff{
+						IsDiff: true,
+						Host:   "central",
+						Name:   "ping",
+					}, nil
+				} else {
+					return &centreonhandler.CentreonServiceDiff{
+						IsDiff: false,
+						Host:   "central",
+						Name:   "ping",
+					}, nil
+				}
+			case "update":
+				if !isUpdated {
+					return &centreonhandler.CentreonServiceDiff{
+						IsDiff: true,
+						Host:   "central",
+						Name:   "ping",
+						ParamsToSet: map[string]string{
+							"template": "template2",
+						},
+					}, nil
+				} else {
+					return &centreonhandler.CentreonServiceDiff{
+						IsDiff: false,
+						Host:   "central",
+						Name:   "ping",
+					}, nil
+				}
+			}
+			return nil, nil
+		})
+
+		mockCS.EXPECT().CreateService(gomock.Eq(serviceToCreate)).AnyTimes().DoAndReturn(func(service *centreonhandler.CentreonService) (err error) {
+			data["isCreated"] = true
+			isCreated = true
+			return nil
+		})
+
+		mockCS.EXPECT().UpdateService(gomock.Eq(serviceToUpdate)).AnyTimes().DoAndReturn(func(service *centreonhandler.CentreonServiceDiff) (err error) {
+			data["isUpdated"] = true
+			isUpdated = true
+			return nil
+		})
+
+		mockCS.EXPECT().DeleteService(gomock.Eq("central"), gomock.Eq("ping")).AnyTimes().DoAndReturn(func(host, service string) (err error) {
+			data["isDeleted"] = true
+			return nil
+		})
+
+		return nil
+	}
+}
+
+func doCreateCentreonServiceStep() test.TestStep {
+	return test.TestStep{
+		Name: "create",
+		Do: func(c client.Client, key types.NamespacedName, o client.Object, data map[string]any) (err error) {
+			logrus.Infof("=== Add new Centreon Service %s/%s ===", key.Namespace, key.Name)
+
+			enabled := true
+			cs := &v1alpha1.CentreonService{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      key.Name,
+					Namespace: key.Namespace,
+				},
+				Spec: v1alpha1.CentreonServiceSpec{
+					Host:                "central",
+					Name:                "ping",
+					Template:            "template1",
+					NormalCheckInterval: "30s",
+					CheckCommand:        "check_ping",
+					RetryCheckInterval:  "5s",
+					MaxCheckAttempts:    "3",
+					ActiveCheckEnabled:  &enabled,
+					PassiveCheckEnabled: &enabled,
+					Activated:           true,
+					Groups:              []string{"sg1"},
+					Macros: map[string]string{
+						"macro1": "value1",
+					},
+					Arguments:  []string{"arg1"},
+					Categories: []string{"cat1"},
+				},
+			}
+
+			if err = c.Create(context.Background(), cs); err != nil {
+				return err
+			}
+
+			return nil
+		},
+		Check: func(t *testing.T, c client.Client, key types.NamespacedName, o client.Object, data map[string]any) (err error) {
+			cs := &v1alpha1.CentreonService{}
+			isCreated := false
+
+			isTimeout, err := RunWithTimeout(func() error {
+				if err := c.Get(context.Background(), key, cs); err != nil {
+					t.Fatal("Centreon service not found")
+				}
+				if b, ok := data["isCreated"]; ok {
+					isCreated = b.(bool)
+				}
+				if !isCreated {
+					return errors.New("Not yet created")
+				}
+				return nil
+			}, time.Second*30, time.Second*1)
+			if err != nil || isTimeout {
+				t.Fatalf("Failed to get Centreon service: %s", err.Error())
+			}
+			assert.True(t, condition.IsStatusConditionPresentAndEqual(cs.Status.Conditions, centreonServiceCondition, metav1.ConditionTrue))
+			assert.Equal(t, "central", cs.Status.Host)
+			assert.Equal(t, "ping", cs.Status.ServiceName)
+			return nil
 		},
 	}
-	if err = t.k8sClient.Create(context.Background(), toCreate); err != nil {
-		t.T().Fatal(err)
-	}
-	isTimeout, err = RunWithTimeout(func() error {
-		fetched = &v1alpha1.CentreonService{}
-		if err := t.k8sClient.Get(context.Background(), key, fetched); err != nil {
-			t.T().Fatal(err)
-		}
-		if !fetched.IsSubmitted() {
-			return errors.New("Not yet created")
-		}
-		return nil
-	}, time.Second*30, time.Second*1)
-	assert.NoError(t.T(), err)
-	assert.False(t.T(), isTimeout)
-	assert.NotEmpty(t.T(), fetched.Status.ID)
-	assert.NotEmpty(t.T(), fetched.Status.CreatedAt)
-	assert.Empty(t.T(), fetched.Status.UpdatedAt)
-	assert.True(t.T(), fetched.HasFinalizer())
-	time.Sleep(10 * time.Second)
+}
 
-	//Update CR ServiceCentreon
-	fetched = &v1alpha1.CentreonService{}
-	if err := t.k8sClient.Get(context.Background(), key, fetched); err != nil {
-		t.T().Fatal(err)
-	}
-	fetched.Spec.Template = "my template 2"
-	update := "update"
-	step = &update
-	if err = t.k8sClient.Update(context.Background(), fetched); err != nil {
-		t.T().Fatal(err)
-	}
-	isTimeout, err = RunWithTimeout(func() error {
-		fetched = &v1alpha1.CentreonService{}
-		if err := t.k8sClient.Get(context.Background(), key, fetched); err != nil {
-			t.T().Fatal(err)
-		}
-		if fetched.Status.UpdatedAt == "" {
-			return errors.New("Not yet updated")
-		}
+func doUpdateCentreonServiceStep() test.TestStep {
+	return test.TestStep{
+		Name: "update",
+		Do: func(c client.Client, key types.NamespacedName, o client.Object, data map[string]any) (err error) {
+			logrus.Infof("=== Update Centreon Service %s/%s ===", key.Namespace, key.Name)
 
-		return nil
-	}, time.Second*30, time.Second*1)
-	assert.NoError(t.T(), err)
-	assert.False(t.T(), isTimeout)
-	assert.NotEmpty(t.T(), fetched.Status.ID)
-	assert.NotEmpty(t.T(), fetched.Status.UpdatedAt)
-	assert.True(t.T(), fetched.HasFinalizer())
-	time.Sleep(10 * time.Second)
-
-	// Delete CR ServiceCentreon
-	fetched = &v1alpha1.CentreonService{}
-	if err := t.k8sClient.Get(context.Background(), key, fetched); err != nil {
-		t.T().Fatal(err)
-	}
-	delete := "delete"
-	step = &delete
-	wait := int64(0)
-	if err = t.k8sClient.Delete(context.Background(), fetched, &client.DeleteOptions{
-		GracePeriodSeconds: &wait,
-	}); err != nil {
-		t.T().Fatal(err)
-	}
-	isTimeout, err = RunWithTimeout(func() error {
-		fetched = &v1alpha1.CentreonService{}
-		if err := t.k8sClient.Get(context.Background(), key, fetched); err != nil {
-			if k8serrors.IsNotFound(err) {
-				return nil
+			if o == nil {
+				return errors.New("Centreon service is null")
 			}
-			t.T().Fatal(err)
-		}
+			cs := o.(*v1alpha1.CentreonService)
+			cs.Spec.Template = "template2"
 
-		return errors.New("Not yet deleted")
-	}, time.Second*30, time.Second*1)
-	assert.NoError(t.T(), err)
-	assert.False(t.T(), isTimeout)
-	time.Sleep(10 * time.Second)
+			if err = c.Update(context.Background(), cs); err != nil {
+				return err
+			}
+
+			return nil
+		},
+		Check: func(t *testing.T, c client.Client, key types.NamespacedName, o client.Object, data map[string]any) (err error) {
+			cs := &v1alpha1.CentreonService{}
+			isUpdated := false
+
+			isTimeout, err := RunWithTimeout(func() error {
+				if err := c.Get(context.Background(), key, cs); err != nil {
+					t.Fatal(err)
+				}
+				if b, ok := data["isUpdated"]; ok {
+					isUpdated = b.(bool)
+				}
+				if !isUpdated {
+					return errors.New("Not yet updated")
+				}
+				return nil
+			}, time.Second*30, time.Second*1)
+
+			if err != nil || isTimeout {
+				t.Fatalf("Failed to get Centreon service: %s", err.Error())
+			}
+			assert.True(t, condition.IsStatusConditionPresentAndEqual(cs.Status.Conditions, centreonServiceCondition, metav1.ConditionTrue))
+			assert.Equal(t, "central", cs.Status.Host)
+			assert.Equal(t, "ping", cs.Status.ServiceName)
+			return nil
+		},
+	}
+}
+
+func doDeleteCentreonServiceStep() test.TestStep {
+	return test.TestStep{
+		Name: "delete",
+		Do: func(c client.Client, key types.NamespacedName, o client.Object, data map[string]any) (err error) {
+			logrus.Infof("=== Delete Centreon Service %s/%s ===", key.Namespace, key.Name)
+
+			if o == nil {
+				return errors.New("ILM is null")
+			}
+			cs := o.(*v1alpha1.CentreonService)
+
+			wait := int64(0)
+			if err = c.Delete(context.Background(), cs, &client.DeleteOptions{GracePeriodSeconds: &wait}); err != nil {
+				return err
+			}
+
+			return nil
+		},
+		Check: func(t *testing.T, c client.Client, key types.NamespacedName, o client.Object, data map[string]any) (err error) {
+			cs := &v1alpha1.CentreonService{}
+			isDeleted := false
+
+			isTimeout, err := RunWithTimeout(func() error {
+				if err = c.Get(context.Background(), key, cs); err != nil {
+					if k8serrors.IsNotFound(err) {
+						isDeleted = true
+						return nil
+					}
+					t.Fatal(err)
+				}
+
+				return errors.New("Not yet deleted")
+			}, time.Second*30, time.Second*1)
+
+			if err != nil || isTimeout {
+				t.Fatalf("Centreon service not deleted: %s", err.Error())
+			}
+			assert.True(t, isDeleted)
+			return nil
+		},
+	}
 }
