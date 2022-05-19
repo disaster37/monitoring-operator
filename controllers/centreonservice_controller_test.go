@@ -279,7 +279,7 @@ func doCreateCentreonServiceStep() test.TestStep {
 			if err != nil || isTimeout {
 				t.Fatalf("Failed to get Centreon service: %s", err.Error())
 			}
-			assert.True(t, condition.IsStatusConditionPresentAndEqual(cs.Status.Conditions, centreonServiceCondition, metav1.ConditionTrue))
+			assert.True(t, condition.IsStatusConditionPresentAndEqual(cs.Status.Conditions, CentreonServiceCondition, metav1.ConditionTrue))
 			assert.Equal(t, "central", cs.Status.Host)
 			assert.Equal(t, "ping", cs.Status.ServiceName)
 			return nil
@@ -325,7 +325,7 @@ func doUpdateCentreonServiceStep() test.TestStep {
 			if err != nil || isTimeout {
 				t.Fatalf("Failed to get Centreon service: %s", err.Error())
 			}
-			assert.True(t, condition.IsStatusConditionPresentAndEqual(cs.Status.Conditions, centreonServiceCondition, metav1.ConditionTrue))
+			assert.True(t, condition.IsStatusConditionPresentAndEqual(cs.Status.Conditions, CentreonServiceCondition, metav1.ConditionTrue))
 			assert.Equal(t, "central", cs.Status.Host)
 			assert.Equal(t, "ping", cs.Status.ServiceName)
 			return nil

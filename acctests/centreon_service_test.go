@@ -6,8 +6,10 @@ import (
 
 	"github.com/disaster37/go-centreon-rest/v21/models"
 	"github.com/disaster37/monitoring-operator/api/v1alpha1"
+	"github.com/disaster37/monitoring-operator/controllers"
 	"github.com/disaster37/monitoring-operator/pkg/centreonhandler"
 	"github.com/stretchr/testify/assert"
+	condition "k8s.io/apimachinery/pkg/api/meta"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -81,8 +83,9 @@ func (t *AccTestSuite) TestCentreonService() {
 	if err = unstructuredToStructured(ucs, cs); err != nil {
 		t.T().Fatal(err)
 	}
-	assert.NotEmpty(t.T(), cs.Status.ID)
-	assert.NotEmpty(t.T(), cs.Status.CreatedAt)
+	assert.Equal(t.T(), "localhost", cs.Status.Host)
+	assert.Equal(t.T(), "test-ping", cs.Status.ServiceName)
+	assert.True(t.T(), condition.IsStatusConditionPresentAndEqual(cs.Status.Conditions, controllers.CentreonServiceCondition, v1.ConditionTrue))
 
 	// Check ressource created on Centreon
 	s, err = t.centreon.GetService("localhost", "test-ping")
@@ -143,7 +146,6 @@ func (t *AccTestSuite) TestCentreonService() {
 	}
 	time.Sleep(20 * time.Second)
 
-	// Check that status is updated
 	ucs, err = t.k8sclient.Resource(centreonServiceGVR).Namespace("default").Get(context.Background(), "test", v1.GetOptions{})
 	if err != nil {
 		t.T().Fatal(err)
@@ -151,7 +153,6 @@ func (t *AccTestSuite) TestCentreonService() {
 	if err = unstructuredToStructured(ucs, cs); err != nil {
 		t.T().Fatal(err)
 	}
-	assert.NotEmpty(t.T(), cs.Status.UpdatedAt)
 
 	// Check service updated on Centreon
 	s, err = t.centreon.GetService("localhost", "test-ping")

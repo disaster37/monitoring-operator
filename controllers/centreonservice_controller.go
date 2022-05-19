@@ -34,8 +34,8 @@ import (
 )
 
 const (
-	centreonServicedFinalizer = "service.monitor.k8s.webcenter.fr/finalizer"
-	centreonServiceCondition  = "UpdateCentreonService"
+	CentreonServicedFinalizer = "service.monitor.k8s.webcenter.fr/finalizer"
+	CentreonServiceCondition  = "UpdateCentreonService"
 )
 
 // CentreonServiceReconciler reconciles a CentreonService object
@@ -60,7 +60,7 @@ type CentreonServiceReconciler struct {
 // For more details, check Reconcile and its Result here:
 // - https://pkg.go.dev/sigs.k8s.io/controller-runtime@v0.10.0/pkg/reconcile
 func (r *CentreonServiceReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
-	reconciler, err := controller.NewStdReconciler(r.Client, centreonServicedFinalizer, r.reconciler, r.log, r.recorder, waitDurationWhenError)
+	reconciler, err := controller.NewStdReconciler(r.Client, CentreonServicedFinalizer, r.reconciler, r.log, r.recorder, waitDurationWhenError)
 	if err != nil {
 		return ctrl.Result{}, err
 	}
@@ -83,9 +83,9 @@ func (r *CentreonServiceReconciler) Configure(ctx context.Context, req ctrl.Requ
 	cs := resource.(*v1alpha1.CentreonService)
 
 	// Init condition status if not exist
-	if condition.FindStatusCondition(cs.Status.Conditions, centreonServiceCondition) == nil {
+	if condition.FindStatusCondition(cs.Status.Conditions, CentreonServiceCondition) == nil {
 		condition.SetStatusCondition(&cs.Status.Conditions, v1.Condition{
-			Type:   centreonServiceCondition,
+			Type:   CentreonServiceCondition,
 			Status: v1.ConditionFalse,
 			Reason: "Initialize",
 		})
@@ -235,7 +235,7 @@ func (r *CentreonServiceReconciler) OnError(ctx context.Context, resource client
 	r.recorder.Event(resource, core.EventTypeWarning, "Failed", err.Error())
 
 	condition.SetStatusCondition(&cs.Status.Conditions, v1.Condition{
-		Type:    centreonServiceCondition,
+		Type:    CentreonServiceCondition,
 		Status:  v1.ConditionFalse,
 		Reason:  "Failed",
 		Message: err.Error(),
@@ -248,7 +248,7 @@ func (r *CentreonServiceReconciler) OnSuccess(ctx context.Context, resource clie
 
 	if diff.NeedCreate {
 		condition.SetStatusCondition(&cs.Status.Conditions, v1.Condition{
-			Type:    centreonServiceCondition,
+			Type:    CentreonServiceCondition,
 			Status:  v1.ConditionTrue,
 			Reason:  "Success",
 			Message: fmt.Sprintf("Service %s/%s successfully created on Centreon", cs.Spec.Host, cs.Spec.Name),
@@ -259,7 +259,7 @@ func (r *CentreonServiceReconciler) OnSuccess(ctx context.Context, resource clie
 
 	if diff.NeedUpdate {
 		condition.SetStatusCondition(&cs.Status.Conditions, v1.Condition{
-			Type:    centreonServiceCondition,
+			Type:    CentreonServiceCondition,
 			Status:  v1.ConditionTrue,
 			Reason:  "Success",
 			Message: fmt.Sprintf("Service %s/%s successfully updated on Centreon", cs.Spec.Host, cs.Spec.Name),
@@ -269,9 +269,9 @@ func (r *CentreonServiceReconciler) OnSuccess(ctx context.Context, resource clie
 	}
 
 	// Update condition status if needed
-	if condition.IsStatusConditionPresentAndEqual(cs.Status.Conditions, centreonServiceCondition, v1.ConditionFalse) {
+	if condition.IsStatusConditionPresentAndEqual(cs.Status.Conditions, CentreonServiceCondition, v1.ConditionFalse) {
 		condition.SetStatusCondition(&cs.Status.Conditions, v1.Condition{
-			Type:    centreonServiceCondition,
+			Type:    CentreonServiceCondition,
 			Reason:  "Success",
 			Status:  v1.ConditionTrue,
 			Message: fmt.Sprintf("Service %s/%s already exit on Centreon", cs.Spec.Host, cs.Spec.Name),
