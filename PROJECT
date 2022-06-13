@@ -38,4 +38,13 @@ resources:
   group: networking.k8s.io
   kind: Ingress
   version: v1
+- api:
+    crdVersion: v1
+    namespaced: true
+  controller: true
+  domain: monitoring.k8s.webcenter.fr
+  group: monitor
+  kind: Platform
+  path: github.com/disaster37/monitoring-operator/api/v1alpha1
+  version: v1alpha1
 version: "3"

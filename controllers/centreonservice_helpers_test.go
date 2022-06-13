@@ -79,7 +79,7 @@ func TestInitCentreonServiceFromAnnotations(t *testing.T) {
 
 func TestInitCentreonServiceDefaultValue(t *testing.T) {
 	var (
-		centreon     *v1alpha1.CentreonSpec
+		endpointSpec *v1alpha1.CentreonSpecEndpoint
 		expectedCS   *v1alpha1.CentreonService
 		cs           *v1alpha1.CentreonService
 		placeholders map[string]string
@@ -89,25 +89,21 @@ func TestInitCentreonServiceDefaultValue(t *testing.T) {
 
 	// When no value
 	cs = &v1alpha1.CentreonService{}
-	centreon = &v1alpha1.CentreonSpec{
-		Endpoints: &v1alpha1.CentreonSpecEndpoint{},
-	}
+	endpointSpec = &v1alpha1.CentreonSpecEndpoint{}
 	expectedCS = &v1alpha1.CentreonService{}
-	initCentreonServiceDefaultValue(centreon, cs, placeholders)
+	initCentreonServiceDefaultValue(endpointSpec, cs, placeholders)
 	assert.Equal(t, expectedCS, cs)
 
 	// When nil value
 	cs = &v1alpha1.CentreonService{}
-	centreon = &v1alpha1.CentreonSpec{}
+	endpointSpec = nil
 	expectedCS = &v1alpha1.CentreonService{}
-	initCentreonServiceDefaultValue(centreon, cs, placeholders)
+	initCentreonServiceDefaultValue(endpointSpec, cs, placeholders)
 	assert.Equal(t, expectedCS, cs)
 
-	centreon = &v1alpha1.CentreonSpec{
-		Endpoints: &v1alpha1.CentreonSpecEndpoint{},
-	}
+	endpointSpec = &v1alpha1.CentreonSpecEndpoint{}
 	expectedCS = &v1alpha1.CentreonService{}
-	initCentreonServiceDefaultValue(centreon, nil, placeholders)
+	initCentreonServiceDefaultValue(endpointSpec, nil, placeholders)
 	assert.Equal(t, expectedCS, cs)
 
 	cs = &v1alpha1.CentreonService{}
@@ -117,20 +113,19 @@ func TestInitCentreonServiceDefaultValue(t *testing.T) {
 
 	// Whan values
 	cs = &v1alpha1.CentreonService{}
-	centreon = &v1alpha1.CentreonSpec{
-		Endpoints: &v1alpha1.CentreonSpecEndpoint{
-			Template:        "template",
-			NameTemplate:    "name",
-			DefaultHost:     "localhost",
-			ActivateService: true,
-			Arguments:       []string{"arg1"},
-			ServiceGroups:   []string{"sg1"},
-			Categories:      []string{"cat1"},
-			Macros: map[string]string{
-				"MACRO1": "value1",
-			},
+	endpointSpec = &v1alpha1.CentreonSpecEndpoint{
+		Template:        "template",
+		NameTemplate:    "name",
+		DefaultHost:     "localhost",
+		ActivateService: true,
+		Arguments:       []string{"arg1"},
+		ServiceGroups:   []string{"sg1"},
+		Categories:      []string{"cat1"},
+		Macros: map[string]string{
+			"MACRO1": "value1",
 		},
 	}
+
 	expectedCS = &v1alpha1.CentreonService{
 		Spec: v1alpha1.CentreonServiceSpec{
 			Template:   "template",
@@ -145,6 +140,6 @@ func TestInitCentreonServiceDefaultValue(t *testing.T) {
 			},
 		},
 	}
-	initCentreonServiceDefaultValue(centreon, cs, placeholders)
+	initCentreonServiceDefaultValue(endpointSpec, cs, placeholders)
 	assert.Equal(t, expectedCS, cs)
 }

@@ -78,7 +78,7 @@ func (r *CentreonServiceReconciler) SetupWithManager(mgr ctrl.Manager) error {
 		Complete(r)
 }
 
-// Configure permit to init condition
+// Configure permit to init condition and choose the right client
 func (r *CentreonServiceReconciler) Configure(ctx context.Context, req ctrl.Request, resource client.Object) (meta any, err error) {
 	cs := resource.(*v1alpha1.CentreonService)
 
@@ -91,7 +91,10 @@ func (r *CentreonServiceReconciler) Configure(ctx context.Context, req ctrl.Requ
 		})
 	}
 
-	return r.client, nil
+	// Get Centreon client
+	meta, _, err = getClient(cs.Spec.PlatformRef, r.platforms)
+	return meta, err
+
 }
 
 // Read permit to get current service from Centreon

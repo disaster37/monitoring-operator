@@ -16,8 +16,6 @@ limitations under the License.
 
 package v1alpha1
 
-/*
-
 import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -25,11 +23,37 @@ import (
 // EDIT THIS FILE!  THIS IS SCAFFOLDING FOR YOU TO OWN!
 // NOTE: json tags are required.  Any new fields you add must have json tags for the fields to be serialized.
 
-// CentreonSpec defines the desired state of Centreon
-// +k8s:openapi-gen=true
-type CentreonSpec struct {
+// PlatformSpec defines the desired state of Platform
+type PlatformSpec struct {
 	// INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
 	// Important: Run "make" to regenerate code after modifying this file
+
+	// Name is the unique name for platform
+	Name string `json:"name"`
+
+	// IsDefault is set to tru to use this plateform when is not specify on resource to create
+	IsDefault bool `json:"isDefault"`
+
+	// PlatformType is the platform type.
+	// It support only `centreon` at this time
+	PlatformType string `json:"type"`
+
+	// CentreonSettings is the setting for Centreon plateform type
+	// optional
+	CentreonSettings *PlatformSpecCentreonSettings `json:"centreonSettings,omitempty"`
+}
+
+type PlatformSpecCentreonSettings struct {
+
+	// URL is the full URL to access on Centreon API
+	URL string `json:"url"`
+
+	// SelfSignedCertificat is true if you shouldn't check Centreon API certificate
+	SelfSignedCertificate bool `json:"selfSignedCertificat"`
+
+	// Secret is the secret that store the username and password to access on Centreon API
+	// It need to have `username` and `password` key
+	Secret string `json:"secret"`
 
 	// The endpoint default setting
 	Endpoint *CentreonSpecEndpoint `json:"endpoint"`
@@ -75,35 +99,33 @@ type CentreonSpecEndpoint struct {
 	Categories []string `json:"categories,omitempty"`
 }
 
-// CentreonStatus defines the observed state of Centreon
-type CentreonStatus struct {
-	// INSERT ADDITIONAL STATUS FIELD - define observed state of cluster
-	// Important: Run "make" to regenerate code after modifying this file
-
+// PlatformStatus defines the observed state of Platform
+type PlatformStatus struct {
+	Conditions []metav1.Condition `json:"conditions"`
+	SecretHash string             `json:"secretHash"`
 }
 
 //+kubebuilder:object:root=true
 //+kubebuilder:subresource:status
 
-// Centreon is the Schema for the centreons API
-type Centreon struct {
+// Platform is the Schema for the platforms API
+type Platform struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
-	Spec   CentreonSpec   `json:"spec,omitempty"`
-	Status CentreonStatus `json:"status,omitempty"`
+	Spec   PlatformSpec   `json:"spec,omitempty"`
+	Status PlatformStatus `json:"status,omitempty"`
 }
 
 //+kubebuilder:object:root=true
 
-// CentreonList contains a list of Centreon
-type CentreonList struct {
+// PlatformList contains a list of Platform
+type PlatformList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata,omitempty"`
-	Items           []Centreon `json:"items"`
+	Items           []Platform `json:"items"`
 }
 
 func init() {
-	SchemeBuilder.Register(&Centreon{}, &CentreonList{})
+	SchemeBuilder.Register(&Platform{}, &PlatformList{})
 }
-*/

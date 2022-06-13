@@ -1,0 +1,104 @@
+apiVersion: operators.coreos.com/v1alpha1
+kind: ClusterServiceVersion
+metadata:
+  annotations:
+    alm-examples: '[]'
+    capabilities: Basic Install
+    categories: Monitoring
+    containerImage: webcenter/monitoring-operator:v0.0.1
+    createdAt: "2022-05-19T00:00:00Z"
+    description: It permit to create monitoring resource on Centreon
+    repository: https://github.com/olaf-meyer/helm-operator
+    support: None
+  name: monitoring-operator.v0.0.0
+  namespace: placeholder
+spec:
+  apiservicedefinitions: {}
+  customresourcedefinitions:
+    owned:
+    - description: Centreon is the Schema for global Centreon config
+      displayName: Centreon
+      kind: Centreon
+      name: centreons.monitor.k8s.webcenter.fr
+      resources:
+      - kind: Centreon
+        name: monitor.k8s.webcenter.fr
+        version: v1alpha1
+      specDescriptors:
+      - description: Endpoint define the global setting to generate Centreon service
+          from route or ingress
+        displayName: Endpoint
+        path: endpoint
+      - description: Endpoint define the global setting to generate Centreon service
+          from route or ingress
+        displayName: Endpoint
+        path: endpoint
+      statusDescriptors:
+      - description: None
+        displayName: None
+        path: none
+      version: v1alpha1
+    - description: CentreonService is the Schema to create service on Centreon
+      displayName: CentreonService
+      kind: CentreonService
+      name: centreonservices.monitor.k8s.webcenter.fr
+      resources:
+      - kind: CentreonService
+        name: monitor.k8s.webcenter.fr
+        version: v1alpha1
+      specDescriptors:
+      - description: Host defines the host where to attach service on Centreon
+        displayName: Host
+        path: host
+      - description: Name defines the service name on Centreon
+        displayName: Name
+        path: name
+      - description: Template defines the service template to attach on Centreon
+        displayName: Template
+        path: template
+      - description: Activate defines if service is enable on Centreon
+        displayName: Activate
+        path: activate
+      statusDescriptors:
+      - description: The current host where service is attached
+        displayName: Host
+        path: host
+      - description: The current service name
+        displayName: Service name
+        path: serviceName
+      - description: Conditions reflect the current state of service on Centreon
+        displayName: Conditions
+        path: conditions
+      version: v1alpha1
+  description: It permit to create monitoring resource on Centreon
+  displayName: monitoring-operator
+  icon:
+  - base64data: ""
+    mediatype: ""
+  install:
+    spec:
+      deployments: null
+    strategy: ""
+  installModes:
+  - supported: false
+    type: OwnNamespace
+  - supported: false
+    type: SingleNamespace
+  - supported: false
+    type: MultiNamespace
+  - supported: true
+    type: AllNamespaces
+  keywords:
+  - monitoring
+  - centreon
+  links:
+  - name: Monitoring Operator
+    url: https://monitoring-operator.domain
+  maintainers:
+  - email: linuxworkgroup@hotmail.com
+    name: disaster37
+  maturity: alpha
+  provider:
+    name: webcenter.fr
+    url: https://github.com/disaster37/monitoring-operator
+  version: 0.0.0

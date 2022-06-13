@@ -1,0 +1,6 @@
+apiVersion: monitor.monitoring.k8s.webcenter.fr/v1alpha1
+kind: Platform
+metadata:
+  name: platform-sample
+spec:
+  # TODO(user): Add fields here

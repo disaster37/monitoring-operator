@@ -17,6 +17,7 @@ limitations under the License.
 package main
 
 import (
+	"context"
 	"flag"
 	"os"
 
@@ -24,13 +25,7 @@ import (
 	// to ensure that exec-entrypoint and run can make use of them.
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
 
-	"github.com/disaster37/go-centreon-rest/v21"
-	monitorv1alpha1 "github.com/disaster37/monitoring-operator/api/v1alpha1"
-	"github.com/disaster37/monitoring-operator/controllers"
-	"github.com/disaster37/monitoring-operator/pkg/centreonhandler"
-	"github.com/disaster37/monitoring-operator/pkg/helpers"
 	routev1 "github.com/openshift/api/route/v1"
-	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	"k8s.io/apimachinery/pkg/runtime"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
@@ -39,6 +34,10 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/cache"
 	"sigs.k8s.io/controller-runtime/pkg/healthz"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
+
+	monitorv1alpha1 "github.com/disaster37/monitoring-operator/api/v1alpha1"
+	"github.com/disaster37/monitoring-operator/controllers"
+	"github.com/disaster37/monitoring-operator/pkg/helpers"
 	//+kubebuilder:scaffold:imports
 )
 
@@ -125,83 +124,97 @@ func main() {
 		os.Exit(1)
 	}
 
-	// Get monitoring type to enable the right controllers
-	monitoringType := os.Getenv("MONITORING_PLATEFORM")
-	switch monitoringType {
-	case MONITORING_CENTREON:
-		// Init Centreon API client
-		centreonCFG, err := helpers.GetCentreonConfig()
-		if err != nil {
-			setupLog.Error(err, "unable to get Centreon config")
-			os.Exit(1)
-		}
-		if log.GetLevel() == logrus.DebugLevel {
-			centreonCFG.Debug = true
-		}
-		centreonClient, err := centreon.NewClient(centreonCFG)
-		if err != nil {
-			setupLog.Error(err, "unable to get Centreon client")
-			os.Exit(1)
-		}
-		centreonHandler := centreonhandler.NewCentreonHandler(centreonClient, logrus.NewEntry(log))
+	// Get platforms
+	// Not block if errors, maybee not yet platform available
+	platforms, err := controllers.PlatformList(context.Background(), mgr.GetClient(), logrus.NewEntry(log), mgr.GetEventRecorderFor("platform-controller"))
+	if err != nil {
+		log.Errorf("Error when init platforms: %s", err.Error())
+	}
 
-		// Set controllers for Centreon resources
-		centreonServiceController := &controllers.CentreonServiceReconciler{
-			Client: mgr.GetClient(),
-			Scheme: mgr.GetScheme(),
-		}
-		centreonServiceController.SetLogger(log.WithFields(logrus.Fields{
-			"type": "CentreonServiceController",
-		}))
-		centreonServiceController.SetRecorder(mgr.GetEventRecorderFor("centreonservice-controller"))
-		centreonServiceController.SetReconsiler(centreonServiceController)
-		centreonServiceController.SetClient(centreonHandler)
-		if err = centreonServiceController.SetupWithManager(mgr); err != nil {
-			setupLog.Error(err, "unable to create controller", "controller", "CentreonService")
-			os.Exit(1)
-		}
-
-		ingressController := &controllers.IngressCentreonReconciler{
-			Client: mgr.GetClient(),
-			Scheme: mgr.GetScheme(),
-		}
-		ingressController.SetLogger(log.WithFields(logrus.Fields{
-			"type": "IngressCentreonController",
-		}))
-		ingressController.SetRecorder(mgr.GetEventRecorderFor("ingresscentreon-controller"))
-		ingressController.SetReconsiler(ingressController)
-		ingressController.SetClient(centreonHandler)
-		if err = ingressController.SetupWithManager(mgr); err != nil {
-			setupLog.Error(err, "unable to create controller", "controller", "IngressCentreon")
-			os.Exit(1)
-		}
-
-		isRouteCRD, err := controllers.IsRouteCRD(cfg)
-		if err != nil {
-			setupLog.Error(err, "unable to check API groups")
-			os.Exit(1)
-		}
-		if isRouteCRD {
-			routeController := &controllers.RouteCentreonReconciler{
-				Client: mgr.GetClient(),
-				Scheme: mgr.GetScheme(),
-			}
-			routeController.SetLogger(log.WithFields(logrus.Fields{
-				"type": "RouteCentreonController",
-			}))
-			routeController.SetRecorder(mgr.GetEventRecorderFor("routecentreon-controller"))
-			routeController.SetReconsiler(routeController)
-			routeController.SetClient(centreonHandler)
-			if err = routeController.SetupWithManager(mgr); err != nil {
-				setupLog.Error(err, "unable to create controller", "controller", "RouteCentreon")
-				os.Exit(1)
-			}
-		}
-
-		break
-	default:
-		setupLog.Error(errors.Errorf("MONITORING_PLATEFORM not supported. You need to set %s", MONITORING_CENTREON), "Monitoring plateform not supported")
+	// Set platform controllers
+	platformController := &controllers.PlatformReconciler{
+		Client: mgr.GetClient(),
+		Scheme: mgr.GetScheme(),
+	}
+	platformController.SetLogger(log.WithFields(logrus.Fields{
+		"type": "PlatformController",
+	}))
+	platformController.SetRecorder(mgr.GetEventRecorderFor("centreonservice-controller"))
+	platformController.SetReconsiler(platformController)
+	platformController.SetPlatforms(platforms)
+	if err = platformController.SetupWithManager(mgr); err != nil {
+		setupLog.Error(err, "unable to create controller", "controller", "Platform")
 		os.Exit(1)
+	}
+
+	// Set secret controller
+	secretController := &controllers.SecretReconciler{
+		Client: mgr.GetClient(),
+		Scheme: mgr.GetScheme(),
+	}
+	secretController.SetLogger(log.WithFields(logrus.Fields{
+		"type": "SecretController",
+	}))
+	secretController.SetRecorder(mgr.GetEventRecorderFor("secret-controller"))
+	secretController.SetPlatforms(platforms)
+	if err = secretController.SetupWithManager(mgr); err != nil {
+		setupLog.Error(err, "unable to create controller", "controller", "Secret")
+		os.Exit(1)
+	}
+
+	// Set CentreonService controller
+	centreonServiceController := &controllers.CentreonServiceReconciler{
+		Client: mgr.GetClient(),
+		Scheme: mgr.GetScheme(),
+	}
+	centreonServiceController.SetLogger(log.WithFields(logrus.Fields{
+		"type": "CentreonServiceController",
+	}))
+	centreonServiceController.SetRecorder(mgr.GetEventRecorderFor("centreonservice-controller"))
+	centreonServiceController.SetReconsiler(centreonServiceController)
+	centreonServiceController.SetPlatforms(platforms)
+	if err = centreonServiceController.SetupWithManager(mgr); err != nil {
+		setupLog.Error(err, "unable to create controller", "controller", "CentreonService")
+		os.Exit(1)
+	}
+
+	// Set Ingress controller
+	ingressController := &controllers.IngressReconciler{
+		Client: mgr.GetClient(),
+		Scheme: mgr.GetScheme(),
+	}
+	ingressController.SetLogger(log.WithFields(logrus.Fields{
+		"type": "IngressCentreonController",
+	}))
+	ingressController.SetRecorder(mgr.GetEventRecorderFor("ingresscentreon-controller"))
+	ingressController.SetReconsiler(ingressController)
+	ingressController.SetPlatforms(platforms)
+	if err = ingressController.SetupWithManager(mgr); err != nil {
+		setupLog.Error(err, "unable to create controller", "controller", "IngressCentreon")
+		os.Exit(1)
+	}
+
+	// Set route controller
+	isRouteCRD, err := controllers.IsRouteCRD(cfg)
+	if err != nil {
+		setupLog.Error(err, "unable to check API groups")
+		os.Exit(1)
+	}
+	if isRouteCRD {
+		routeController := &controllers.RouteReconciler{
+			Client: mgr.GetClient(),
+			Scheme: mgr.GetScheme(),
+		}
+		routeController.SetLogger(log.WithFields(logrus.Fields{
+			"type": "RouteCentreonController",
+		}))
+		routeController.SetRecorder(mgr.GetEventRecorderFor("routecentreon-controller"))
+		routeController.SetReconsiler(routeController)
+		routeController.SetPlatforms(platforms)
+		if err = routeController.SetupWithManager(mgr); err != nil {
+			setupLog.Error(err, "unable to create controller", "controller", "RouteCentreon")
+			os.Exit(1)
+		}
 	}
 
 	//+kubebuilder:scaffold:builder

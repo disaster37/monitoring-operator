@@ -4,8 +4,9 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/disaster37/monitoring-operator/pkg/centreonhandler"
+	"github.com/disaster37/monitoring-operator/api/v1alpha1"
 	"github.com/disaster37/operator-sdk-extra/pkg/controller"
+	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	"k8s.io/client-go/discovery"
 	"k8s.io/client-go/rest"
@@ -24,7 +25,7 @@ type Reconciler struct {
 	recorder   record.EventRecorder
 	log        *logrus.Entry
 	reconciler controller.Reconciler
-	client     centreonhandler.CentreonHandler
+	platforms  map[string]*ComputedPlatform
 }
 
 func (r *Reconciler) SetLogger(log *logrus.Entry) {
@@ -39,8 +40,9 @@ func (r *Reconciler) SetReconsiler(reconciler controller.Reconciler) {
 	r.reconciler = reconciler
 }
 
-func (r *Reconciler) SetClient(client centreonhandler.CentreonHandler) {
-	r.client = client
+// SetPlatforms permit to set the platform list
+func (r *Reconciler) SetPlatforms(p map[string]*ComputedPlatform) {
+	r.platforms = p
 }
 
 // Handle only resources that have the monitoring annotation
@@ -94,4 +96,20 @@ func IsRouteCRD(cfg *rest.Config) (bool, error) {
 	}
 
 	return false, nil
+}
+
+func getClient(platformRef string, platforms map[string]*ComputedPlatform) (meta any, platform *v1alpha1.Platform, err error) {
+	if platformRef == "" {
+		if p, ok := platforms["default"]; ok {
+			return p.client, p.platform, nil
+		}
+
+		return nil, nil, errors.New("No default platform")
+	}
+
+	if p, ok := platforms[platformRef]; ok {
+		return p.client, p.platform, nil
+	}
+
+	return nil, nil, errors.Errorf("Platform %s not found", platformRef)
 }

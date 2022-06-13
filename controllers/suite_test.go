@@ -1,17 +1,18 @@
 package controllers
 
 import (
+	"os"
 	"path/filepath"
 	"testing"
 	"time"
 
-	"github.com/disaster37/monitoring-operator/pkg/mocks"
 	"github.com/disaster37/operator-sdk-extra/pkg/mock"
 	"github.com/golang/mock/gomock"
 	"github.com/onsi/gomega/gexec"
 	routev1 "github.com/openshift/api/route/v1"
 	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/suite"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/rest"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -20,6 +21,9 @@ import (
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 
+	"github.com/disaster37/monitoring-operator/pkg/mocks"
+
+	"github.com/disaster37/monitoring-operator/api/v1alpha1"
 	monitorv1alpha1 "github.com/disaster37/monitoring-operator/api/v1alpha1"
 	//+kubebuilder:scaffold:imports
 )
@@ -32,6 +36,7 @@ type ControllerTestSuite struct {
 	mockCentreonHandler *mocks.MockCentreonHandler
 	mockCtrl            *gomock.Controller
 	cfg                 *rest.Config
+	platforms           map[string]*ComputedPlatform
 }
 
 func TestControllerSuite(t *testing.T) {
@@ -89,7 +94,67 @@ func (t *ControllerTestSuite) SetupSuite() {
 	k8sClient := k8sManager.GetClient()
 	t.k8sClient = k8sClient
 
-	// Init controlles
+	// Init controllers
+	os.Setenv("OPERATOR_NAMESPACE", "default")
+
+	platforms := map[string]*ComputedPlatform{
+		"default": {
+			platform: &v1alpha1.Platform{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "default",
+					Namespace: "default",
+				},
+				Spec: v1alpha1.PlatformSpec{
+					IsDefault:    true,
+					Name:         "default",
+					PlatformType: "centreon",
+					CentreonSettings: &v1alpha1.PlatformSpecCentreonSettings{
+						Endpoint: &v1alpha1.CentreonSpecEndpoint{
+							Template:     "template",
+							DefaultHost:  "localhost",
+							NameTemplate: "ping",
+							Macros: map[string]string{
+								"mac1": "value1",
+								"mac2": "value2",
+							},
+							Arguments:       []string{"arg1", "arg2"},
+							ActivateService: true,
+							ServiceGroups:   []string{"sg1"},
+							Categories:      []string{"cat1"},
+						},
+					},
+				},
+			},
+			client: t.mockCentreonHandler,
+		},
+	}
+	t.platforms = platforms
+	platformReconsiler := &PlatformReconciler{
+		Client: k8sClient,
+		Scheme: scheme.Scheme,
+	}
+	platformReconsiler.SetLogger(logrus.WithFields(logrus.Fields{
+		"type": "platformController",
+	}))
+	platformReconsiler.SetRecorder(k8sManager.GetEventRecorderFor("platform-controller"))
+	platformReconsiler.SetReconsiler(mock.NewMockReconciler(platformReconsiler, t.mockCentreonHandler))
+	platformReconsiler.SetPlatforms(platforms)
+	if err = platformReconsiler.SetupWithManager(k8sManager); err != nil {
+		panic(err)
+	}
+
+	secretReconciler := &SecretReconciler{
+		Client: k8sClient,
+		Scheme: scheme.Scheme,
+	}
+	secretReconciler.SetLogger(logrus.WithFields(logrus.Fields{
+		"type": "secretController",
+	}))
+	secretReconciler.SetRecorder(k8sManager.GetEventRecorderFor("secret-controller"))
+	if err = secretReconciler.SetupWithManager(k8sManager); err != nil {
+		panic(err)
+	}
+
 	centreonServiceReconsiler := &CentreonServiceReconciler{
 		Client: k8sClient,
 		Scheme: scheme.Scheme,
@@ -99,11 +164,12 @@ func (t *ControllerTestSuite) SetupSuite() {
 	}))
 	centreonServiceReconsiler.SetRecorder(k8sManager.GetEventRecorderFor("centreonservice-controller"))
 	centreonServiceReconsiler.SetReconsiler(mock.NewMockReconciler(centreonServiceReconsiler, t.mockCentreonHandler))
+	centreonServiceReconsiler.SetPlatforms(platforms)
 	if err = centreonServiceReconsiler.SetupWithManager(k8sManager); err != nil {
 		panic(err)
 	}
 
-	ingressReconsiler := &IngressCentreonReconciler{
+	ingressReconsiler := &IngressReconciler{
 		Client: k8sClient,
 		Scheme: scheme.Scheme,
 	}
@@ -112,11 +178,12 @@ func (t *ControllerTestSuite) SetupSuite() {
 	}))
 	ingressReconsiler.SetRecorder(k8sManager.GetEventRecorderFor("ingresscentreon-controller"))
 	ingressReconsiler.SetReconsiler(mock.NewMockReconciler(ingressReconsiler, t.mockCentreonHandler))
+	ingressReconsiler.SetPlatforms(platforms)
 	if err = ingressReconsiler.SetupWithManager(k8sManager); err != nil {
 		panic(err)
 	}
 
-	routeReconsiler := &RouteCentreonReconciler{
+	routeReconsiler := &RouteReconciler{
 		Client: k8sClient,
 		Scheme: scheme.Scheme,
 	}
@@ -125,6 +192,7 @@ func (t *ControllerTestSuite) SetupSuite() {
 	}))
 	routeReconsiler.SetRecorder(k8sManager.GetEventRecorderFor("routecentreon-controller"))
 	routeReconsiler.SetReconsiler(mock.NewMockReconciler(routeReconsiler, t.mockCentreonHandler))
+	routeReconsiler.SetPlatforms(platforms)
 	if err = routeReconsiler.SetupWithManager(k8sManager); err != nil {
 		panic(err)
 	}
@@ -150,6 +218,7 @@ func (t *ControllerTestSuite) TearDownSuite() {
 }
 
 func (t *ControllerTestSuite) BeforeTest(suiteName, testName string) {
+
 }
 
 func (t *ControllerTestSuite) AfterTest(suiteName, testName string) {

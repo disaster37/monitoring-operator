@@ -1,0 +1,24 @@
+# permissions for end users to edit platforms.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: platform-editor-role
+rules:
+- apiGroups:
+  - monitor.monitoring.k8s.webcenter.fr
+  resources:
+  - platforms
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - monitor.monitoring.k8s.webcenter.fr
+  resources:
+  - platforms/status
+  verbs:
+  - get

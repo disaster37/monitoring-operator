@@ -34,6 +34,9 @@ type CentreonServiceSpec struct {
 	// INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
 	// Important: Run "make" to regenerate code after modifying this file
 
+	// PlatformRef is the target platform where to create service
+	PlatformRef string `json:"platformRef"`
+
 	// The service name
 	Name string `json:"name"`
 
