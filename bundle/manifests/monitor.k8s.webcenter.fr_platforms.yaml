@@ -4,20 +4,20 @@ metadata:
   annotations:
     controller-gen.kubebuilder.io/version: v0.7.0
   creationTimestamp: null
-  name: centreonservices.monitor.k8s.webcenter.fr
+  name: platforms.monitor.k8s.webcenter.fr
 spec:
   group: monitor.k8s.webcenter.fr
   names:
-    kind: CentreonService
-    listKind: CentreonServiceList
-    plural: centreonservices
-    singular: centreonservice
+    kind: Platform
+    listKind: PlatformList
+    plural: platforms
+    singular: platform
   scope: Namespaced
   versions:
   - name: v1alpha1
     schema:
       openAPIV3Schema:
-        description: CentreonService is the Schema for the centreonservices API
+        description: Platform is the Schema for the platforms API
         properties:
           apiVersion:
             description: 'APIVersion defines the versioned schema of this representation
@@ -32,68 +32,93 @@ spec:
           metadata:
             type: object
           spec:
-            description: CentreonServiceSpec defines the desired state of CentreonService
+            description: PlatformSpec defines the desired state of Platform
             properties:
-              activate:
-                description: Activate or disable service
-                type: boolean
-              activeChecksEnabled:
-                description: The active check enable
-                type: boolean
-              arguments:
-                description: The list of arguments
-                items:
-                  type: string
-                type: array
-              categories:
-                description: The list of categories
-                items:
-                  type: string
-                type: array
-              checkCommand:
-                description: The check command
-                type: string
-              groups:
-                description: The list of service groups
-                items:
-                  type: string
-                type: array
-              host:
-                description: The host to attach the service
-                type: string
-              macros:
-                additionalProperties:
-                  type: string
-                description: The map of macros
+              centreonSettings:
+                description: CentreonSettings is the setting for Centreon plateform
+                  type optional
+                properties:
+                  endpoint:
+                    description: The endpoint default setting
+                    properties:
+                      activeService:
+                        description: By default, activate service when created it
+                          Default to true
+                        type: boolean
+                      arguments:
+                        description: The default command arguements to set when create
+                          service You can use special tag to generate value on the
+                          flow
+                        items:
+                          type: string
+                        type: array
+                      categories:
+                        description: Default categories
+                        items:
+                          type: string
+                        type: array
+                      defaultHost:
+                        description: The default host to attach service
+                        type: string
+                      macros:
+                        additionalProperties:
+                          type: string
+                        description: The default macro to set when create service
+                          You can use special tag to generate value on the flow
+                        type: object
+                      nameTemplate:
+                        description: The default template name when create service
+                          from endpoint
+                        type: string
+                      serviceGroups:
+                        description: Default service groups
+                        items:
+                          type: string
+                        type: array
+                      template:
+                        description: The default service template to use when create
+                          service from endpoint It normally optional, but Centreon
+                          bug impose to set an existed template
+                        type: string
+                    required:
+                    - template
+                    type: object
+                  secret:
+                    description: Secret is the secret that store the username and
+                      password to access on Centreon API It need to have `username`
+                      and `password` key
+                    type: string
+                  selfSignedCertificat:
+                    description: SelfSignedCertificat is true if you shouldn't check
+                      Centreon API certificate
+                    type: boolean
+                  url:
+                    description: URL is the full URL to access on Centreon API
+                    type: string
+                required:
+                - endpoint
+                - secret
+                - selfSignedCertificat
+                - url
                 type: object
-              maxCheckAttempts:
-                description: The max check attemps
-                type: string
-              name:
-                description: The service name
-                type: string
-              normalCheckInterval:
-                description: The normal check interval
-                type: string
-              passiveChecksEnabled:
-                description: The passive check enable
+              isDefault:
+                description: IsDefault is set to tru to use this plateform when is
+                  not specify on resource to create
                 type: boolean
-              platformRef:
-                description: PlatformRef is the target platform where to create service
+              name:
+                description: Name is the unique name for platform
                 type: string
-              retryCheckInterval:
-                description: The retry check interval
-                type: string
-              template:
-                description: The service templates
+              type:
+                description: PlatformType is the platform type. It support only `centreon`
+                  at this time
                 type: string
             required:
-            - host
+            - isDefault
             - name
-            - platformRef
+            - type
             type: object
           status:
-            description: CentreonServiceStatus defines the observed state of CentreonService
+            description: PlatformStatus defines the observed state of Platform
             properties:
               conditions:
                 items:
@@ -164,14 +189,11 @@ spec:
                   - type
                   type: object
                 type: array
-              host:
-                description: The host affected to service on Centreon
-                type: string
-              serviceName:
-                description: The service name
+              secretHash:
                 type: string
             required:
             - conditions
+            - secretHash
             type: object
         type: object
     served: true

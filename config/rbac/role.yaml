@@ -79,7 +79,7 @@ rules:
   - patch
   - update
 - apiGroups:
-  - monitor.monitoring.k8s.webcenter.fr
+  - monitor.k8s.webcenter.fr
   resources:
   - platforms
   verbs:
@@ -91,13 +91,13 @@ rules:
   - update
   - watch
 - apiGroups:
-  - monitor.monitoring.k8s.webcenter.fr
+  - monitor.k8s.webcenter.fr
   resources:
   - platforms/finalizers
   verbs:
   - update
 - apiGroups:
-  - monitor.monitoring.k8s.webcenter.fr
+  - monitor.k8s.webcenter.fr
   resources:
   - platforms/status
   verbs:

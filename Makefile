@@ -34,7 +34,7 @@ BUNDLE_METADATA_OPTS ?= $(BUNDLE_CHANNELS) $(BUNDLE_DEFAULT_CHANNEL)
 # This variable is used to construct full image tags for bundle and catalog images.
 #
 # For example, running 'make bundle-build bundle-push catalog-build catalog-push' will build and push both
-# monitoring.k8s.webcenter.fr/monitoring-operator-bundle:$VERSION and monitoring.k8s.webcenter.fr/monitoring-operator-catalog:$VERSION.
+# k8s.webcenter.fr/monitoring-operator-bundle:$VERSION and k8s.webcenter.fr/monitoring-operator-catalog:$VERSION.
 IMAGE_TAG_BASE ?= webcenter/monitoring-operator
 
 # BUNDLE_IMG defines the image:tag used for the bundle.

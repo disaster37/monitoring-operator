@@ -4,17 +4,17 @@ kind: ClusterRole
 metadata:
   name: platform-viewer-role
 rules:
-- apiGroups:
-  - monitor.monitoring.k8s.webcenter.fr
-  resources:
-  - platforms
-  verbs:
-  - get
-  - list
-  - watch
-- apiGroups:
-  - monitor.monitoring.k8s.webcenter.fr
-  resources:
-  - platforms/status
-  verbs:
-  - get
+  - apiGroups:
+      - monitor.k8s.webcenter.fr
+    resources:
+      - platforms
+    verbs:
+      - get
+      - list
+      - watch
+  - apiGroups:
+      - monitor.k8s.webcenter.fr
+    resources:
+      - platforms/status
+    verbs:
+      - get

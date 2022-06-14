@@ -6,18 +6,6 @@ metadata:
       [
         {
           "apiVersion": "monitor.k8s.webcenter.fr/v1alpha1",
-          "kind": "Centreon",
-          "metadata": {
-            "name": "centreon-sample"
-          },
-          "spec": {
-            "endpoint": {
-              "discoverEndpoint": false
-            }
-          }
-        },
-        {
-          "apiVersion": "monitor.k8s.webcenter.fr/v1alpha1",
           "kind": "CentreonService",
           "metadata": {
             "name": "cs-sample"
@@ -27,6 +15,26 @@ metadata:
             "host": "localhost",
             "name": "test-ping",
             "template": "template-test"
+          }
+        },
+        {
+          "apiVersion": "monitor.k8s.webcenter.fr/v1alpha1",
+          "kind": "Platform",
+          "metadata": {
+            "name": "platform-sample"
+          },
+          "spec": {
+            "entreonSettings": {
+              "endpoint": {
+                "discoverEndpoint": false
+              },
+              "secret": "centreon",
+              "selfSignedCertificat": true,
+              "url": "http://localhost/api"
+            },
+            "isDefault": false,
+            "name": "centreon",
+            "type": "centreon"
           }
         }
       ]
@@ -45,59 +53,15 @@ spec:
   apiservicedefinitions: {}
   customresourcedefinitions:
     owned:
-    - description: Centreon is the Schema for global Centreon config
-      displayName: Centreon
-      kind: Centreon
-      name: centreons.monitor.k8s.webcenter.fr
-      resources:
-      - kind: Centreon
-        name: monitor.k8s.webcenter.fr
-        version: v1alpha1
-      specDescriptors:
-      - description: Endpoint define the global setting to generate Centreon service
-          from route or ingress
-        displayName: Endpoint
-        path: endpoint
-      - description: Endpoint define the global setting to generate Centreon service
-          from route or ingress
-        displayName: Endpoint
-        path: endpoint
-      statusDescriptors:
-      - description: None
-        displayName: None
-        path: none
-      version: v1alpha1
-    - description: CentreonService is the Schema to create service on Centreon
-      displayName: CentreonService
+    - description: CentreonService is the Schema for the centreonservices API
+      displayName: Centreon Service
       kind: CentreonService
       name: centreonservices.monitor.k8s.webcenter.fr
-      resources:
-      - kind: CentreonService
-        name: monitor.k8s.webcenter.fr
-        version: v1alpha1
-      specDescriptors:
-      - description: Host defines the host where to attach service on Centreon
-        displayName: Host
-        path: host
-      - description: Name defines the service name on Centreon
-        displayName: Name
-        path: name
-      - description: Template defines the service template to attach on Centreon
-        displayName: Template
-        path: template
-      - description: Activate defines if service is enable on Centreon
-        displayName: Activate
-        path: activate
-      statusDescriptors:
-      - description: The current host where service is attached
-        displayName: Host
-        path: host
-      - description: The current service name
-        displayName: Service name
-        path: serviceName
-      - description: Conditions reflect the current state of service on Centreon
-        displayName: Conditions
-        path: conditions
+      version: v1alpha1
+    - description: Platform is the Schema for the platforms API
+      displayName: Platform
+      kind: Platform
+      name: platforms.monitor.k8s.webcenter.fr
       version: v1alpha1
   description: It permit to create monitoring resource on Centreon
   displayName: monitoring-operator
@@ -116,6 +80,24 @@ spec:
           - create
           - get
           - patch
+        - apiGroups:
+          - ""
+          resources:
+          - secrets
+          verbs:
+          - get
+          - list
+          - patch
+          - update
+          - watch
+        - apiGroups:
+          - ""
+          resources:
+          - secrets/status
+          verbs:
+          - get
+          - patch
+          - update
         - apiGroups:
           - monitor.k8s.webcenter.fr
           resources:
@@ -158,6 +140,32 @@ spec:
           - monitor.k8s.webcenter.fr
           resources:
           - centreonservices/status
+          verbs:
+          - get
+          - patch
+          - update
+        - apiGroups:
+          - monitor.k8s.webcenter.fr
+          resources:
+          - platforms
+          verbs:
+          - create
+          - delete
+          - get
+          - list
+          - patch
+          - update
+          - watch
+        - apiGroups:
+          - monitor.k8s.webcenter.fr
+          resources:
+          - platforms/finalizers
+          verbs:
+          - update
+        - apiGroups:
+          - monitor.k8s.webcenter.fr
+          resources:
+          - platforms/status
           verbs:
           - get
           - patch

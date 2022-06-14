@@ -4,4 +4,4 @@ kind: CustomResourceDefinition
 metadata:
   annotations:
     cert-manager.io/inject-ca-from: $(CERTIFICATE_NAMESPACE)/$(CERTIFICATE_NAME)
-  name: platforms.monitor.monitoring.k8s.webcenter.fr
+  name: platforms.monitor.k8s.webcenter.fr

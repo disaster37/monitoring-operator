@@ -4,21 +4,21 @@ kind: ClusterRole
 metadata:
   name: platform-editor-role
 rules:
-- apiGroups:
-  - monitor.monitoring.k8s.webcenter.fr
-  resources:
-  - platforms
-  verbs:
-  - create
-  - delete
-  - get
-  - list
-  - patch
-  - update
-  - watch
-- apiGroups:
-  - monitor.monitoring.k8s.webcenter.fr
-  resources:
-  - platforms/status
-  verbs:
-  - get
+  - apiGroups:
+      - monitor.k8s.webcenter.fr
+    resources:
+      - platforms
+    verbs:
+      - create
+      - delete
+      - get
+      - list
+      - patch
+      - update
+      - watch
+  - apiGroups:
+      - monitor.k8s.webcenter.fr
+    resources:
+      - platforms/status
+    verbs:
+      - get

@@ -2,9 +2,8 @@
 # since it depends on service name and namespace that are out of this kustomize package.
 # It should be run by config/default
 resources:
-  - bases/monitor.k8s.webcenter.fr_centreons.yaml
   - bases/monitor.k8s.webcenter.fr_centreonservices.yaml
-- bases/monitor.monitoring.k8s.webcenter.fr_platforms.yaml
+  - bases/monitor.k8s.webcenter.fr_platforms.yaml
 #+kubebuilder:scaffold:crdkustomizeresource
 
 patchesStrategicMerge:
