@@ -103,7 +103,10 @@ type CentreonSpecEndpoint struct {
 // PlatformStatus defines the observed state of Platform
 type PlatformStatus struct {
 	Conditions []metav1.Condition `json:"conditions"`
-	SecretHash string             `json:"secretHash"`
+
+	// SecretHash contain a secret hash to help controller to know if secret has been changed
+	// +optional
+	SecretHash string `json:"secretHash,omitempty"`
 }
 
 //+kubebuilder:object:root=true
