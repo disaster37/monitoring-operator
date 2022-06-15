@@ -59,9 +59,5 @@ spec:
                   fieldPath: metadata.namespace
             - name: LOG_LEVEL
               value: "INFO"
-            - name: MONITORING_PLATEFORM
-              value: "centreon"
-            - name: MONITORING_DISABLE_SSL_CHECK
-              value: "true"
       serviceAccountName: monitoring-operator
       terminationGracePeriodSeconds: 10

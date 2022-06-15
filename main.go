@@ -129,6 +129,7 @@ func main() {
 	platforms, err := controllers.PlatformList(context.Background(), mgr.GetClient(), logrus.NewEntry(log), mgr.GetEventRecorderFor("platform-controller"))
 	if err != nil {
 		log.Errorf("Error when init platforms: %s", err.Error())
+		platforms = map[string]*controllers.ComputedPlatform{}
 	}
 
 	// Set platform controllers
