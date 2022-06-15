@@ -38,7 +38,7 @@ spec:
             properties:
               centreonSettings:
                 description: CentreonSettings is the setting for Centreon plateform
-                  type optional
+                  type
                 properties:
                   endpoint:
                     description: The endpoint default setting
@@ -98,7 +98,6 @@ spec:
                     description: URL is the full URL to access on Centreon API
                     type: string
                 required:
-                - endpoint
                 - secret
                 - selfSignedCertificat
                 - url

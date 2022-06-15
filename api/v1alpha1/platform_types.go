@@ -39,7 +39,7 @@ type PlatformSpec struct {
 	PlatformType string `json:"type"`
 
 	// CentreonSettings is the setting for Centreon plateform type
-	// optional
+	// +optional
 	CentreonSettings *PlatformSpecCentreonSettings `json:"centreonSettings,omitempty"`
 }
 
@@ -56,7 +56,8 @@ type PlatformSpecCentreonSettings struct {
 	Secret string `json:"secret"`
 
 	// The endpoint default setting
-	Endpoint *CentreonSpecEndpoint `json:"endpoint"`
+	// +optional
+	Endpoint *CentreonSpecEndpoint `json:"endpoint,omitempty"`
 }
 
 // General configuration setting when handle monitring service from endpoint (Ingress / Route)
@@ -69,11 +70,11 @@ type CentreonSpecEndpoint struct {
 
 	// The default template name when create service from endpoint
 	// +optional
-	NameTemplate string `json:"nameTemplate"`
+	NameTemplate string `json:"nameTemplate,omitempty"`
 
 	// The default host to attach service
 	// +optional
-	DefaultHost string `json:"defaultHost"`
+	DefaultHost string `json:"defaultHost,omitempty"`
 
 	// The default macro to set when create service
 	// You can use special tag to generate value on the flow
