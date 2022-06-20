@@ -35,7 +35,8 @@ type CentreonServiceSpec struct {
 	// Important: Run "make" to regenerate code after modifying this file
 
 	// PlatformRef is the target platform where to create service
-	PlatformRef string `json:"platformRef"`
+	// +optional
+	PlatformRef string `json:"platformRef,,omitempty"`
 
 	// The service name
 	Name string `json:"name"`

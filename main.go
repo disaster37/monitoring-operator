@@ -23,6 +23,8 @@ import (
 
 	// Import all Kubernetes client auth plugins (e.g. Azure, GCP, OIDC, etc.)
 	// to ensure that exec-entrypoint and run can make use of them.
+	"k8s.io/client-go/dynamic"
+	"k8s.io/client-go/kubernetes"
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
 
 	routev1 "github.com/openshift/api/route/v1"
@@ -126,12 +128,13 @@ func main() {
 
 	// Get platforms
 	// Not block if errors, maybee not yet platform available
-	platforms, err := controllers.PlatformList(context.Background(), mgr.GetClient(), logrus.NewEntry(log), mgr.GetEventRecorderFor("platform-controller"))
+	platforms, err := controllers.ComputedPlatformList(context.Background(), dynamic.NewForConfigOrDie(cfg), kubernetes.NewForConfigOrDie(cfg), log.WithFields(logrus.Fields{
+		"type": "CentreonHandler",
+	}))
 	if err != nil {
-		log.Errorf("Error when init platforms: %s", err.Error())
+		log.Errorf("Error when get platforms, we start controller with empty platform list: %s", err.Error())
 		platforms = map[string]*controllers.ComputedPlatform{}
 	}
-
 	// Set platform controllers
 	platformController := &controllers.PlatformReconciler{
 		Client: mgr.GetClient(),
@@ -140,7 +143,7 @@ func main() {
 	platformController.SetLogger(log.WithFields(logrus.Fields{
 		"type": "PlatformController",
 	}))
-	platformController.SetRecorder(mgr.GetEventRecorderFor("centreonservice-controller"))
+	platformController.SetRecorder(mgr.GetEventRecorderFor("platform-controller"))
 	platformController.SetReconsiler(platformController)
 	platformController.SetPlatforms(platforms)
 	if err = platformController.SetupWithManager(mgr); err != nil {
@@ -148,25 +151,11 @@ func main() {
 		os.Exit(1)
 	}
 
-	// Set secret controller
-	secretController := &controllers.SecretReconciler{
-		Client: mgr.GetClient(),
-		Scheme: mgr.GetScheme(),
-	}
-	secretController.SetLogger(log.WithFields(logrus.Fields{
-		"type": "SecretController",
-	}))
-	secretController.SetRecorder(mgr.GetEventRecorderFor("secret-controller"))
-	secretController.SetPlatforms(platforms)
-	if err = secretController.SetupWithManager(mgr); err != nil {
-		setupLog.Error(err, "unable to create controller", "controller", "Secret")
-		os.Exit(1)
-	}
-
 	// Set CentreonService controller
 	centreonServiceController := &controllers.CentreonServiceReconciler{
-		Client: mgr.GetClient(),
-		Scheme: mgr.GetScheme(),
+		Client:     mgr.GetClient(),
+		Scheme:     mgr.GetScheme(),
+		Reconciler: controllers.Reconciler{},
 	}
 	centreonServiceController.SetLogger(log.WithFields(logrus.Fields{
 		"type": "CentreonServiceController",
@@ -180,6 +169,7 @@ func main() {
 	}
 
 	// Set Ingress controller
+
 	ingressController := &controllers.IngressReconciler{
 		Client: mgr.GetClient(),
 		Scheme: mgr.GetScheme(),
@@ -187,11 +177,11 @@ func main() {
 	ingressController.SetLogger(log.WithFields(logrus.Fields{
 		"type": "IngressCentreonController",
 	}))
-	ingressController.SetRecorder(mgr.GetEventRecorderFor("ingresscentreon-controller"))
+	ingressController.SetRecorder(mgr.GetEventRecorderFor("ingress-controller"))
 	ingressController.SetReconsiler(ingressController)
 	ingressController.SetPlatforms(platforms)
 	if err = ingressController.SetupWithManager(mgr); err != nil {
-		setupLog.Error(err, "unable to create controller", "controller", "IngressCentreon")
+		setupLog.Error(err, "unable to create controller", "controller", "Ingress")
 		os.Exit(1)
 	}
 
@@ -203,17 +193,18 @@ func main() {
 	}
 	if isRouteCRD {
 		routeController := &controllers.RouteReconciler{
-			Client: mgr.GetClient(),
-			Scheme: mgr.GetScheme(),
+			Client:     mgr.GetClient(),
+			Scheme:     mgr.GetScheme(),
+			Reconciler: controllers.Reconciler{},
 		}
 		routeController.SetLogger(log.WithFields(logrus.Fields{
 			"type": "RouteCentreonController",
 		}))
-		routeController.SetRecorder(mgr.GetEventRecorderFor("routecentreon-controller"))
+		routeController.SetRecorder(mgr.GetEventRecorderFor("route-controller"))
 		routeController.SetReconsiler(routeController)
 		routeController.SetPlatforms(platforms)
 		if err = routeController.SetupWithManager(mgr); err != nil {
-			setupLog.Error(err, "unable to create controller", "controller", "RouteCentreon")
+			setupLog.Error(err, "unable to create controller", "controller", "Route")
 			os.Exit(1)
 		}
 	}

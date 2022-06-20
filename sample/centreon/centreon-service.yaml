@@ -4,10 +4,10 @@ metadata:
   name: centreon-test
 spec:
   ports:
-  - name: http
-    port: 80
-    protocol: TCP
-    targetPort: 80
+    - name: http
+      port: 80
+      protocol: TCP
+      targetPort: 80
   selector:
     app.kubernetes.io/instance: centreon-test
   sessionAffinity: None

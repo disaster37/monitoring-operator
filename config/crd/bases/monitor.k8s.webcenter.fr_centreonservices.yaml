@@ -92,7 +92,6 @@ spec:
             required:
             - host
             - name
-            - platformRef
             type: object
           status:
             description: CentreonServiceStatus defines the observed state of CentreonService

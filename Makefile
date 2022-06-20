@@ -1,7 +1,3 @@
-MONITORING_URL ?= "http://localhost/centreon/api/index.php"
-MONITORING_USERNAME ?= "admin"
-MONITORING_PASSWORD ?= "admin"
-MONITORING_PLATEFORM ?= "centreon"
 OPERATOR_NAMESPACE ?= "default"
 
 # VERSION defines the project version for the bundle.
@@ -107,8 +103,8 @@ test-acc:
 build: generate fmt vet ## Build manager binary.
 	go build -o bin/manager .
 
-run: manifests generate fmt vet ## Run a controller from your host.
-	MONITORING_PLATEFORM=$(MONITORING_PLATEFORM) MONITORING_URL=$(MONITORING_URL) MONITORING_USERNAME=$(MONITORING_USERNAME) MONITORING_PASSWORD=$(MONITORING_PASSWORD) OPERATOR_NAMESPACE=$(OPERATOR_NAMESPACE) LOG_LEVEL=debug go run .
+run: manifests generate fmt vet install ## Run a controller from your host.
+	OPERATOR_NAMESPACE=$(OPERATOR_NAMESPACE) LOG_LEVEL=debug go run .
 
 install-sample: manifests kustomize ## Install samples
 	$(KUSTOMIZE) build config/samples | kubectl apply -f -
@@ -230,3 +226,16 @@ catalog-build: opm ## Build a catalog image.
 .PHONY: catalog-push
 catalog-push: ## Push a catalog image.
 	$(MAKE) docker-push IMG=$(CATALOG_IMG)
+
+.PHONY: k8s
+k8s: ## Start and config k8s cluster to test OLM deployement
+	docker run --name centreon -d --privileged -t -p 9090:80 disaster/centreon:21.10-configured
+	go install sigs.k8s.io/kind@v0.14.0 && kind create cluster
+	kubectl config use-context kind-kind
+	kubectl config set-context --current --namespace=default
+	KUBERNETES_SERVICE_HOST= KUBERNETES_SERVICE_PORT= operator-sdk olm install
+.PHONY: local-run
+local-run:
+	make run
+	kubectl port-forward centreon-test-0 9090:80 &
+	make install-sample

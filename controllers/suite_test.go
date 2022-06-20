@@ -143,18 +143,6 @@ func (t *ControllerTestSuite) SetupSuite() {
 		panic(err)
 	}
 
-	secretReconciler := &SecretReconciler{
-		Client: k8sClient,
-		Scheme: scheme.Scheme,
-	}
-	secretReconciler.SetLogger(logrus.WithFields(logrus.Fields{
-		"type": "secretController",
-	}))
-	secretReconciler.SetRecorder(k8sManager.GetEventRecorderFor("secret-controller"))
-	if err = secretReconciler.SetupWithManager(k8sManager); err != nil {
-		panic(err)
-	}
-
 	centreonServiceReconsiler := &CentreonServiceReconciler{
 		Client: k8sClient,
 		Scheme: scheme.Scheme,

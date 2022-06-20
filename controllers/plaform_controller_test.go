@@ -17,6 +17,8 @@ import (
 	condition "k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/client-go/dynamic"
+	"k8s.io/client-go/kubernetes"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
@@ -27,12 +29,15 @@ func (t *ControllerTestSuite) TestPlatformController() {
 	}
 	platform := &v1alpha1.Platform{}
 	data := map[string]any{
-		"platforms": t.platforms,
+		"platforms":     t.platforms,
+		"dinamicClient": dynamic.NewForConfigOrDie(t.cfg),
+		"k8sClient":     kubernetes.NewForConfigOrDie(t.cfg),
 	}
 
 	testCase := test.NewTestCase(t.T(), t.k8sClient, key, platform, 5*time.Second, data)
 	testCase.Steps = []test.TestStep{
 		doCreatePlatformStep(),
+		doListPlatformStep(),
 		doUpdatePlatformStep(),
 		doUpdatePlatformSecretStep(),
 		doDeletePlatformStep(),
@@ -124,7 +129,6 @@ func doCreatePlatformStep() test.TestStep {
 				t.Fatalf("Failed to get Platform: %s", err.Error())
 			}
 
-			assert.NotEmpty(t, p.Status.SecretHash)
 			assert.NotEmpty(t, platforms["test"])
 			assert.Equal(t, "test", platforms["test"].platform.Spec.Name)
 			assert.NotNil(t, platforms["test"].client)
@@ -212,10 +216,6 @@ func doUpdatePlatformSecretStep() test.TestStep {
 			if o == nil {
 				return errors.New("Plaform is null")
 			}
-			p := o.(*v1alpha1.Platform)
-
-			data["version"] = p.ResourceVersion
-			data["hash"] = p.Status.SecretHash
 
 			secret := &core.Secret{}
 			if err = c.Get(context.Background(), key, secret); err != nil {
@@ -245,24 +245,12 @@ func doUpdatePlatformSecretStep() test.TestStep {
 			}
 			platform := d.(*ComputedPlatform)
 
-			d, err = helper.Get(data, "version")
-			if err != nil {
-				t.Fatal(err)
-			}
-			version := d.(string)
-
-			d, err = helper.Get(data, "hash")
-			if err != nil {
-				t.Fatal(err)
-			}
-			hash := d.(string)
-
 			isTimeout, err := RunWithTimeout(func() error {
 				if err := c.Get(context.Background(), key, p); err != nil {
 					t.Fatalf("Error when get Centreon service: %s", err.Error())
 				}
 
-				if p.ResourceVersion == version {
+				if platforms["test"].client == platform.client {
 					return errors.New("Not yet updated")
 				}
 
@@ -274,8 +262,45 @@ func doUpdatePlatformSecretStep() test.TestStep {
 			}
 
 			assert.Equal(t, "http://localhost2", platforms["test"].platform.Spec.CentreonSettings.URL)
-			assert.NotEqual(t, p.Status.SecretHash, hash)
 			assert.NotEqual(t, platforms["test"].client, platform.client)
+			return nil
+		},
+	}
+}
+
+func doListPlatformStep() test.TestStep {
+	return test.TestStep{
+		Name: "list",
+		Do: func(c client.Client, key types.NamespacedName, o client.Object, data map[string]any) (err error) {
+			logrus.Info("=== List Plaforms ===")
+
+			return nil
+		},
+		Check: func(t *testing.T, c client.Client, key types.NamespacedName, o client.Object, data map[string]any) (err error) {
+			var d any
+
+			d, err = helper.Get(data, "dinamicClient")
+			if err != nil {
+				t.Fatal(err)
+			}
+			dinamicClient := d.(dynamic.Interface)
+
+			d, err = helper.Get(data, "k8sClient")
+			if err != nil {
+				t.Fatal(err)
+			}
+			k8sClient := d.(kubernetes.Interface)
+
+			log := logrus.NewEntry(logrus.New())
+			log.Logger.SetLevel(logrus.DebugLevel)
+
+			platforms, err := ComputedPlatformList(context.Background(), dinamicClient, k8sClient, log)
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			assert.NotNil(t, platforms["test"])
+
 			return nil
 		},
 	}

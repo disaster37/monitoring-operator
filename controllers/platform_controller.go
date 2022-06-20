@@ -21,19 +21,6 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
-	"fmt"
-
-	core "k8s.io/api/core/v1"
-	k8serrors "k8s.io/apimachinery/pkg/api/errors"
-	condition "k8s.io/apimachinery/pkg/api/meta"
-	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/apimachinery/pkg/types"
-	"k8s.io/client-go/tools/record"
-	ctrl "sigs.k8s.io/controller-runtime"
-	"sigs.k8s.io/controller-runtime/pkg/client"
-	"sigs.k8s.io/controller-runtime/pkg/event"
-	"sigs.k8s.io/controller-runtime/pkg/predicate"
 
 	"github.com/disaster37/go-centreon-rest/v21"
 	"github.com/disaster37/go-centreon-rest/v21/models"
@@ -42,14 +29,27 @@ import (
 	"github.com/disaster37/monitoring-operator/pkg/helpers"
 	"github.com/disaster37/operator-sdk-extra/pkg/controller"
 	"github.com/disaster37/operator-sdk-extra/pkg/helper"
+	"github.com/google/go-cmp/cmp"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
+	core "k8s.io/api/core/v1"
+	k8serrors "k8s.io/apimachinery/pkg/api/errors"
+	condition "k8s.io/apimachinery/pkg/api/meta"
+	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/client-go/dynamic"
+	"k8s.io/client-go/kubernetes"
+	ctrl "sigs.k8s.io/controller-runtime"
+	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
+	"sigs.k8s.io/controller-runtime/pkg/event"
+	"sigs.k8s.io/controller-runtime/pkg/predicate"
 )
 
 const (
-	PlatformFinalizer         = "platform.monitor.k8s.webcenter.fr/finalizer"
-	PlatformCondition         = "LoadConfig"
-	PlateformSecretAnnotation = "platform.monitor.k8s.webcenter.fr/secret"
+	PlatformFinalizer = "platform.monitor.k8s.webcenter.fr/finalizer"
+	PlatformCondition = "LoadConfig"
 )
 
 // PlatformReconciler reconciles a Platform object
@@ -60,10 +60,9 @@ type PlatformReconciler struct {
 }
 
 type ComputedPlatform struct {
-	client     any
-	platform   *v1alpha1.Platform
-	hash       string
-	secretHash string
+	client   any
+	platform *v1alpha1.Platform
+	hash     string
 }
 
 //+kubebuilder:rbac:groups=monitor.k8s.webcenter.fr,resources=platforms,verbs=get;list;watch;create;update;patch;delete
@@ -97,6 +96,7 @@ func (r *PlatformReconciler) Reconcile(ctx context.Context, req ctrl.Request) (c
 func (r *PlatformReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&v1alpha1.Platform{}).
+		Owns(&core.Secret{}).
 		WithEventFilter(viewOperatorNamespacePredicate()).
 		Complete(r)
 }
@@ -139,12 +139,15 @@ func (r *PlatformReconciler) Configure(ctx context.Context, req ctrl.Request, re
 	return nil, nil
 }
 
-// It permit to compute ComputedPlatform from Platform
-func computePlatform(ctx context.Context, c client.Client, p *v1alpha1.Platform, log *logrus.Entry, recorder record.EventRecorder) (computedPlatform *ComputedPlatform, err error) {
-	computedPlatform = &ComputedPlatform{}
-	var (
-		shaByte []byte
-	)
+// Read
+func (r *PlatformReconciler) Read(ctx context.Context, resource client.Object, data map[string]any, meta any) (res ctrl.Result, err error) {
+	p := resource.(*v1alpha1.Platform)
+
+	// Skip compute platform if on delete step because off secret can be already deleted
+	// It avoid dead lock
+	if !p.ObjectMeta.DeletionTimestamp.IsZero() {
+		return res, nil
+	}
 
 	switch p.Spec.PlatformType {
 	case "centreon":
@@ -154,79 +157,23 @@ func computePlatform(ctx context.Context, c client.Client, p *v1alpha1.Platform,
 			Namespace: p.Namespace,
 			Name:      p.Spec.CentreonSettings.Secret,
 		}
-		if err = c.Get(ctx, k, s); err != nil {
+		if err = r.Get(ctx, k, s); err != nil {
 			if k8serrors.IsNotFound(err) {
-				log.Warnf("Secret %s not yet exist, try later", p.Spec.CentreonSettings.Secret)
-				return nil, errors.Errorf("Secret %s not yet exist", p.Spec.CentreonSettings.Secret)
+				r.log.Warnf("Secret %s not yet exist, try later", p.Spec.CentreonSettings.Secret)
+				return res, errors.Errorf("Secret %s not yet exist", p.Spec.CentreonSettings.Secret)
 			}
 		}
-		username := string(s.Data["username"])
-		password := string(s.Data["password"])
-		if username == "" || password == "" {
-			return nil, errors.Errorf("You need to set username and password on secret %s", p.Spec.CentreonSettings.Secret)
-		}
+		data["secret"] = s
 
-		// Add annotation on secret to track change
-		if s.Annotations == nil || s.Annotations[PlateformSecretAnnotation] != p.Name {
-			if s.Annotations == nil {
-				s.Annotations = map[string]string{}
-			}
-			s.Annotations[PlateformSecretAnnotation] = p.Name
-			if err = c.Update(ctx, s); err != nil {
-				return nil, errors.Wrapf(err, "Error when add annotation on secret %s", p.Spec.CentreonSettings.Secret)
-			}
-			recorder.Eventf(p, core.EventTypeNormal, "Success", "Add annotation on secret %s", p.Spec.CentreonSettings.Secret)
-		}
-
-		// Create client
-		cfg := &models.Config{
-			Address:          p.Spec.CentreonSettings.URL,
-			Username:         username,
-			Password:         password,
-			DisableVerifySSL: p.Spec.CentreonSettings.SelfSignedCertificate,
-		}
-		if log.Level == logrus.DebugLevel {
-			cfg.Debug = true
-		}
-		client, err := centreon.NewClient(cfg)
+		computedPlatform, err := getComputedCentreonPlatform(p, s, r.log)
 		if err != nil {
-			return nil, errors.Wrap(err, "Error when create Centreon client")
+			return res, errors.Wrapf(err, "Error when compute platform %s", p.Name)
 		}
-		shaByte, err = json.Marshal(cfg)
-		if err != nil {
-			return nil, err
-		}
-
-		computedPlatform.client = centreonhandler.NewCentreonHandler(client, log)
-
-		computedPlatform.secretHash = fmt.Sprintf("%x", sha256.Sum256([]byte(username+password)))
+		data["platform"] = computedPlatform
 
 	default:
-		return nil, errors.Errorf("Plaform %s is not supported", p.Spec.PlatformType)
+		return res, errors.Errorf("Plaform %s is not supported", p.Spec.PlatformType)
 	}
-
-	sha := sha256.New()
-	if _, err := sha.Write([]byte(shaByte)); err != nil {
-		return nil, err
-	}
-
-	computedPlatform.hash = hex.EncodeToString(sha.Sum(nil))
-	computedPlatform.platform = p
-
-	return computedPlatform, nil
-}
-
-// Read
-func (r *PlatformReconciler) Read(ctx context.Context, resource client.Object, data map[string]any, meta any) (res ctrl.Result, err error) {
-	p := resource.(*v1alpha1.Platform)
-
-	computedPlatform, err := computePlatform(ctx, r.Client, p, r.log, r.recorder)
-	if err != nil {
-		return res, err
-	}
-
-	data["platform"] = computedPlatform
-	data["secretHash"] = computedPlatform.secretHash
 
 	return res, nil
 }
@@ -234,25 +181,33 @@ func (r *PlatformReconciler) Read(ctx context.Context, resource client.Object, d
 // Create add new Service on Centreon
 func (r *PlatformReconciler) Create(ctx context.Context, resource client.Object, data map[string]interface{}, meta interface{}) (res ctrl.Result, err error) {
 	p := resource.(*v1alpha1.Platform)
-	var d any
+	var (
+		d any
+		s *core.Secret
+	)
+
+	// First, set owner on secret to track it
+	d, err = helper.Get(data, "secret")
+	if err != nil {
+		return res, err
+	}
+	s = d.(*core.Secret)
+	err = controllerutil.SetOwnerReference(p, s, r.Scheme)
+	if err != nil {
+		return res, err
+	}
+	if err = r.Client.Update(ctx, s); err != nil {
+		return res, errors.Wrapf(err, "Error when update owner on secret %s", s.Name)
+	}
 
 	d, err = helper.Get(data, "platform")
 	if err != nil {
 		return res, err
 	}
-
 	if p.Spec.IsDefault {
 		r.platforms["default"] = d.(*ComputedPlatform)
 	}
-
 	r.platforms[p.Spec.Name] = d.(*ComputedPlatform)
-
-	d, err = helper.Get(data, "secretHash")
-	if err != nil {
-		return res, err
-	}
-
-	p.Status.SecretHash = d.(string)
 
 	return res, nil
 }
@@ -283,7 +238,6 @@ func (r *PlatformReconciler) Diff(resource client.Object, data map[string]interf
 	if err != nil {
 		return diff, err
 	}
-
 	pTarget := d.(*ComputedPlatform)
 
 	diff = controller.Diff{
@@ -291,16 +245,26 @@ func (r *PlatformReconciler) Diff(resource client.Object, data map[string]interf
 		NeedUpdate: false,
 	}
 
+	// New platform
 	if r.platforms[p.Spec.Name] == nil {
 		diff.NeedCreate = true
-		diff.Diff = "Create"
+		diff.Diff = "New plaform"
 
 		return diff, nil
 	}
 
+	// Client change
 	if r.platforms[p.Spec.Name].hash != pTarget.hash {
 		diff.NeedUpdate = true
-		diff.Diff = "Update"
+		diff.Diff = "Secret change on platform"
+		return diff, nil
+	}
+
+	// Platform change
+	diffStr := cmp.Diff(r.platforms[p.Spec.Name].platform.Spec, p.Spec)
+	if diffStr != "" {
+		diff.NeedUpdate = true
+		diff.Diff = diffStr
 		return diff, nil
 	}
 
@@ -334,6 +298,8 @@ func (r *PlatformReconciler) OnSuccess(ctx context.Context, resource client.Obje
 			Message: "Load platform successfully",
 		})
 
+		r.recorder.Event(resource, core.EventTypeNormal, "Completed", "Load platform successfully")
+
 		return nil
 	}
 
@@ -352,29 +318,102 @@ func (r *PlatformReconciler) OnSuccess(ctx context.Context, resource client.Obje
 	return nil
 }
 
-// PlatformList return the list of computed platform
-func PlatformList(ctx context.Context, c client.Client, log *logrus.Entry, recorder record.EventRecorder) (platforms map[string]*ComputedPlatform, err error) {
+// ComputedPlatformList permit to get the list of coomputed platform object
+// It usefull to init controller with client to access on external monitoring resources
+func ComputedPlatformList(ctx context.Context, cd dynamic.Interface, c kubernetes.Interface, log *logrus.Entry) (platforms map[string]*ComputedPlatform, err error) {
 	platforms = map[string]*ComputedPlatform{}
-	platformList := v1alpha1.PlatformList{}
+	platformList := &v1alpha1.PlatformList{}
+	platformGVR := v1alpha1.GroupVersion.WithResource("platforms")
 	ns, err := helpers.GetOperatorNamespace()
 	if err != nil {
-		return nil, errors.Wrap(err, "Error when get operator namespace")
+		return nil, err
 	}
 
-	if err = c.List(ctx, &platformList, &client.ListOptions{Namespace: ns}); err != nil {
-		return nil, errors.Wrapf(err, "Error when list platform on namespace %s", ns)
+	// Get list of current platform
+	pluc, err := cd.Resource(platformGVR).Namespace(ns).List(ctx, v1.ListOptions{})
+	if err != nil {
+		return nil, err
 	}
 
+	if err = runtime.DefaultUnstructuredConverter.FromUnstructured(pluc.UnstructuredContent(), platformList); err != nil {
+		return nil, err
+	}
+
+	// Create computed platform
 	for _, p := range platformList.Items {
-		computedPlatform, err := computePlatform(ctx, c, &p, log, recorder)
-		if err != nil {
-			return nil, errors.Wrapf(err, "Error when comptute platform %s", p.Spec.Name)
+		log.Debugf("Start to Compute platform %s", p.Name)
+
+		switch p.Spec.PlatformType {
+		case "centreon":
+			// Get centreon secret
+			s, err := c.CoreV1().Secrets(p.Namespace).Get(ctx, p.Spec.CentreonSettings.Secret, v1.GetOptions{})
+			if err != nil {
+				if k8serrors.IsNotFound(err) {
+					log.Warnf("Secret %s not yet exist, skip platform %s", p.Spec.CentreonSettings.Secret, p.Name)
+					continue
+				}
+				return nil, err
+			}
+			cp, err := getComputedCentreonPlatform(&p, s, log)
+			if err != nil {
+				return nil, errors.Wrapf(err, "Error when compute platform %s", p.Name)
+			}
+			platforms[p.Spec.Name] = cp
+			if p.Spec.IsDefault {
+				platforms["default"] = cp
+			}
+
+		default:
+			return nil, errors.Errorf("Platform %s of type %s is not supported", p.Name, p.Spec.PlatformType)
+
 		}
-
-		platforms[p.Spec.Name] = computedPlatform
-
 	}
 
 	return platforms, nil
+}
+
+func getComputedCentreonPlatform(p *v1alpha1.Platform, s *core.Secret, log *logrus.Entry) (cp *ComputedPlatform, err error) {
+
+	if p == nil {
+		return nil, errors.New("Platform can't be null")
+	}
+	if s == nil {
+		return nil, errors.New("Secret can't be null")
+	}
+
+	username := string(s.Data["username"])
+	password := string(s.Data["password"])
+	if username == "" || password == "" {
+		return nil, errors.Errorf("You need to set username and password on secret %s", s.Name)
+	}
+
+	// Create client
+	cfg := &models.Config{
+		Address:          p.Spec.CentreonSettings.URL,
+		Username:         username,
+		Password:         password,
+		DisableVerifySSL: p.Spec.CentreonSettings.SelfSignedCertificate,
+	}
+	if log.Level == logrus.DebugLevel {
+		cfg.Debug = true
+	}
+	client, err := centreon.NewClient(cfg)
+	if err != nil {
+		return nil, errors.Wrap(err, "Error when create Centreon client")
+	}
+	shaByte, err := json.Marshal(cfg)
+	if err != nil {
+		return nil, err
+	}
+	sha := sha256.New()
+	if _, err := sha.Write([]byte(shaByte)); err != nil {
+		return nil, err
+	}
+
+	return &ComputedPlatform{
+		client:   centreonhandler.NewCentreonHandler(client, log),
+		platform: p,
+		hash:     hex.EncodeToString(sha.Sum(nil)),
+	}, nil
 
 }

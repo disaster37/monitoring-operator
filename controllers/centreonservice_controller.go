@@ -256,6 +256,7 @@ func (r *CentreonServiceReconciler) OnSuccess(ctx context.Context, resource clie
 			Reason:  "Success",
 			Message: fmt.Sprintf("Service %s/%s successfully created on Centreon", cs.Spec.Host, cs.Spec.Name),
 		})
+		r.recorder.Eventf(resource, core.EventTypeNormal, "Completed", "Service %s/%s successfully created on Centreon", cs.Spec.Host, cs.Spec.Name)
 
 		return nil
 	}
@@ -267,6 +268,8 @@ func (r *CentreonServiceReconciler) OnSuccess(ctx context.Context, resource clie
 			Reason:  "Success",
 			Message: fmt.Sprintf("Service %s/%s successfully updated on Centreon", cs.Spec.Host, cs.Spec.Name),
 		})
+
+		r.recorder.Eventf(resource, core.EventTypeNormal, "Completed", "Service %s/%s successfully updated on Centreon", cs.Spec.Host, cs.Spec.Name)
 
 		return nil
 	}
