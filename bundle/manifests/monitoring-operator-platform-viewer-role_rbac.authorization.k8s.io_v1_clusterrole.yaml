@@ -1,13 +1,13 @@
-# permissions for end users to view centreons.
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
-  name: centreon-viewer-role
+  creationTimestamp: null
+  name: monitoring-operator-platform-viewer-role
 rules:
 - apiGroups:
   - monitor.k8s.webcenter.fr
   resources:
-  - centreons
+  - platforms
   verbs:
   - get
   - list
@@ -15,6 +15,6 @@ rules:
 - apiGroups:
   - monitor.k8s.webcenter.fr
   resources:
-  - centreons/status
+  - platforms/status
   verbs:
   - get

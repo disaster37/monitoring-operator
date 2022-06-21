@@ -1,13 +1,13 @@
-# permissions for end users to edit centreons.
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
-  name: centreon-editor-role
+  creationTimestamp: null
+  name: monitoring-operator-centreonservice-editor-role
 rules:
 - apiGroups:
   - monitor.k8s.webcenter.fr
   resources:
-  - centreons
+  - centreonservices
   verbs:
   - create
   - delete
@@ -19,6 +19,6 @@ rules:
 - apiGroups:
   - monitor.k8s.webcenter.fr
   resources:
-  - centreons/status
+  - centreonservices/status
   verbs:
   - get

@@ -78,33 +78,33 @@ func initCentreonServiceFromAnnotations(annotations map[string]string, cs *v1alp
 }
 
 // It initiate CentreonService spec with default value provided by Centreon spec and some placeholders
-func initCentreonServiceDefaultValue(centreon *v1alpha1.CentreonSpec, cs *v1alpha1.CentreonService, placesholders map[string]string) {
-	if centreon == nil || centreon.Endpoints == nil || cs == nil {
+func initCentreonServiceDefaultValue(endpointSpec *v1alpha1.CentreonSpecEndpoint, cs *v1alpha1.CentreonService, placesholders map[string]string) {
+	if endpointSpec == nil || cs == nil {
 		return
 	}
 
-	cs.Spec.Activated = centreon.Endpoints.ActivateService
-	cs.Spec.Categories = centreon.Endpoints.Categories
-	cs.Spec.Groups = centreon.Endpoints.ServiceGroups
-	cs.Spec.Host = centreon.Endpoints.DefaultHost
-	cs.Spec.Template = centreon.Endpoints.Template
+	cs.Spec.Activated = endpointSpec.ActivateService
+	cs.Spec.Categories = endpointSpec.Categories
+	cs.Spec.Groups = endpointSpec.ServiceGroups
+	cs.Spec.Host = endpointSpec.DefaultHost
+	cs.Spec.Template = endpointSpec.Template
 
 	// Need placeholders
-	if centreon.Endpoints.Arguments != nil && len(centreon.Endpoints.Arguments) > 0 {
-		arguments := make([]string, len(centreon.Endpoints.Arguments))
-		for i, arg := range centreon.Endpoints.Arguments {
+	if endpointSpec.Arguments != nil && len(endpointSpec.Arguments) > 0 {
+		arguments := make([]string, len(endpointSpec.Arguments))
+		for i, arg := range endpointSpec.Arguments {
 			arguments[i] = helpers.PlaceholdersInString(arg, placesholders)
 		}
 		cs.Spec.Arguments = arguments
 	}
 
-	if centreon.Endpoints.Macros != nil && len(centreon.Endpoints.Macros) > 0 {
+	if endpointSpec.Macros != nil && len(endpointSpec.Macros) > 0 {
 		macros := map[string]string{}
-		for key, value := range centreon.Endpoints.Macros {
+		for key, value := range endpointSpec.Macros {
 			macros[key] = helpers.PlaceholdersInString(value, placesholders)
 		}
 		cs.Spec.Macros = macros
 	}
 
-	cs.Spec.Name = helpers.PlaceholdersInString(centreon.Endpoints.NameTemplate, placesholders)
+	cs.Spec.Name = helpers.PlaceholdersInString(endpointSpec.NameTemplate, placesholders)
 }

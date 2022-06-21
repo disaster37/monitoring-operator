@@ -1,0 +1,12 @@
+apiVersion: monitor.k8s.webcenter.fr/v1alpha1
+kind: Platform
+metadata:
+  name: platform-sample
+spec:
+  name: centreon
+  isDefault: true
+  type: centreon
+  centreonSettings:
+    url: "http://localhost:9090/centreon/api/index.php"
+    selfSignedCertificat: true
+    secret: centreon

@@ -1,7 +1,3 @@
-MONITORING_URL ?= "http://localhost/centreon/api/index.php"
-MONITORING_USERNAME ?= "admin"
-MONITORING_PASSWORD ?= "admin"
-MONITORING_PLATEFORM ?= "centreon"
 OPERATOR_NAMESPACE ?= "default"
 
 # VERSION defines the project version for the bundle.
@@ -34,7 +30,7 @@ BUNDLE_METADATA_OPTS ?= $(BUNDLE_CHANNELS) $(BUNDLE_DEFAULT_CHANNEL)
 # This variable is used to construct full image tags for bundle and catalog images.
 #
 # For example, running 'make bundle-build bundle-push catalog-build catalog-push' will build and push both
-# monitoring.k8s.webcenter.fr/monitoring-operator-bundle:$VERSION and monitoring.k8s.webcenter.fr/monitoring-operator-catalog:$VERSION.
+# k8s.webcenter.fr/monitoring-operator-bundle:$VERSION and k8s.webcenter.fr/monitoring-operator-catalog:$VERSION.
 IMAGE_TAG_BASE ?= webcenter/monitoring-operator
 
 # BUNDLE_IMG defines the image:tag used for the bundle.
@@ -44,7 +40,7 @@ BUNDLE_IMG ?= $(IMAGE_TAG_BASE)-bundle:v$(VERSION)
 # Image URL to use all building/pushing image targets
 IMG ?= $(IMAGE_TAG_BASE):$(VERSION)
 # ENVTEST_K8S_VERSION refers to the version of kubebuilder assets to be downloaded by envtest binary.
-ENVTEST_K8S_VERSION = 1.21.x
+ENVTEST_K8S_VERSION = 1.23.x
 
 # Get the currently used golang install path (in GOPATH/bin, unless GOBIN is set)
 ifeq (,$(shell go env GOBIN))
@@ -80,7 +76,7 @@ help: ## Display this help.
 ##@ Development
 
 manifests: controller-gen ## Generate WebhookConfiguration, ClusterRole and CustomResourceDefinition objects.
-	$(CONTROLLER_GEN) rbac:roleName=manager-role crd webhook paths="./..." output:crd:artifacts:config=config/crd/bases
+	$(CONTROLLER_GEN) rbac:roleName=monitoring-operator crd webhook paths="./..." output:crd:artifacts:config=config/crd/bases
 
 generate: controller-gen ## Generate code containing DeepCopy, DeepCopyInto, and DeepCopyObject method implementations.
 	$(CONTROLLER_GEN) object:headerFile="hack/boilerplate.go.txt" paths="./..."
@@ -94,7 +90,6 @@ vet: ## Run go vet against code.
 mock-gen:
 	go install github.com/golang/mock/mockgen@v1.6.0
 	mockgen --build_flags=--mod=mod -destination=pkg/mocks/centreon.go -package=mocks github.com/disaster37/monitoring-operator/pkg/centreonhandler CentreonHandler
-	mockgen --build_flags=--mod=mod -destination=pkg/mocks/centreon_service.go -package=mocks github.com/disaster37/monitoring-operator/controllers CentreonService
 
 
 test: manifests generate mock-gen fmt envtest ## Run tests.
@@ -108,8 +103,8 @@ test-acc:
 build: generate fmt vet ## Build manager binary.
 	go build -o bin/manager .
 
-run: manifests generate fmt vet ## Run a controller from your host.
-	MONITORING_PLATEFORM=$(MONITORING_PLATEFORM) MONITORING_URL=$(MONITORING_URL) MONITORING_USERNAME=$(MONITORING_USERNAME) MONITORING_PASSWORD=$(MONITORING_PASSWORD) OPERATOR_NAMESPACE=$(OPERATOR_NAMESPACE) LOG_LEVEL=debug go run .
+run: manifests generate fmt vet install ## Run a controller from your host.
+	OPERATOR_NAMESPACE=$(OPERATOR_NAMESPACE) LOG_LEVEL=debug go run .
 
 install-sample: manifests kustomize ## Install samples
 	$(KUSTOMIZE) build config/samples | kubectl apply -f -
@@ -123,7 +118,11 @@ docker-build: test ## Build docker image with the manager.
 docker-push: ## Push docker image with the manager.
 	docker push ${IMG}
 
-  
+docker-buildx: test ## Build docker image with the manager.
+	docker buildx build -t ${IMG} . --push
+
+
+
 
 ##@ Deployment
 
@@ -174,6 +173,8 @@ bundle: manifests kustomize ## Generate bundle manifests and metadata, then vali
 	cd config/manager && $(KUSTOMIZE) edit set image controller=$(IMG)
 	$(KUSTOMIZE) build config/manifests | operator-sdk generate bundle -q --overwrite --version $(VERSION) $(BUNDLE_METADATA_OPTS)
 	operator-sdk bundle validate ./bundle
+	operator-sdk bundle validate ./bundle --select-optional name=operatorhub
+	operator-sdk bundle validate ./bundle --select-optional suite=operatorframework 
 
 .PHONY: bundle-build
 bundle-build: ## Build the bundle image.
@@ -182,6 +183,10 @@ bundle-build: ## Build the bundle image.
 .PHONY: bundle-push
 bundle-push: ## Push the bundle image.
 	$(MAKE) docker-push IMG=$(BUNDLE_IMG)
+
+.PHONY: bundle-buildx
+bundle-buildx: bundle ## Build the bundle image.
+	docker buildx build -f bundle.Dockerfile -t $(BUNDLE_IMG) . --push
 
 .PHONY: opm
 OPM = ./bin/opm
@@ -223,3 +228,16 @@ catalog-build: opm ## Build a catalog image.
 .PHONY: catalog-push
 catalog-push: ## Push a catalog image.
 	$(MAKE) docker-push IMG=$(CATALOG_IMG)
+
+.PHONY: k8s
+k8s: ## Start and config k8s cluster to test OLM deployement
+	docker run --name centreon -d --privileged -t -p 9090:80 disaster/centreon:21.10-configured
+	go install sigs.k8s.io/kind@v0.14.0 && kind create cluster
+	kubectl config use-context kind-kind
+	kubectl config set-context --current --namespace=default
+	KUBERNETES_SERVICE_HOST= KUBERNETES_SERVICE_PORT= operator-sdk olm install
+	KUBERNETES_SERVICE_HOST= KUBERNETES_SERVICE_PORT= kubectl apply -f sample/centreon
+.PHONY: clean-k8s
+clean-k8s:
+	kind delete cluster
+	docker rm centreon --force

@@ -1,0 +1,23 @@
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: centreon
+type: Opaque
+data:
+  username: YWRtaW4=
+  password: YWRtaW4=
+
+---
+apiVersion: monitor.k8s.webcenter.fr/v1alpha1
+kind: Platform
+metadata:
+  name: platform-sample
+spec:
+  name: centreon
+  isDefault: true
+  type: centreon
+  centreonSettings:
+    url: "http://centreon-test/centreon/api/index.php"
+    selfSignedCertificat: true
+    secret: centreon

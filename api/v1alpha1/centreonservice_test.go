@@ -2,7 +2,6 @@ package v1alpha1
 
 import (
 	"testing"
-	"time"
 
 	"github.com/disaster37/monitoring-operator/pkg/helpers"
 	"github.com/stretchr/testify/assert"
@@ -49,37 +48,6 @@ func (t *V1alpha1TestSuite) TestCentreonServiceCRUD() {
 	assert.NoError(t.T(), err)
 	err = t.k8sClient.Get(context.Background(), key, created)
 	assert.Error(t.T(), err)
-}
-
-func (t *V1alpha1TestSuite) TestCentreonServiceIsSubmitted() {
-	centreonService := &CentreonService{}
-	assert.False(t.T(), centreonService.IsSubmitted())
-
-	centreonService.Status.ID = "test"
-	assert.True(t.T(), centreonService.IsSubmitted())
-}
-
-func (t *V1alpha1TestSuite) TestCentreonServiceIsBeingDeleted() {
-	centreonService := &CentreonService{
-		ObjectMeta: metav1.ObjectMeta{
-			DeletionTimestamp: &metav1.Time{
-				Time: time.Now(),
-			},
-		},
-	}
-	assert.True(t.T(), centreonService.IsBeingDeleted())
-}
-
-func (t *V1alpha1TestSuite) TestCentreonServiceFinalizer() {
-	centreonService := &CentreonService{}
-
-	centreonService.AddFinalizer()
-	assert.Equal(t.T(), 1, len(centreonService.GetFinalizers()))
-	assert.True(t.T(), centreonService.HasFinalizer())
-
-	centreonService.RemoveFinalizer()
-	assert.Equal(t.T(), 0, len(centreonService.GetFinalizers()))
-	assert.False(t.T(), centreonService.HasFinalizer())
 }
 
 func TestCentreonServiceIsValid(t *testing.T) {

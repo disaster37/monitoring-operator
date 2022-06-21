@@ -4,8 +4,26 @@ apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
   creationTimestamp: null
-  name: manager-role
+  name: monitoring-operator
 rules:
+- apiGroups:
+  - ""
+  resources:
+  - events
+  verbs:
+  - create
+  - get
+  - patch
+- apiGroups:
+  - ""
+  resources:
+  - secrets
+  verbs:
+  - get
+  - list
+  - patch
+  - update
+  - watch
 - apiGroups:
   - monitor.k8s.webcenter.fr
   resources:
@@ -48,6 +66,32 @@ rules:
   - monitor.k8s.webcenter.fr
   resources:
   - centreonservices/status
+  verbs:
+  - get
+  - patch
+  - update
+- apiGroups:
+  - monitor.k8s.webcenter.fr
+  resources:
+  - platforms
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - monitor.k8s.webcenter.fr
+  resources:
+  - platforms/finalizers
+  verbs:
+  - update
+- apiGroups:
+  - monitor.k8s.webcenter.fr
+  resources:
+  - platforms/status
   verbs:
   - get
   - patch

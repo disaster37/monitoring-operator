@@ -1,19 +1,31 @@
 package acctests
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"testing"
+	"time"
 
 	"github.com/disaster37/go-centreon-rest/v21"
+	"github.com/disaster37/go-centreon-rest/v21/models"
+	"github.com/disaster37/monitoring-operator/api/v1alpha1"
 	"github.com/disaster37/monitoring-operator/pkg/centreonhandler"
-	"github.com/disaster37/monitoring-operator/pkg/helpers"
 	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/suite"
+	core "k8s.io/api/core/v1"
+	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
+)
+
+const (
+	centreonURL      = "http://localhost/centreon/api/index.php"
+	centreonUsername = "admin"
+	centreonPassword = "admin"
 )
 
 type AccTestSuite struct {
@@ -54,10 +66,62 @@ func (t *AccTestSuite) SetupSuite() {
 	}
 	t.k8sclientStd = clientStd
 
-	// Init Centreon client
-	cfg, err := helpers.GetCentreonConfig()
+	// Create new monitoring platform
+	secret := &core.Secret{
+		ObjectMeta: v1.ObjectMeta{
+			Name: "centreon",
+		},
+		Data: map[string][]byte{
+			"username": []byte(centreonUsername),
+			"password": []byte(centreonPassword),
+		},
+	}
+	if _, err := t.k8sclientStd.CoreV1().Secrets("default").Create(context.Background(), secret, v1.CreateOptions{}); err != nil {
+		panic(err)
+	}
+
+	platformGVR := schema.GroupVersionResource{
+		Group:    "monitor.k8s.webcenter.fr",
+		Version:  "v1alpha1",
+		Resource: "platforms",
+	}
+	p := &v1alpha1.Platform{
+		TypeMeta: v1.TypeMeta{
+			Kind:       "Platform",
+			APIVersion: "monitor.k8s.webcenter.fr/v1alpha1",
+		},
+		ObjectMeta: v1.ObjectMeta{
+			Name: "default",
+		},
+		Spec: v1alpha1.PlatformSpec{
+			Name:         "centreon",
+			IsDefault:    true,
+			PlatformType: "centreon",
+			CentreonSettings: &v1alpha1.PlatformSpecCentreonSettings{
+				URL:                   centreonURL,
+				SelfSignedCertificate: true,
+				Secret:                "centreon",
+			},
+		},
+	}
+
+	ucs, err := structuredToUntructured(p)
 	if err != nil {
 		panic(err)
+	}
+
+	_, err = t.k8sclient.Resource(platformGVR).Namespace("default").Create(context.Background(), ucs, v1.CreateOptions{})
+	if err != nil {
+		panic(err)
+	}
+	time.Sleep(20 * time.Second)
+
+	// Init Centreon client
+	cfg := &models.Config{
+		Address:          centreonURL,
+		Username:         centreonUsername,
+		Password:         centreonPassword,
+		DisableVerifySSL: true,
 	}
 	centreonClient, err := centreon.NewClient(cfg)
 	if err != nil {

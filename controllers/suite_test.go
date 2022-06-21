@@ -1,16 +1,18 @@
 package controllers
 
 import (
+	"os"
 	"path/filepath"
 	"testing"
 	"time"
 
-	"github.com/disaster37/monitoring-operator/pkg/mocks"
+	"github.com/disaster37/operator-sdk-extra/pkg/mock"
 	"github.com/golang/mock/gomock"
 	"github.com/onsi/gomega/gexec"
 	routev1 "github.com/openshift/api/route/v1"
 	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/suite"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/rest"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -19,6 +21,9 @@ import (
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 
+	"github.com/disaster37/monitoring-operator/pkg/mocks"
+
+	"github.com/disaster37/monitoring-operator/api/v1alpha1"
 	monitorv1alpha1 "github.com/disaster37/monitoring-operator/api/v1alpha1"
 	//+kubebuilder:scaffold:imports
 )
@@ -29,10 +34,9 @@ type ControllerTestSuite struct {
 	suite.Suite
 	k8sClient           client.Client
 	mockCentreonHandler *mocks.MockCentreonHandler
-	mockCentreonService *mocks.MockCentreonService
 	mockCtrl            *gomock.Controller
-	service             CentreonService
 	cfg                 *rest.Config
+	platforms           map[string]*ComputedPlatform
 }
 
 func TestControllerSuite(t *testing.T) {
@@ -43,8 +47,6 @@ func (t *ControllerTestSuite) SetupSuite() {
 	// Init Centreon mock
 	t.mockCtrl = gomock.NewController(t.T())
 	t.mockCentreonHandler = mocks.NewMockCentreonHandler(t.mockCtrl)
-	t.service = NewCentreonService(t.mockCentreonHandler)
-	t.mockCentreonService = mocks.NewMockCentreonService(t.mockCtrl)
 
 	logf.SetLogger(zap.New(zap.UseDevMode(true)))
 	logrus.SetLevel(logrus.DebugLevel)
@@ -92,39 +94,94 @@ func (t *ControllerTestSuite) SetupSuite() {
 	k8sClient := k8sManager.GetClient()
 	t.k8sClient = k8sClient
 
-	// Init controlles
-	err = (&CentreonServiceReconciler{
-		Client:   k8sClient,
-		Recorder: k8sManager.GetEventRecorderFor("centreonservice-controller"),
-		Scheme:   scheme.Scheme,
-		Log: logrus.WithFields(logrus.Fields{
-			"type": "centreonServiceController",
-		}),
-		Service: t.mockCentreonService,
-	}).SetupWithManager(k8sManager)
-	if err != nil {
+	// Init controllers
+	os.Setenv("OPERATOR_NAMESPACE", "default")
+
+	platforms := map[string]*ComputedPlatform{
+		"default": {
+			platform: &v1alpha1.Platform{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "default",
+					Namespace: "default",
+				},
+				Spec: v1alpha1.PlatformSpec{
+					IsDefault:    true,
+					Name:         "default",
+					PlatformType: "centreon",
+					CentreonSettings: &v1alpha1.PlatformSpecCentreonSettings{
+						Endpoint: &v1alpha1.CentreonSpecEndpoint{
+							Template:     "template",
+							DefaultHost:  "localhost",
+							NameTemplate: "ping",
+							Macros: map[string]string{
+								"mac1": "value1",
+								"mac2": "value2",
+							},
+							Arguments:       []string{"arg1", "arg2"},
+							ActivateService: true,
+							ServiceGroups:   []string{"sg1"},
+							Categories:      []string{"cat1"},
+						},
+					},
+				},
+			},
+			client: t.mockCentreonHandler,
+		},
+	}
+	t.platforms = platforms
+	platformReconsiler := &PlatformReconciler{
+		Client: k8sClient,
+		Scheme: scheme.Scheme,
+	}
+	platformReconsiler.SetLogger(logrus.WithFields(logrus.Fields{
+		"type": "platformController",
+	}))
+	platformReconsiler.SetRecorder(k8sManager.GetEventRecorderFor("platform-controller"))
+	platformReconsiler.SetReconsiler(mock.NewMockReconciler(platformReconsiler, t.mockCentreonHandler))
+	platformReconsiler.SetPlatforms(platforms)
+	if err = platformReconsiler.SetupWithManager(k8sManager); err != nil {
 		panic(err)
 	}
-	err = (&IngressCentreonReconciler{
-		Client:   k8sClient,
-		Recorder: k8sManager.GetEventRecorderFor("ingresscentreon-controller"),
-		Log: logrus.WithFields(logrus.Fields{
-			"type": "ingressCentreonController",
-		}),
+
+	centreonServiceReconsiler := &CentreonServiceReconciler{
+		Client: k8sClient,
 		Scheme: scheme.Scheme,
-	}).SetupWithManager(k8sManager)
-	if err != nil {
+	}
+	centreonServiceReconsiler.SetLogger(logrus.WithFields(logrus.Fields{
+		"type": "centreonServiceController",
+	}))
+	centreonServiceReconsiler.SetRecorder(k8sManager.GetEventRecorderFor("centreonservice-controller"))
+	centreonServiceReconsiler.SetReconsiler(mock.NewMockReconciler(centreonServiceReconsiler, t.mockCentreonHandler))
+	centreonServiceReconsiler.SetPlatforms(platforms)
+	if err = centreonServiceReconsiler.SetupWithManager(k8sManager); err != nil {
 		panic(err)
 	}
-	err = (&RouteCentreonReconciler{
-		Client:   k8sClient,
-		Recorder: k8sManager.GetEventRecorderFor("routecentreon-controller"),
-		Log: logrus.WithFields(logrus.Fields{
-			"type": "routeCentreonController",
-		}),
+
+	ingressReconsiler := &IngressReconciler{
+		Client: k8sClient,
 		Scheme: scheme.Scheme,
-	}).SetupWithManager(k8sManager)
-	if err != nil {
+	}
+	ingressReconsiler.SetLogger(logrus.WithFields(logrus.Fields{
+		"type": "ingressCentreonController",
+	}))
+	ingressReconsiler.SetRecorder(k8sManager.GetEventRecorderFor("ingresscentreon-controller"))
+	ingressReconsiler.SetReconsiler(mock.NewMockReconciler(ingressReconsiler, t.mockCentreonHandler))
+	ingressReconsiler.SetPlatforms(platforms)
+	if err = ingressReconsiler.SetupWithManager(k8sManager); err != nil {
+		panic(err)
+	}
+
+	routeReconsiler := &RouteReconciler{
+		Client: k8sClient,
+		Scheme: scheme.Scheme,
+	}
+	routeReconsiler.SetLogger(logrus.WithFields(logrus.Fields{
+		"type": "routeCentreonController",
+	}))
+	routeReconsiler.SetRecorder(k8sManager.GetEventRecorderFor("routecentreon-controller"))
+	routeReconsiler.SetReconsiler(mock.NewMockReconciler(routeReconsiler, t.mockCentreonHandler))
+	routeReconsiler.SetPlatforms(platforms)
+	if err = routeReconsiler.SetupWithManager(k8sManager); err != nil {
 		panic(err)
 	}
 
@@ -149,7 +206,7 @@ func (t *ControllerTestSuite) TearDownSuite() {
 }
 
 func (t *ControllerTestSuite) BeforeTest(suiteName, testName string) {
-	t.mockCentreonService.EXPECT().SetLogger(gomock.Any()).AnyTimes().Return()
+
 }
 
 func (t *ControllerTestSuite) AfterTest(suiteName, testName string) {

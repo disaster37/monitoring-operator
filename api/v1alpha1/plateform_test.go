@@ -9,10 +9,10 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 )
 
-func (t *V1alpha1TestSuite) TestCentreonCRUD() {
+func (t *V1alpha1TestSuite) TestPlatformCRUD() {
 	var (
 		key              types.NamespacedName
-		created, fetched *Centreon
+		created, fetched *Platform
 		err              error
 	)
 
@@ -22,20 +22,22 @@ func (t *V1alpha1TestSuite) TestCentreonCRUD() {
 	}
 
 	// Create object
-	created = &Centreon{
+	created = &Platform{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      key.Name,
 			Namespace: key.Namespace,
 		},
-		Spec: CentreonSpec{
-			Endpoints: &CentreonSpecEndpoint{},
+		Spec: PlatformSpec{
+			Name:         "test",
+			IsDefault:    true,
+			PlatformType: "centreon",
 		},
 	}
 	err = t.k8sClient.Create(context.Background(), created)
 	assert.NoError(t.T(), err)
 
 	// Get object
-	fetched = &Centreon{}
+	fetched = &Platform{}
 	err = t.k8sClient.Get(context.Background(), key, fetched)
 	assert.NoError(t.T(), err)
 	assert.Equal(t.T(), created, fetched)
