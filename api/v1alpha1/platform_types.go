@@ -24,21 +24,26 @@ import (
 // NOTE: json tags are required.  Any new fields you add must have json tags for the fields to be serialized.
 
 // PlatformSpec defines the desired state of Platform
+// +k8s:openapi-gen=true
 type PlatformSpec struct {
 	// INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
 	// Important: Run "make" to regenerate code after modifying this file
 
 	// Name is the unique name for platform
+	// +operator-sdk:csv:customresourcedefinitions:type=spec
 	Name string `json:"name"`
 
 	// IsDefault is set to tru to use this plateform when is not specify on resource to create
+	// +operator-sdk:csv:customresourcedefinitions:type=spec
 	IsDefault bool `json:"isDefault"`
 
 	// PlatformType is the platform type.
 	// It support only `centreon` at this time
+	// +operator-sdk:csv:customresourcedefinitions:type=spec
 	PlatformType string `json:"type"`
 
 	// CentreonSettings is the setting for Centreon plateform type
+	// +operator-sdk:csv:customresourcedefinitions:type=spec
 	// +optional
 	CentreonSettings *PlatformSpecCentreonSettings `json:"centreonSettings,omitempty"`
 }
@@ -46,16 +51,20 @@ type PlatformSpec struct {
 type PlatformSpecCentreonSettings struct {
 
 	// URL is the full URL to access on Centreon API
+	// +operator-sdk:csv:customresourcedefinitions:type=spec
 	URL string `json:"url"`
 
 	// SelfSignedCertificat is true if you shouldn't check Centreon API certificate
+	// +operator-sdk:csv:customresourcedefinitions:type=spec
 	SelfSignedCertificate bool `json:"selfSignedCertificat"`
 
 	// Secret is the secret that store the username and password to access on Centreon API
 	// It need to have `username` and `password` key
+	// +operator-sdk:csv:customresourcedefinitions:type=spec
 	Secret string `json:"secret"`
 
 	// The endpoint default setting
+	// +operator-sdk:csv:customresourcedefinitions:type=spec
 	// +optional
 	Endpoint *CentreonSpecEndpoint `json:"endpoint,omitempty"`
 }
@@ -66,42 +75,53 @@ type CentreonSpecEndpoint struct {
 
 	// The default service template to use when create service from endpoint
 	// It normally optional, but Centreon bug impose to set an existed template
+	// +operator-sdk:csv:customresourcedefinitions:type=spec
 	Template string `json:"template"`
 
 	// The default template name when create service from endpoint
 	// +optional
+	// +operator-sdk:csv:customresourcedefinitions:type=spec
 	NameTemplate string `json:"nameTemplate,omitempty"`
 
 	// The default host to attach service
 	// +optional
+	// +operator-sdk:csv:customresourcedefinitions:type=spec
 	DefaultHost string `json:"defaultHost,omitempty"`
 
 	// The default macro to set when create service
 	// You can use special tag to generate value on the flow
 	// +optional
+	// +operator-sdk:csv:customresourcedefinitions:type=spec
 	Macros map[string]string `json:"macros,omitempty"`
 
 	// The default command arguements to set when create service
 	// You can use special tag to generate value on the flow
 	// +optional
+	// +operator-sdk:csv:customresourcedefinitions:type=spec
 	Arguments []string `json:"arguments,omitempty"`
 
 	// By default, activate service when created it
 	// Default to true
 	// +optional
+	// +operator-sdk:csv:customresourcedefinitions:type=spec
 	ActivateService bool `json:"activeService,omitempty"`
 
 	// Default service groups
 	// +optional
+	// +operator-sdk:csv:customresourcedefinitions:type=spec
 	ServiceGroups []string `json:"serviceGroups,omitempty"`
 
 	// Default categories
 	// +optional
+	// +operator-sdk:csv:customresourcedefinitions:type=spec
 	Categories []string `json:"categories,omitempty"`
 }
 
 // PlatformStatus defines the observed state of Platform
 type PlatformStatus struct {
+
+	// List of conditions
+	// +operator-sdk:csv:customresourcedefinitions:type=status
 	Conditions []metav1.Condition `json:"conditions"`
 }
 
@@ -109,6 +129,7 @@ type PlatformStatus struct {
 //+kubebuilder:subresource:status
 
 // Platform is the Schema for the platforms API
+// +operator-sdk:csv:customresourcedefinitions:resources={{Secret,v1,monitoring-credentials}}
 type Platform struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`

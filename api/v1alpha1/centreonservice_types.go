@@ -35,60 +35,75 @@ type CentreonServiceSpec struct {
 	// Important: Run "make" to regenerate code after modifying this file
 
 	// PlatformRef is the target platform where to create service
+	// +operator-sdk:csv:customresourcedefinitions:type=spec
 	// +optional
 	PlatformRef string `json:"platformRef,,omitempty"`
 
 	// The service name
+	// +operator-sdk:csv:customresourcedefinitions:type=spec
 	Name string `json:"name"`
 
 	// The host to attach the service
+	// +operator-sdk:csv:customresourcedefinitions:type=spec
 	Host string `json:"host"`
 
 	// The service templates
+	// +operator-sdk:csv:customresourcedefinitions:type=spec
 	// +optional
 	Template string `json:"template,omitempty"`
 
 	// The list of service groups
+	// +operator-sdk:csv:customresourcedefinitions:type=spec
 	// +optional
 	Groups []string `json:"groups,omitempty"`
 
 	// The map of macros
+	// +operator-sdk:csv:customresourcedefinitions:type=spec
 	// +optional
 	Macros map[string]string `json:"macros,omitempty"`
 
 	// The list of arguments
+	// +operator-sdk:csv:customresourcedefinitions:type=spec
 	// +optional
 	Arguments []string `json:"arguments,omitempty"`
 
 	// The list of categories
+	// +operator-sdk:csv:customresourcedefinitions:type=spec
 	// +optional
 	Categories []string `json:"categories,omitempty"`
 
 	// The check command
+	// +operator-sdk:csv:customresourcedefinitions:type=spec
 	// +optional
 	CheckCommand string `json:"checkCommand,omitempty"`
 
 	// The normal check interval
+	// +operator-sdk:csv:customresourcedefinitions:type=spec
 	// +optional
 	NormalCheckInterval string `json:"normalCheckInterval,omitempty"`
 
 	// The retry check interval
+	// +operator-sdk:csv:customresourcedefinitions:type=spec
 	// +optional
 	RetryCheckInterval string `json:"retryCheckInterval,omitempty"`
 
 	// The max check attemps
+	// +operator-sdk:csv:customresourcedefinitions:type=spec
 	// +optional
 	MaxCheckAttempts string `json:"maxCheckAttempts,omitempty"`
 
 	// The active check enable
+	// +operator-sdk:csv:customresourcedefinitions:type=spec
 	// +optional
 	ActiveCheckEnabled *bool `json:"activeChecksEnabled,omitempty"`
 
 	// The passive check enable
+	// +operator-sdk:csv:customresourcedefinitions:type=spec
 	// +optional
 	PassiveCheckEnabled *bool `json:"passiveChecksEnabled,omitempty"`
 
 	// Activate or disable service
+	// +operator-sdk:csv:customresourcedefinitions:type=spec
 	// +optional
 	Activated bool `json:"activate,omitempty"`
 }
@@ -99,11 +114,15 @@ type CentreonServiceStatus struct {
 	// Important: Run "make" to regenerate code after modifying this file
 
 	// The host affected to service on Centreon
+	// +operator-sdk:csv:customresourcedefinitions:type=status
 	Host string `json:"host,omitempty"`
 
 	// The service name
+	// +operator-sdk:csv:customresourcedefinitions:type=status
 	ServiceName string `json:"serviceName,omitempty"`
 
+	// List of conditions
+	// +operator-sdk:csv:customresourcedefinitions:type=status
 	Conditions []metav1.Condition `json:"conditions"`
 }
 
@@ -111,6 +130,7 @@ type CentreonServiceStatus struct {
 //+kubebuilder:subresource:status
 
 // CentreonService is the Schema for the centreonservices API
+// +operator-sdk:csv:customresourcedefinitions:resources={{None,None,None}}
 type CentreonService struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`

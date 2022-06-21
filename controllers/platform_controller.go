@@ -69,6 +69,7 @@ type ComputedPlatform struct {
 //+kubebuilder:rbac:groups=monitor.k8s.webcenter.fr,resources=platforms/status,verbs=get;update;patch
 //+kubebuilder:rbac:groups=monitor.k8s.webcenter.fr,resources=platforms/finalizers,verbs=update
 //+kubebuilder:rbac:groups="",resources=events,verbs=patch;get;create
+//+kubebuilder:rbac:groups="",resources=secrets,verbs=get;list;watch;update;patch
 
 // Reconcile is part of the main kubernetes reconciliation loop which aims to
 // move the current state of the cluster closer to the desired state.

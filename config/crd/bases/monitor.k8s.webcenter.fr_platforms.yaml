@@ -122,6 +122,7 @@ spec:
             description: PlatformStatus defines the observed state of Platform
             properties:
               conditions:
+                description: List of conditions
                 items:
                   description: "Condition contains details for one aspect of the current
                     state of this API Resource. --- This struct is intended for direct

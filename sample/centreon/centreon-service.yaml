@@ -11,4 +11,3 @@ spec:
   selector:
     app.kubernetes.io/instance: centreon-test
   sessionAffinity: None
-  type: NodePort

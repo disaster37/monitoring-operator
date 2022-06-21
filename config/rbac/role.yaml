@@ -15,6 +15,16 @@ rules:
   - get
   - patch
 - apiGroups:
+  - ""
+  resources:
+  - secrets
+  verbs:
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
   - monitor.k8s.webcenter.fr
   resources:
   - centreonServices

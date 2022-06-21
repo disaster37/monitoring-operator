@@ -173,6 +173,8 @@ bundle: manifests kustomize ## Generate bundle manifests and metadata, then vali
 	cd config/manager && $(KUSTOMIZE) edit set image controller=$(IMG)
 	$(KUSTOMIZE) build config/manifests | operator-sdk generate bundle -q --overwrite --version $(VERSION) $(BUNDLE_METADATA_OPTS)
 	operator-sdk bundle validate ./bundle
+	operator-sdk bundle validate ./bundle --select-optional name=operatorhub
+	operator-sdk bundle validate ./bundle --select-optional suite=operatorframework 
 
 .PHONY: bundle-build
 bundle-build: ## Build the bundle image.
@@ -234,8 +236,8 @@ k8s: ## Start and config k8s cluster to test OLM deployement
 	kubectl config use-context kind-kind
 	kubectl config set-context --current --namespace=default
 	KUBERNETES_SERVICE_HOST= KUBERNETES_SERVICE_PORT= operator-sdk olm install
-.PHONY: local-run
-local-run:
-	make run
-	kubectl port-forward centreon-test-0 9090:80 &
-	make install-sample
+	KUBERNETES_SERVICE_HOST= KUBERNETES_SERVICE_PORT= kubectl apply -f sample/centreon
+.PHONY: clean-k8s
+clean-k8s:
+	kind delete cluster
+	docker rm centreon --force
