@@ -1,7 +1,7 @@
 apiVersion: monitor.k8s.webcenter.fr/v1alpha1
 kind: Platform
 metadata:
-  name: platform-sample
+  name: sample
 spec:
   name: centreon
   isDefault: true
@@ -10,3 +10,17 @@ spec:
     url: "http://localhost:9090/centreon/api/index.php"
     selfSignedCertificat: true
     secret: centreon
+    endpoint:
+      template: "check-http"
+      nameTemplate: "App_<namespace>_URL"
+      defaultHost: "kubernetes"
+      macros:
+        PROTOCOL: "<rule.0.scheme>"
+        URLPATH: "<rule.0.path.0>"
+      arguments:
+        - "<rule.0.host>"
+      activeService: true
+      serviceGroups:
+        - "SG1"
+      categories:
+        - "cat1"
