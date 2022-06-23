@@ -182,4 +182,5 @@ jobs:
         run: |
           make docker-buildx
           make bundle-buildx
-          make catalog-build & make catalog-push
+          make catalog-build
+          make catalog-push
