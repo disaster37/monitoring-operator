@@ -9,140 +9,132 @@ Kubernetes operator to manage monitoring resources
 It actually only support Centreon as monitoring plateform.
 
 ## Supported fonctionnalities:
-  - Manage service from custom resource `CentreonService`
-  - Manage service from ingress annotations and custom resource `Centreon` (kind of global setting)
-  - Manage service from routes annotations and custom resource `Centreon` (kind of global setting)
+  - Manage monitoring service from custom resource `CentreonService`
+  - Auto create monitoring service from Ingress
+  - Auto create monitoring service from Route
 
-## Deploy operator with helm
+## Deploy operator with OLM
 
-The project provide 2 helm chart:
-  - monitoring-operator-crds: it only contain the CRD needed by operator
-  - monitoring-operator: it deploy operator as deployement
+The right way to deploy operator base on operatot-sdk is to use OLM.
+You can use the catalog image `webcenter/monitoring-operator-catalog:v0.0.1`
 
-You can deploy the 2 separately, if you not have full right on cluster (CRD is installed by admin cluster). Or only deploy `monitoring-operator` and ask to install CRD on values.yaml.
-
-1. Create custome `values.yaml`
-
-Sample of values.yaml:
-```yaml
----
-replicaCount: 1
-installCRDs: true
-config:
-  loglevel: info
-monitoring:
-  secret:
-    name: 'monitoring-operator-credentials'
-  plateform: 'centreon'
-  url: 'https://centreon.domain.com/centreon/api/index.php'
-  disableSSLCheck: true
-
-centreon:
-  endpoint:
-    template: 'TS_App-Protocol-HTTP-MultiCheck'
-    nameTemplate: 'App_<namespace>_URL'
-    defaultHost: 'HOST_KUBERNETES'
-    activeService: true
-    macros:
-      PROTOCOL: '<rule.0.scheme>'
-      CRITICALCONTENT: '%{code} != 200 or ${code} != 401'
-      URLPATH: '<rule.0.path.0>'
-    arguments:
-      - '<rule.0.host>'
+For test purpose, you can use operator-sdk to run bundle
+```bash
+operator-sdk run bundle docker.io/webcenter/monitoring-operator-bundle:v0.0.1
 ```
 
-2. Create secret with credantial to access on Centreon API
+## Use it
 
-> The section of `centreon.endpoint` permit to set some global setting when you shoud monitor ingress automatically. It avoid to set all annotations on each ingress.
+### Platform
 
-And secret specified here with name `monitoring-operator-credentials`, need to have credential to access on Centreon:
+The first way consist to declare a platform. A platform is a monitoring API endpoint. actually, we only support Centreon platform.
+So, you need to provide a resource of type platfrom on same operator namespace
 
+platform.yaml
+```yaml
+apiVersion: monitor.k8s.webcenter.fr/v1alpha1
+kind: Platform
+metadata:
+  name: default
+spec:
+  name: default
+  isDefault: true
+  type: centreon
+  centreonSettings:
+    url: "http://localhost:9090/centreon/api/index.php"
+    selfSignedCertificat: true
+    secret: centreon
+    endpoint:
+      template: "check-http"
+      nameTemplate: "App_<namespace>_URL"
+      defaultHost: "kubernetes"
+      macros:
+        PROTOCOL: "<rule.0.scheme>"
+        URLPATH: "<rule.0.path.0>"
+      arguments:
+        - "<rule.0.host>"
+      activeService: true
+      serviceGroups:
+        - "SG1"
+      categories:
+        - "cat1"
+```
+
+Like you can see, you need to set credential to access on external monitoring API. The right way to do that on K8s is to use secret.
+So, you need to create a new secret on same operator namespace with the name who are privided on platform.
+
+secret.yaml
 ```yaml
 apiVersion: v1
 metadata:
-  name: monitoring-operator-credentials
+  name: centreon
 type: Opaque
 data:
-  MONITORING_PASSWORD: bzQwcFdINy4zNnhs
-  MONITORING_USERNAME: Y3MuY2xhcGk=
+  username: bzQwcFdINy4zNnhs
+  password: Y3MuY2xhcGk=
 kind: Secret
-```
+``` 
 
-3. Deploy with helm
+> On Platform spec, there are a subsection call endpoint. It's a generic setting when you should to auto create monitoring service from Ingress or route spec. It avoid to provide each time, the wall setting by annotation.
 
-Add repository
-```bash
-helm repo add webcenter https://charts.webcenter.fr
-```
-
-Install chart
-```bash
-helm install monitoring-operator webcenter/monitoring-operator --version 0.0.1
-```
-
-## Custom ressources
-
-### Centreon
-
-This custom resource permit to set global setting used by operator.
-
-
-#### Global setting for endpoints
 
 You can use this global setting when you should to auto discover / monitor your ingress / Route:
 
 ```yaml
 apiVersion: monitor.k8s.webcenter.fr/v1alpha1
-kind: Centreon
+kind: Platform
 metadata:
-  name: monitoring-operator
+  name: default
 spec:
-  endpoint:
-    # It enable service when it create it
-    # Optional
-    activeService: true
+  name: default
+  isDefault: true
+  type: centreon
+  centreonSettings:
+    url: "http://localhost:9090/centreon/api/index.php"
+    selfSignedCertificat: true
+    secret: centreon
+    endpoint:
+      # It enable service when it create it
+      # Optional
+      activeService: true
 
-    # The name template to use when it generate service name
-    # You can use placeholders
-    # Optional
-    nameTemplate: App_<namespace>_URL
+      # The name template to use when it generate service name
+      # You can use placeholders
+      # Optional
+      nameTemplate: App_<namespace>_URL
 
-    # The service template to affect on service
-    # Optional
-    template: TS_App-Protocol-HTTP-MultiCheck
+      # The service template to affect on service
+      # Optional
+      template: TS_App-Protocol-HTTP-MultiCheck
 
-    # The default host to link service on it
-    # Optional
-    defaultHost: HOST_KUBERNETES_HM-HPD
+      # The default host to link service on it
+      # Optional
+      defaultHost: HOST_KUBERNETES_HM-HPD
 
-    # The list service's arguments
-    # You can use placeholders
-    # Optional
-    arguments:
-    - <rule.0.host>
+      # The list service's arguments
+      # You can use placeholders
+      # Optional
+      arguments:
+      - <rule.0.host>
 
-    # The list of service's macros
-    # You can use placeholders
-    # Optional
-    macros:
-      CRITICALCONTENT: '%{code} != 200 or ${code} != 401'
-      PROTOCOL: <rule.0.scheme>
-      URLPATH: <rule.0.path.0>
-    
-    # The list of service's groups
-    # Optional
-    serviceGroups:
-    - SG_K8S_INGRESS
+      # The list of service's macros
+      # You can use placeholders
+      # Optional
+      macros:
+        CRITICALCONTENT: '%{code} != 200 or ${code} != 401'
+        PROTOCOL: <rule.0.scheme>
+        URLPATH: <rule.0.path.0>
+      
+      # The list of service's groups
+      # Optional
+      serviceGroups:
+      - SG_K8S_INGRESS
 
-    # The list of service's categories
-    # Optional
-    categories:
-    - Endpoint
+      # The list of service's categories
+      # Optional
+      categories:
+      - Endpoint
 ```
-
-> It avoid to set each time all annotations in Ingress / Route
-> Annotation have always the priority on this settings
-> You can use some placeholders to get properties from Ingress / Routes described in the next section
 
 ### CentreonService
 
@@ -155,6 +147,10 @@ kind: CentreonService
 metadata:
   name: monitor-workloads
 spec:
+  # Optional
+  # Target platform to create monitoring resource
+  platformRef: default
+
   # Optional
   # It enable service
   activate: true
@@ -219,8 +215,10 @@ spec:
   passiveChecksEnabled:
 ```
 
+> If you not provide spec key `platformRef`, it use the default platform.
 
-## List of annotations for Ingress / Route
+
+### List of annotations for Ingress / Route
 **Global annotations:**
   - monitor.k8s.webcenter.fr/discover : true to watch resource
 
@@ -250,9 +248,9 @@ spec:
    - <annotation.key>: annotations
 
 placeholders available for macros, arguments and nameTemplate from Route:
-   - <rule.host> : the url
-   - <rule.scheme>: the scheme - http or https
-   - <rule.path>: the path
+   - <rule.0.host> : the url
+   - <rule.0.scheme>: the scheme - http or https
+   - <rule.0.path>: the path
    - <name>: route name
    - <namespace>: route namespace
    - <label.key>: labels

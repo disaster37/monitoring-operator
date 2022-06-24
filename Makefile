@@ -119,7 +119,7 @@ docker-push: ## Push docker image with the manager.
 	docker push ${IMG}
 
 docker-buildx: test ## Build docker image with the manager.
-	docker buildx build -t ${IMG} . --push
+	docker buildx build -t ${IMG} . --push --build-arg http_proxy="$(http_proxy)" --build-arg https_proxy="$(https_proxy)"
 
 
 
@@ -186,7 +186,7 @@ bundle-push: ## Push the bundle image.
 
 .PHONY: bundle-buildx
 bundle-buildx: bundle ## Build the bundle image.
-	docker buildx build -f bundle.Dockerfile -t $(BUNDLE_IMG) . --push
+	docker buildx build -f bundle.Dockerfile -t $(BUNDLE_IMG) . --push --build-arg http_proxy="$(http_proxy)" --build-arg https_proxy="$(https_proxy)"
 
 .PHONY: opm
 OPM = ./bin/opm
@@ -222,7 +222,7 @@ endif
 # https://github.com/operator-framework/community-operators/blob/7f1438c/docs/packaging-operator.md#updating-your-existing-operator
 .PHONY: catalog-build
 catalog-build: opm ## Build a catalog image.
-	$(OPM) index add --container-tool docker --mode semver --tag $(CATALOG_IMG) --bundles $(BUNDLE_IMGS) $(FROM_INDEX_OPT)
+	$(OPM) index add --container-tool docker --mode replaces --tag $(CATALOG_IMG) --bundles $(BUNDLE_IMGS) $(FROM_INDEX_OPT)
 
 # Push the catalog image.
 .PHONY: catalog-push
