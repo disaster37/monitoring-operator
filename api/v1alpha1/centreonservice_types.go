@@ -37,7 +37,7 @@ type CentreonServiceSpec struct {
 	// PlatformRef is the target platform where to create service
 	// +operator-sdk:csv:customresourcedefinitions:type=spec
 	// +optional
-	PlatformRef string `json:"platformRef,,omitempty"`
+	PlatformRef string `json:"platformRef,omitempty"`
 
 	// The service name
 	// +operator-sdk:csv:customresourcedefinitions:type=spec

@@ -46,6 +46,37 @@ func (r *Reconciler) SetPlatforms(p map[string]*ComputedPlatform) {
 }
 
 // Handle only resources that have the monitoring annotation
+func viewResourceWithMonitoringTemplate() predicate.Predicate {
+	return predicate.Funcs{
+		UpdateFunc: func(e event.UpdateEvent) bool {
+
+			return isMonitoringTemplateAnnotation(e.ObjectOld.GetAnnotations()) || isMonitoringTemplateAnnotation(e.ObjectNew.GetAnnotations())
+		},
+		DeleteFunc: func(e event.DeleteEvent) bool {
+			return isMonitoringTemplateAnnotation(e.Object.GetAnnotations())
+		},
+		CreateFunc: func(e event.CreateEvent) bool {
+			return isMonitoringTemplateAnnotation(e.Object.GetAnnotations())
+		},
+		GenericFunc: func(e event.GenericEvent) bool {
+			return isMonitoringAnnotation(e.Object.GetAnnotations())
+		},
+	}
+}
+func isMonitoringTemplateAnnotation(annotations map[string]string) bool {
+	if annotations == nil {
+		return false
+	}
+	watchKey := fmt.Sprintf("%s/templates", monitoringAnnotationKey)
+	for key, value := range annotations {
+		if key == watchKey && value != "" {
+			return true
+		}
+	}
+	return false
+}
+
+// Handle only resources that have the monitoring annotation
 func viewResourceWithMonitoringAnnotationPredicate() predicate.Predicate {
 	return predicate.Funcs{
 		UpdateFunc: func(e event.UpdateEvent) bool {
