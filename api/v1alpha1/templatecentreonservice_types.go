@@ -40,15 +40,6 @@ type TemplateCentreonServiceStatus struct {
 	// INSERT ADDITIONAL STATUS FIELD - define observed state of cluster
 	// Important: Run "make" to regenerate code after modifying this file
 
-	// Links is the ressource created from this template
-	// +operator-sdk:csv:customresourcedefinitions:type=status
-	Links []NamespacedName `json:"links,omitempty"`
-}
-
-// NamespacedName represent the full name of ressource
-type NamespacedName struct {
-	Name      string `json:"name"`
-	Namespace string `json:"namespace"`
 }
 
 //+kubebuilder:object:root=true

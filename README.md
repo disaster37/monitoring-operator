@@ -256,7 +256,7 @@ metadata:
 spec:
   template: |
     activate: true
-    host: {{ .annotations.monitoring-host}}
+    host: {{ .annotations.monitoring-host }}
     name: "check-namespace-quota_{{ .namespace }}"
     template: TS_prometheus_quota
     macros:
@@ -274,7 +274,7 @@ metadata:
 spec:
   template: |
     activate: true
-    host: {{ .annotations.monitoring-host}}
+    host: {{ .annotations.monitoring-host }}
     name: "check-workloads-state_{{ .namespace }}"
     template: TS_prometheus_workloads
     macros:

@@ -1,0 +1,14 @@
+apiVersion: monitor.k8s.webcenter.fr/v1alpha1
+kind: TemplateCentreonService
+metadata:
+  name: templatecentreonservice-sample
+spec:
+  template: |
+    host: localhost
+    name: "test-ping-{{ .namespace }}"
+    template: template-test
+    activate: true
+    macros:
+      CHECKTYPE: quota
+      EXTRAOPTIONS: -sS
+      NAMESPACE: {{ .namespace }}
