@@ -163,8 +163,9 @@ categories:
 					Name:      "template1",
 					Namespace: key.Name,
 					Labels: map[string]string{
-						"app": "appTest",
-						"env": "dev",
+						"app":                               "appTest",
+						"env":                               "dev",
+						"monitor.k8s.webcenter.fr/template": "default/template1",
 					},
 					Annotations: map[string]string{
 						"monitor.k8s.webcenter.fr/templates": "[{\"namespace\":\"default\", \"name\": \"template1\"}, {\"namespace\":\"default\", \"name\": \"template2\"}]",
@@ -185,6 +186,7 @@ categories:
 				},
 			}
 			assert.Equal(t, "appTest", expectedCS.Labels["app"])
+			assert.Equal(t, "default/template1", expectedCS.Annotations["monitor.k8s.webcenter.fr/template"])
 			assert.Equal(t, "[{\"namespace\":\"default\", \"name\": \"template1\"}, {\"namespace\":\"default\", \"name\": \"template2\"}]", expectedCS.Annotations["monitor.k8s.webcenter.fr/templates"])
 			assert.Equal(t, expectedCS.Spec, cs.Spec)
 			assert.NotEmpty(t, cs.OwnerReferences)
@@ -207,8 +209,9 @@ categories:
 					Name:      "template2",
 					Namespace: key.Name,
 					Labels: map[string]string{
-						"app": "appTest",
-						"env": "dev",
+						"app":                               "appTest",
+						"env":                               "dev",
+						"monitor.k8s.webcenter.fr/template": "default/template2",
 					},
 					Annotations: map[string]string{
 						"monitor.k8s.webcenter.fr/templates": "[{\"namespace\":\"default\", \"name\": \"template1\"}, {\"namespace\":\"default\", \"name\": \"template2\"}]",
@@ -229,6 +232,7 @@ categories:
 				},
 			}
 			assert.Equal(t, "appTest", expectedCS.Labels["app"])
+			assert.Equal(t, "default/template2", expectedCS.Annotations["monitor.k8s.webcenter.fr/template"])
 			assert.Equal(t, "[{\"namespace\":\"default\", \"name\": \"template1\"}, {\"namespace\":\"default\", \"name\": \"template2\"}]", expectedCS.Annotations["monitor.k8s.webcenter.fr/templates"])
 			assert.Equal(t, expectedCS.Spec, cs.Spec)
 			assert.NotEmpty(t, cs.OwnerReferences)

@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"html/template"
+	"reflect"
 	"strings"
 
 	"github.com/Masterminds/sprig/v3"
@@ -19,13 +20,17 @@ import (
 	"github.com/sirupsen/logrus"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/handler"
+	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 	"sigs.k8s.io/yaml"
 )
 
+// CentreonController permit to handle all Centreon resource templating
 type CentreonController struct {
 	client.Client
 	Scheme *runtime.Scheme
@@ -36,6 +41,49 @@ type CompareResource struct {
 	Current  client.Object
 	Expected client.Object
 	Diff     *controller.Diff
+}
+
+// SetLogger permit to set logger on Centreon controller
+func (r *CentreonController) SetLogger(log *logrus.Entry) {
+	r.log = log
+}
+
+// Return true if object type is TemplateCentreService
+func isTemplateCentreonService(o client.Object) bool {
+	if reflect.TypeOf(o).Elem().Name() == "TemplateCentreonService" {
+		return true
+	}
+	return false
+}
+
+// watchCentreonTemplate permit to search CentreonService created from TemplateCentreonService to reconcil parents of them
+func watchCentreonTemplate(c client.Client) handler.MapFunc {
+	return func(a client.Object) []reconcile.Request {
+
+		reconcileRequests := make([]reconcile.Request, 0, 0)
+		listCentreonService := &v1alpha1.CentreonServiceList{}
+
+		selectors, err := labels.Parse(fmt.Sprintf("%s/template-name=%s,%s/template-namespace=%s", monitoringAnnotationKey, a.GetName(), monitoringAnnotationKey, a.GetNamespace()))
+		if err != nil {
+			panic(err)
+		}
+
+		// Get all CentreonService created from this template
+		if err := c.List(context.Background(), listCentreonService, &client.ListOptions{LabelSelector: selectors}); err != nil {
+			panic(err)
+		}
+
+		for _, cs := range listCentreonService.Items {
+			logrus.Debugf("Found CentreonService %s/%s", cs.Namespace, cs.Name)
+			// Search parent to reconcile parent
+			for _, parent := range cs.OwnerReferences {
+				logrus.Debugf("Reconcile %s/%s", cs.Namespace, parent.Name)
+				reconcileRequests = append(reconcileRequests, reconcile.Request{NamespacedName: types.NamespacedName{Name: parent.Name, Namespace: cs.Namespace}})
+			}
+		}
+
+		return reconcileRequests
+	}
 }
 
 // readTemplatingCentreonService get all templates from annotations (name and namespace)
@@ -120,6 +168,8 @@ func (r *CentreonController) readTemplatingCentreonService(ctx context.Context, 
 			},
 			Spec: *expectedCSSpec,
 		}
+		expectedCS.Labels[fmt.Sprintf("%s/template-name", monitoringAnnotationKey)] = namespacedName.Name
+		expectedCS.Labels[fmt.Sprintf("%s/template-namespace", monitoringAnnotationKey)] = namespacedName.Namespace
 		// Check CentreonService is valide
 		if !expectedCS.IsValid() {
 			return res, fmt.Errorf("Generated CentreonService is not valid: %+v", expectedCS.Spec)

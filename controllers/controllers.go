@@ -45,24 +45,25 @@ func (r *Reconciler) SetPlatforms(p map[string]*ComputedPlatform) {
 	r.platforms = p
 }
 
-// Handle only resources that have the monitoring annotation
+// Handle only resources that have the monitoring annotation or TemplateCentreonService type
 func viewResourceWithMonitoringTemplate() predicate.Predicate {
 	return predicate.Funcs{
 		UpdateFunc: func(e event.UpdateEvent) bool {
-
-			return isMonitoringTemplateAnnotation(e.ObjectOld.GetAnnotations()) || isMonitoringTemplateAnnotation(e.ObjectNew.GetAnnotations())
+			return isMonitoringTemplateAnnotation(e.ObjectOld.GetAnnotations()) || isMonitoringTemplateAnnotation(e.ObjectNew.GetAnnotations()) || isTemplateCentreonService(e.ObjectNew)
 		},
 		DeleteFunc: func(e event.DeleteEvent) bool {
-			return isMonitoringTemplateAnnotation(e.Object.GetAnnotations())
+			return isMonitoringTemplateAnnotation(e.Object.GetAnnotations()) || isTemplateCentreonService(e.Object)
 		},
 		CreateFunc: func(e event.CreateEvent) bool {
-			return isMonitoringTemplateAnnotation(e.Object.GetAnnotations())
+			return isMonitoringTemplateAnnotation(e.Object.GetAnnotations()) || isTemplateCentreonService(e.Object)
 		},
 		GenericFunc: func(e event.GenericEvent) bool {
-			return isMonitoringAnnotation(e.Object.GetAnnotations())
+			return isMonitoringAnnotation(e.Object.GetAnnotations()) || isTemplateCentreonService(e.Object)
 		},
 	}
 }
+
+// Return true if monitoring annotation is present
 func isMonitoringTemplateAnnotation(annotations map[string]string) bool {
 	if annotations == nil {
 		return false
@@ -80,7 +81,6 @@ func isMonitoringTemplateAnnotation(annotations map[string]string) bool {
 func viewResourceWithMonitoringAnnotationPredicate() predicate.Predicate {
 	return predicate.Funcs{
 		UpdateFunc: func(e event.UpdateEvent) bool {
-
 			return isMonitoringAnnotation(e.ObjectOld.GetAnnotations()) || isMonitoringAnnotation(e.ObjectNew.GetAnnotations())
 		},
 		DeleteFunc: func(e event.DeleteEvent) bool {
@@ -94,6 +94,7 @@ func viewResourceWithMonitoringAnnotationPredicate() predicate.Predicate {
 		},
 	}
 }
+
 func isMonitoringAnnotation(annotations map[string]string) bool {
 	if annotations == nil {
 		return false

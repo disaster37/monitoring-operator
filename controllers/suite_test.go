@@ -191,13 +191,13 @@ func (t *ControllerTestSuite) SetupSuite() {
 		CentreonController: CentreonController{
 			Client: k8sClient,
 			Scheme: scheme.Scheme,
-			log: logrus.WithFields(logrus.Fields{
-				"type": "namespaceController",
-			}),
 		},
 	}
-	namespaceReconsiler.SetLogger(logrus.WithFields(logrus.Fields{
+	namespaceReconsiler.Reconciler.SetLogger(logrus.WithFields(logrus.Fields{
 		"type": "namespaceController",
+	}))
+	namespaceReconsiler.CentreonController.SetLogger(logrus.WithFields(logrus.Fields{
+		"type": "centreonController",
 	}))
 	namespaceReconsiler.SetRecorder(k8sManager.GetEventRecorderFor("namespace-controller"))
 	namespaceReconsiler.SetReconsiler(mock.NewMockReconciler(namespaceReconsiler, t.mockCentreonHandler))

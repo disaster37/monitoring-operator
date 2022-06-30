@@ -97,7 +97,6 @@ func main() {
 		} else {
 			multiNamespacesCached = cache.MultiNamespacedCacheBuilder(watchNamespaces)
 		}
-
 	}
 
 	printVersion(ctrl.Log, metricsAddr, probeAddr)
@@ -169,13 +168,12 @@ func main() {
 	}
 
 	// Set Ingress controller
-
 	ingressController := &controllers.IngressReconciler{
 		Client: mgr.GetClient(),
 		Scheme: mgr.GetScheme(),
 	}
 	ingressController.SetLogger(log.WithFields(logrus.Fields{
-		"type": "IngressCentreonController",
+		"type": "IngressController",
 	}))
 	ingressController.SetRecorder(mgr.GetEventRecorderFor("ingress-controller"))
 	ingressController.SetReconsiler(ingressController)
@@ -198,7 +196,7 @@ func main() {
 			Reconciler: controllers.Reconciler{},
 		}
 		routeController.SetLogger(log.WithFields(logrus.Fields{
-			"type": "RouteCentreonController",
+			"type": "RouteController",
 		}))
 		routeController.SetRecorder(mgr.GetEventRecorderFor("route-controller"))
 		routeController.SetReconsiler(routeController)
@@ -207,6 +205,29 @@ func main() {
 			setupLog.Error(err, "unable to create controller", "controller", "Route")
 			os.Exit(1)
 		}
+	}
+
+	// Set namespace
+	namespaceController := &controllers.NamespaceReconciler{
+		Client: mgr.GetClient(),
+		Scheme: mgr.GetScheme(),
+		CentreonController: controllers.CentreonController{
+			Client: mgr.GetClient(),
+			Scheme: mgr.GetScheme(),
+		},
+	}
+	namespaceController.Reconciler.SetLogger(log.WithFields(logrus.Fields{
+		"type": "NamespaceController",
+	}))
+	namespaceController.CentreonController.SetLogger(log.WithFields(logrus.Fields{
+		"type": "CentreonController",
+	}))
+	namespaceController.SetRecorder(mgr.GetEventRecorderFor("namespace-controller"))
+	namespaceController.SetReconsiler(namespaceController)
+	namespaceController.SetPlatforms(platforms)
+	if err = namespaceController.SetupWithManager(mgr); err != nil {
+		setupLog.Error(err, "unable to create controller", "controller", "Namespace")
+		os.Exit(1)
 	}
 
 	//+kubebuilder:scaffold:builder
