@@ -134,7 +134,7 @@ jobs:
           operator-sdk scorecard bundle
 
   release:
-    needs: [acctest-openshift, acctest-k8s]
+    needs: [acctest-openshift, acctest-k8s, bundle-test]
     runs-on: ubuntu-latest
     if: startsWith(github.ref, 'refs/tags/')
     steps:
