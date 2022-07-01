@@ -49,7 +49,7 @@ func (t *ControllerTestSuite) SetupSuite() {
 	t.mockCentreonHandler = mocks.NewMockCentreonHandler(t.mockCtrl)
 
 	logf.SetLogger(zap.New(zap.UseDevMode(true)))
-	logrus.SetLevel(logrus.DebugLevel)
+	logrus.SetLevel(logrus.TraceLevel)
 	logrus.SetFormatter(&logrus.TextFormatter{
 		DisableQuote: true,
 	})

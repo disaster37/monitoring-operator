@@ -74,10 +74,8 @@ func watchCentreonTemplate(c client.Client) handler.MapFunc {
 		}
 
 		for _, cs := range listCentreonService.Items {
-			logrus.Debugf("Found CentreonService %s/%s", cs.Namespace, cs.Name)
 			// Search parent to reconcile parent
 			for _, parent := range cs.OwnerReferences {
-				logrus.Debugf("Reconcile %s/%s", cs.Namespace, parent.Name)
 				reconcileRequests = append(reconcileRequests, reconcile.Request{NamespacedName: types.NamespacedName{Name: parent.Name, Namespace: cs.Namespace}})
 			}
 		}
@@ -94,7 +92,7 @@ func (r *CentreonController) readTemplatingCentreonService(ctx context.Context, 
 	// Get Templates for CentreonService
 	targetTemplates := resource.GetAnnotations()[fmt.Sprintf("%s/templates", monitoringAnnotationKey)]
 	r.log.Debugf("Raw target template: %s", targetTemplates)
-	listNamespacedName := make([]*types.NamespacedName, 0, 0)
+	listNamespacedName := make([]types.NamespacedName, 0, 0)
 	if targetTemplates != "" {
 		if err = json.Unmarshal([]byte(targetTemplates), &listNamespacedName); err != nil {
 			return res, errors.Wrap(err, "Error when unmarshall the list of CentreonService template")
@@ -123,25 +121,22 @@ func (r *CentreonController) readTemplatingCentreonService(ctx context.Context, 
 	}
 
 	// Get currents resources and compute expected resources
-	listCompareResource := make([]*CompareResource, 0, len(listNamespacedName))
+	listCompareResource := make([]CompareResource, 0, len(listNamespacedName))
 	for _, namespacedName := range listNamespacedName {
 		r.log.Debugf("Process CentreonServiceTemplate %s/%s", namespacedName.Namespace, namespacedName.Name)
-		compareResource := &CompareResource{}
 
 		// Get current resource
 		currentCS := &v1alpha1.CentreonService{}
 		err = r.Get(ctx, types.NamespacedName{Name: namespacedName.Name, Namespace: namespace}, currentCS)
 		if err != nil && k8serrors.IsNotFound(err) {
-			compareResource.Current = nil
+			currentCS = nil
 		} else if err != nil {
 			return res, errors.Wrapf(err, "Error when get CentreonService %s/%s", namespace, namespacedName.Name)
-		} else {
-			compareResource.Current = currentCS
 		}
 
 		// Compute expected resource
 		templateCS := &v1alpha1.TemplateCentreonService{}
-		if err = r.Get(ctx, *namespacedName, templateCS); err != nil {
+		if err = r.Get(ctx, namespacedName, templateCS); err != nil {
 			return res, errors.Wrapf(err, "Error when get CentreonServiceTemplate %s/%s", namespacedName.Namespace, namespacedName.Name)
 		}
 		t, err := template.New("templateCentreonService").Funcs(sprig.FuncMap()).Parse(templateCS.Spec.Template)
@@ -153,9 +148,9 @@ func (r *CentreonController) readTemplatingCentreonService(ctx context.Context, 
 			return res, errors.Wrap(err, "Error when execute template")
 		}
 		r.log.Debugf("Raw CentreonService spec after template it:\n %s", buf.String())
-		expectedCSSpec := &v1alpha1.CentreonServiceSpec{}
+		expectedCSSpec := v1alpha1.CentreonServiceSpec{}
 
-		if err = yaml.Unmarshal(buf.Bytes(), expectedCSSpec); err != nil {
+		if err = yaml.Unmarshal(buf.Bytes(), &expectedCSSpec); err != nil {
 			return res, errors.Wrap(err, "Error when unmarshall expected Centreon service spec")
 		}
 
@@ -163,25 +158,36 @@ func (r *CentreonController) readTemplatingCentreonService(ctx context.Context, 
 			ObjectMeta: metav1.ObjectMeta{
 				Name:        namespacedName.Name,
 				Namespace:   namespace,
-				Labels:      resource.GetLabels(),
-				Annotations: resource.GetAnnotations(),
+				Labels:      helpers.CopyMapString(resource.GetLabels()),
+				Annotations: helpers.CopyMapString(resource.GetAnnotations()),
 			},
-			Spec: *expectedCSSpec,
+			Spec: expectedCSSpec,
 		}
+
+		// Add labels for labelSelectors
+		// Its needed to search CentreonService when TemplateCentreonService change to reconcil parent
 		expectedCS.Labels[fmt.Sprintf("%s/template-name", monitoringAnnotationKey)] = namespacedName.Name
 		expectedCS.Labels[fmt.Sprintf("%s/template-namespace", monitoringAnnotationKey)] = namespacedName.Namespace
+
 		// Check CentreonService is valide
 		if !expectedCS.IsValid() {
 			return res, fmt.Errorf("Generated CentreonService is not valid: %+v", expectedCS.Spec)
 		}
-		r.log.Debugf("Exepcted CentreonService from template %s/%s:\n%s", namespacedName.Namespace, namespacedName.Name, spew.Sdump(expectedCS))
 		// Set namespace instance as the owner
 		ctrl.SetControllerReference(resource, expectedCS, r.Scheme)
-		compareResource.Expected = expectedCS
+		compareResource := CompareResource{
+			Current:  currentCS,
+			Expected: expectedCS,
+			Diff: &controller.Diff{
+				NeedCreate: false,
+				NeedUpdate: false,
+			},
+		}
 
 		listCompareResource = append(listCompareResource, compareResource)
-
 	}
+
+	r.log.Tracef("List of compare resources: %s", spew.Sdump(listCompareResource))
 
 	data["compareResources"] = listCompareResource
 
@@ -196,7 +202,7 @@ func (r *CentreonController) createOrUpdateCentreonServiceFromTemplate(ctx conte
 	if err != nil {
 		return res, err
 	}
-	listCompareResource := d.([]*CompareResource)
+	listCompareResource := d.([]CompareResource)
 
 	for _, compareResource := range listCompareResource {
 		if compareResource.Diff.NeedCreate {
@@ -223,7 +229,8 @@ func (r *CentreonController) diffCentreonService(resource client.Object, data ma
 	if err != nil {
 		return diff, err
 	}
-	listCompareResource := d.([]*CompareResource)
+	listCompareResource := d.([]CompareResource)
+
 	diff = controller.Diff{
 		NeedCreate: false,
 		NeedUpdate: false,
@@ -231,34 +238,29 @@ func (r *CentreonController) diffCentreonService(resource client.Object, data ma
 	var sb strings.Builder
 
 	for _, compareResource := range listCompareResource {
-		localDiff := &controller.Diff{
-			NeedCreate: false,
-			NeedUpdate: false,
-		}
-		compareResource.Diff = localDiff
 
 		// New CentreonService
-		if compareResource.Current == nil {
-			localDiff.NeedCreate = true
-			localDiff.Diff = fmt.Sprintf("CentreonService %s not exist", compareResource.Expected.GetName())
+		if reflect.ValueOf(compareResource.Current).IsNil() {
+			compareResource.Diff.NeedCreate = true
+			compareResource.Diff.Diff = fmt.Sprintf("CentreonService %s not exist", compareResource.Expected.GetName())
 			diff.NeedCreate = true
-			sb.WriteString(localDiff.Diff)
-			continue
+			sb.WriteString(compareResource.Diff.Diff)
+		} else {
+			// EDxisting CentreonService
+			diffSpec := cmp.Diff(compareResource.Current.(*v1alpha1.CentreonService).Spec, compareResource.Expected.(*v1alpha1.CentreonService).Spec)
+			diffLabels := cmp.Diff(compareResource.Current.GetLabels(), compareResource.Expected.GetLabels())
+			diffAnnotations := cmp.Diff(compareResource.Current.GetAnnotations(), compareResource.Expected.GetAnnotations())
+			if diffSpec != "" || diffLabels != "" || diffAnnotations != "" {
+				compareResource.Diff.NeedUpdate = true
+				compareResource.Diff.Diff = fmt.Sprintf("%s\n%s\n%s", diffLabels, diffAnnotations, diffSpec)
+				compareResource.Current.SetLabels(compareResource.Expected.GetLabels())
+				compareResource.Current.SetAnnotations(compareResource.Expected.GetAnnotations())
+				compareResource.Current.(*v1alpha1.CentreonService).Spec = compareResource.Expected.(*v1alpha1.CentreonService).Spec
+				diff.NeedUpdate = true
+				sb.WriteString(compareResource.Diff.Diff)
+			}
 		}
 
-		// EDxisting CentreonService
-		diffSpec := cmp.Diff(compareResource.Current.(*v1alpha1.CentreonService).Spec, compareResource.Expected.(*v1alpha1.CentreonService).Spec)
-		diffLabels := cmp.Diff(compareResource.Current.GetLabels(), compareResource.Expected.GetLabels())
-		diffAnnotations := cmp.Diff(compareResource.Current.GetAnnotations(), compareResource.Expected.GetAnnotations())
-		if diffSpec != "" || diffLabels != "" || diffAnnotations != "" {
-			localDiff.NeedUpdate = true
-			localDiff.Diff = fmt.Sprintf("%s\n%s\n%s", diffLabels, diffAnnotations, diffSpec)
-			compareResource.Current.SetLabels(compareResource.Expected.GetLabels())
-			compareResource.Current.SetAnnotations(compareResource.Expected.GetAnnotations())
-			compareResource.Current.(*v1alpha1.CentreonService).Spec = compareResource.Expected.(*v1alpha1.CentreonService).Spec
-			diff.NeedUpdate = true
-			sb.WriteString(localDiff.Diff)
-		}
 	}
 
 	diff.Diff = sb.String()
