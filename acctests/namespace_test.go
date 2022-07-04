@@ -54,7 +54,7 @@ activate: true`,
 	if err != nil {
 		t.T().Fatal(err)
 	}
-	if tcsu, err = t.k8sclient.Resource(v1alpha1.GroupVersion.WithResource("templateCenteronService")).Create(context.Background(), tcsu, v1.CreateOptions{}); err != nil {
+	if tcsu, err = t.k8sclient.Resource(v1alpha1.GroupVersion.WithResource("templateCentreonService")).Create(context.Background(), tcsu, v1.CreateOptions{}); err != nil {
 		t.T().Fatal(err)
 	}
 
@@ -84,7 +84,7 @@ activate: true`,
 		Groups:              []string{},
 		Categories:          []string{},
 		Macros:              []*models.Macro{
-			&models.Macro{
+			{
 				Name: "LABEL",
 				Value: "bar",
 			},
