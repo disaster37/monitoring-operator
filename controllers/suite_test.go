@@ -49,7 +49,7 @@ func (t *ControllerTestSuite) SetupSuite() {
 	t.mockCentreonHandler = mocks.NewMockCentreonHandler(t.mockCtrl)
 
 	logf.SetLogger(zap.New(zap.UseDevMode(true)))
-	logrus.SetLevel(logrus.DebugLevel)
+	logrus.SetLevel(logrus.TraceLevel)
 	logrus.SetFormatter(&logrus.TextFormatter{
 		DisableQuote: true,
 	})
@@ -162,9 +162,9 @@ func (t *ControllerTestSuite) SetupSuite() {
 		Scheme: scheme.Scheme,
 	}
 	ingressReconsiler.SetLogger(logrus.WithFields(logrus.Fields{
-		"type": "ingressCentreonController",
+		"type": "ingressController",
 	}))
-	ingressReconsiler.SetRecorder(k8sManager.GetEventRecorderFor("ingresscentreon-controller"))
+	ingressReconsiler.SetRecorder(k8sManager.GetEventRecorderFor("ingress-controller"))
 	ingressReconsiler.SetReconsiler(mock.NewMockReconciler(ingressReconsiler, t.mockCentreonHandler))
 	ingressReconsiler.SetPlatforms(platforms)
 	if err = ingressReconsiler.SetupWithManager(k8sManager); err != nil {
@@ -176,12 +176,33 @@ func (t *ControllerTestSuite) SetupSuite() {
 		Scheme: scheme.Scheme,
 	}
 	routeReconsiler.SetLogger(logrus.WithFields(logrus.Fields{
-		"type": "routeCentreonController",
+		"type": "routeController",
 	}))
-	routeReconsiler.SetRecorder(k8sManager.GetEventRecorderFor("routecentreon-controller"))
+	routeReconsiler.SetRecorder(k8sManager.GetEventRecorderFor("route-controller"))
 	routeReconsiler.SetReconsiler(mock.NewMockReconciler(routeReconsiler, t.mockCentreonHandler))
 	routeReconsiler.SetPlatforms(platforms)
 	if err = routeReconsiler.SetupWithManager(k8sManager); err != nil {
+		panic(err)
+	}
+
+	namespaceReconsiler := &NamespaceReconciler{
+		Client: k8sClient,
+		Scheme: scheme.Scheme,
+		CentreonController: CentreonController{
+			Client: k8sClient,
+			Scheme: scheme.Scheme,
+		},
+	}
+	namespaceReconsiler.Reconciler.SetLogger(logrus.WithFields(logrus.Fields{
+		"type": "namespaceController",
+	}))
+	namespaceReconsiler.CentreonController.SetLogger(logrus.WithFields(logrus.Fields{
+		"type": "centreonController",
+	}))
+	namespaceReconsiler.SetRecorder(k8sManager.GetEventRecorderFor("namespace-controller"))
+	namespaceReconsiler.SetReconsiler(mock.NewMockReconciler(namespaceReconsiler, t.mockCentreonHandler))
+	namespaceReconsiler.SetPlatforms(platforms)
+	if err = namespaceReconsiler.SetupWithManager(k8sManager); err != nil {
 		panic(err)
 	}
 

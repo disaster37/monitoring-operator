@@ -217,6 +217,73 @@ spec:
 
 > If you not provide spec key `platformRef`, it use the default platform.
 
+### Namespace
+
+If you need create Centreon service when you create namespace (like monitoring check base on prometheus to check namespace quota, resource usage, etc.), you can add annotation `monitor.k8s.webcenter.fr/templates` with content of json array
+```json
+[
+  {
+    "namespace": "monitoring-operator",
+    "name": "check-namespace-quota"
+  },
+  {
+    "namespace": "monitoring-operator",
+    "name": "check-workloads-state"
+  }
+]
+```
+
+```yaml
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: test
+  annotations:
+    monitor.k8s.webcenter.fr/templates: '[{"namespace":"monitoring-operator","name":"check-namespace-quota"},{"namespace":"monitoring-operator","name":"check-workloads-state"}]'
+    monitoring-host: k8s-virtual-host
+
+
+```
+
+Then you need create associated template. The template is just the CentreonService spec with golang templating syntaxe (look placeholders available on templating).
+
+```yaml
+apiVersion: monitor.k8s.webcenter.fr/v1alpha1
+kind: CentreonService
+metadata:
+  name: check-namespace-quota
+  namespace: monitoring-operator
+spec:
+  template: |
+    activate: true
+    host: {{ .annotations.monitoring-host }}
+    name: "check-namespace-quota_{{ .namespace }}"
+    template: TS_prometheus_quota
+    macros:
+      CHECKTYPE: quota
+      EXTRAOPTIONS: -sS
+      NAMESPACE: {{ .namespace }}
+```
+
+```yaml
+apiVersion: monitor.k8s.webcenter.fr/v1alpha1
+kind: CentreonService
+metadata:
+  name: check-workloads-state
+  namespace: monitoring-operator
+spec:
+  template: |
+    activate: true
+    host: {{ .annotations.monitoring-host }}
+    name: "check-workloads-state_{{ .namespace }}"
+    template: TS_prometheus_workloads
+    macros:
+      CHECKTYPE: workloads
+      EXTRAOPTIONS: -sS
+      NAMESPACE: {{ .namespace }}
+```
+
+Have fun, the two services was created on Centreon when namespace is created.
 
 ### List of annotations for Ingress / Route
 **Global annotations:**

@@ -17,6 +17,14 @@ rules:
 - apiGroups:
   - ""
   resources:
+  - namespaces
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
+  - ""
+  resources:
   - secrets
   verbs:
   - get
@@ -35,14 +43,6 @@ rules:
   - list
   - patch
   - update
-  - watch
-- apiGroups:
-  - monitor.k8s.webcenter.fr
-  resources:
-  - centreons
-  verbs:
-  - get
-  - list
   - watch
 - apiGroups:
   - monitor.k8s.webcenter.fr

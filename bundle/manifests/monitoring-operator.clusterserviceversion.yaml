@@ -52,6 +52,16 @@ metadata:
             "name": "centreon",
             "type": "centreon"
           }
+        },
+        {
+          "apiVersion": "monitor.k8s.webcenter.fr/v1alpha1",
+          "kind": "TemplateCentreonService",
+          "metadata": {
+            "name": "template-sample"
+          },
+          "spec": {
+            "template": "host: localhost\nname: \"test-ping-{{ .namespace }}\"\ntemplate: template-test\nactivate: true\nmacros:\n  CHECKTYPE: quota\n  EXTRAOPTIONS: -sS\n  NAMESPACE: {{ .namespace }}\n"
+          }
         }
       ]
     capabilities: Basic Install
@@ -205,6 +215,25 @@ spec:
         displayName: Conditions
         path: conditions
       version: v1alpha1
+    - description: CentreonServiceTemplate is the Schema for the centreonservicetemplates
+        API
+      displayName: Centreon Service template
+      kind: TemplateCentreonService
+      name: templatecentreonservices.monitor.k8s.webcenter.fr
+      resources:
+      - kind: CentreonService
+        name: centreonservices.monitor.k8s.webcenter.fr
+        version: v1alpha1
+      specDescriptors:
+      - description: The template contend on yaml format base on golang templating.
+          The contend is the CentreService spec.
+        displayName: Template
+        path: template
+      statusDescriptors:
+      - description: None
+        displayName: None
+        path: none
+      version: v1alpha1
   description: |
     A Kubernetes operator based on the Operator SDK for creating and managing monitoring resources on Centreon.
 
@@ -235,6 +264,14 @@ spec:
         - apiGroups:
           - ""
           resources:
+          - namespaces
+          verbs:
+          - get
+          - list
+          - watch
+        - apiGroups:
+          - ""
+          resources:
           - secrets
           verbs:
           - get
@@ -253,14 +290,6 @@ spec:
           - list
           - patch
           - update
-          - watch
-        - apiGroups:
-          - monitor.k8s.webcenter.fr
-          resources:
-          - centreons
-          verbs:
-          - get
-          - list
           - watch
         - apiGroups:
           - monitor.k8s.webcenter.fr
