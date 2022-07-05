@@ -160,9 +160,16 @@ func (t *ControllerTestSuite) SetupSuite() {
 	ingressReconsiler := &IngressReconciler{
 		Client: k8sClient,
 		Scheme: scheme.Scheme,
+		CentreonController: CentreonController{
+			Client: k8sClient,
+			Scheme: scheme.Scheme,
+		},
 	}
-	ingressReconsiler.SetLogger(logrus.WithFields(logrus.Fields{
+	ingressReconsiler.Reconciler.SetLogger(logrus.WithFields(logrus.Fields{
 		"type": "ingressController",
+	}))
+	ingressReconsiler.CentreonController.SetLogger(logrus.WithFields(logrus.Fields{
+		"type": "centreonController",
 	}))
 	ingressReconsiler.SetRecorder(k8sManager.GetEventRecorderFor("ingress-controller"))
 	ingressReconsiler.SetReconsiler(mock.NewMockReconciler(ingressReconsiler, t.mockCentreonHandler))

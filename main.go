@@ -171,9 +171,16 @@ func main() {
 	ingressController := &controllers.IngressReconciler{
 		Client: mgr.GetClient(),
 		Scheme: mgr.GetScheme(),
+		CentreonController: controllers.CentreonController{
+			Client: mgr.GetClient(),
+			Scheme: mgr.GetScheme(),
+		},
 	}
-	ingressController.SetLogger(log.WithFields(logrus.Fields{
+	ingressController.Reconciler.SetLogger(log.WithFields(logrus.Fields{
 		"type": "IngressController",
+	}))
+	ingressController.CentreonController.SetLogger(log.WithFields(logrus.Fields{
+		"type": "CentreonController",
 	}))
 	ingressController.SetRecorder(mgr.GetEventRecorderFor("ingress-controller"))
 	ingressController.SetReconsiler(ingressController)
