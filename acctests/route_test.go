@@ -284,7 +284,7 @@ name: "test-ingress-ping"
 template: "template-test"
 checkCommand: "ping"
 macros:
-LABEL: "{{ .labels.foo }}"
+  LABEL: "{{ .labels.foo }}"
   SCHEME: "{{ $rule.scheme }}"
   HOST: "{{ $rule.host }}"
   PATH: "{{ $path }}"
