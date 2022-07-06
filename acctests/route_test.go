@@ -51,7 +51,7 @@ func (t *AccTestSuite) TestRoute() {
 	}
 
 	/***
-	 * Create new template dedicated for ingress test
+	 * Create new template dedicated for route test
 	 */
 	 tcs := &api.TemplateCentreonService{
 		TypeMeta: v1.TypeMeta{
@@ -280,7 +280,7 @@ activate: true`,
 {{ $rule := index .rules 0}}
 {{ $path := index $rule.paths 0}}
 host: "localhost"
-name: "test-ingress-ping"
+name: "test-route-ping"
 template: "template-test"
 checkCommand: "ping"
 macros:
