@@ -30,6 +30,8 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/handler"
+	"sigs.k8s.io/controller-runtime/pkg/source"
 )
 
 // RouteReconciler reconciles a Route object
@@ -37,6 +39,7 @@ type RouteReconciler struct {
 	Reconciler
 	client.Client
 	Scheme *runtime.Scheme
+	CentreonController
 }
 
 //+kubebuilder:rbac:groups=route.openshift.io,resources=routes,verbs=get;list;watch
@@ -53,7 +56,7 @@ type RouteReconciler struct {
 // For more details, check Reconcile and its Result here:
 // - https://pkg.go.dev/sigs.k8s.io/controller-runtime@v0.10.0/pkg/reconcile
 func (r *RouteReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
-	reconciler, err := controller.NewStdReconciler(r.Client, "", r.reconciler, r.log, r.recorder, waitDurationWhenError)
+	reconciler, err := controller.NewStdReconciler(r.Client, "", r.reconciler, r.Reconciler.log, r.recorder, waitDurationWhenError)
 	if err != nil {
 		return ctrl.Result{}, err
 	}
@@ -70,7 +73,8 @@ func (r *RouteReconciler) SetupWithManager(mgr ctrl.Manager) error {
 		// Uncomment the following line adding a pointer to an instance of the controlled resource as an argument
 		For(&routev1.Route{}).
 		Owns(&monitorv1alpha1.CentreonService{}).
-		WithEventFilter(viewResourceWithMonitoringAnnotationPredicate()).
+		WithEventFilter(viewResourceWithMonitoringTemplate()).
+		Watches(&source.Kind{Type: &v1alpha1.TemplateCentreonService{}}, handler.EnqueueRequestsFromMapFunc(watchCentreonTemplate(r.Client))).
 		Complete(r)
 }
 
@@ -92,7 +96,7 @@ func (r *RouteReconciler) Read(ctx context.Context, resource client.Object, data
 
 	switch platform.Spec.PlatformType {
 	case "centreon":
-		return r.readForCentreonPlatform(ctx, route, platform, data, meta)
+		return r.CentreonController.readTemplatingCentreonService(ctx, route, data, meta, generatePlaceholdersRoute(route))
 	default:
 		return res, errors.Errorf("Platform of type %s is not supported", platform.Spec.PlatformType)
 	}
@@ -111,7 +115,7 @@ func (r *RouteReconciler) Create(ctx context.Context, resource client.Object, da
 
 	switch platform.Spec.PlatformType {
 	case "centreon":
-		return r.createForCentreonPlatform(ctx, resource, data, meta)
+		return r.CentreonController.createOrUpdateCentreonServiceFromTemplate(ctx, resource, data, meta)
 	default:
 		return res, errors.Errorf("Platform of type %s is not supported", platform.Spec.PlatformType)
 	}
@@ -119,20 +123,7 @@ func (r *RouteReconciler) Create(ctx context.Context, resource client.Object, da
 
 // Update permit to update monitoring service object
 func (r *RouteReconciler) Update(ctx context.Context, resource client.Object, data map[string]interface{}, meta interface{}) (res ctrl.Result, err error) {
-	var d any
-
-	d, err = helper.Get(data, "platform")
-	if err != nil {
-		return res, err
-	}
-	platform := d.(*v1alpha1.Platform)
-
-	switch platform.Spec.PlatformType {
-	case "centreon":
-		return r.updateForCentreonPlatform(ctx, resource, data, meta)
-	default:
-		return res, errors.Errorf("Platform of type %s is not supported", platform.Spec.PlatformType)
-	}
+	return r.Create(ctx, resource, data, meta)
 }
 
 // Delete do nothink here
@@ -154,7 +145,7 @@ func (r *RouteReconciler) Diff(resource client.Object, data map[string]interface
 
 	switch platform.Spec.PlatformType {
 	case "centreon":
-		return r.diffForCentreonPlatform(resource, data, data)
+		return r.CentreonController.diffCentreonService(resource, data, meta)
 	default:
 		return diff, errors.Errorf("Platform of type %s is not supported", platform.Spec.PlatformType)
 	}
@@ -163,7 +154,7 @@ func (r *RouteReconciler) Diff(resource client.Object, data map[string]interface
 // OnError permit to set status condition on the right state and record error
 func (r *RouteReconciler) OnError(ctx context.Context, resource client.Object, data map[string]any, meta any, err error) {
 
-	r.log.Error(err)
+	r.Reconciler.log.Error(err)
 	r.recorder.Event(resource, core.EventTypeWarning, "Failed", fmt.Sprintf("Error when generate CentreonService: %s", err.Error()))
 
 }
@@ -185,8 +176,8 @@ func (r *RouteReconciler) OnSuccess(ctx context.Context, resource client.Object,
 }
 
 // It generate map of placeholders from route spec
-func generatePlaceholdersRoute(r *routev1.Route) (placeholders map[string]string) {
-	placeholders = map[string]string{}
+func generatePlaceholdersRoute(r *routev1.Route) (placeholders map[string]any) {
+	placeholders = map[string]any{}
 	if r == nil {
 		return placeholders
 	}
@@ -194,29 +185,27 @@ func generatePlaceholdersRoute(r *routev1.Route) (placeholders map[string]string
 	//Main properties
 	placeholders["name"] = r.Name
 	placeholders["namespace"] = r.Namespace
+	placeholders["labels"] = r.GetLabels()
+	placeholders["annotations"] = r.GetAnnotations()
 
-	// Labels properties
-	for key, value := range r.GetLabels() {
-		placeholders[fmt.Sprintf("label.%s", key)] = value
+	// Set route placeholders on same format as ingress
+	rules := make([]map[string]any, 0, 1)
+	rule := map[string]any{
+		"host": r.Spec.Host,
 	}
-
-	// Annotations properties
-	for key, value := range r.GetAnnotations() {
-		placeholders[fmt.Sprintf("annotation.%s", key)] = value
-	}
-
-	// Route properties
-	placeholders["rule.0.host"] = r.Spec.Host
 	if r.Spec.Path != "" {
-		placeholders["rule.0.path"] = r.Spec.Path
+		rule["paths"] = []string{r.Spec.Path}
 	} else {
-		placeholders["rule.0.path"] = "/"
+		rule["paths"] = []string{"/"}
 	}
 	if r.Spec.TLS != nil && r.Spec.TLS.Termination != "" {
-		placeholders["rule.0.scheme"] = "https"
+		rule["scheme"] = "https"
 	} else {
-		placeholders["rule.0.scheme"] = "http"
+		rule["scheme"] = "http"
 	}
+
+	rules = append(rules, rule)
+	placeholders["rules"] = rules
 
 	return placeholders
 
