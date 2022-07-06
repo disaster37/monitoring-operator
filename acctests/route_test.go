@@ -367,7 +367,6 @@ activate: true`
 	/***
 	 * Delete route
 	 */
-	time.Sleep(20 * time.Second)
 	if err = t.k8sclient.Resource(routeGVR).Namespace("default").Delete(context.Background(), "test-route", *metav1.NewDeleteOptions(0)); err != nil {
 		t.T().Fatal(err)
 	}
