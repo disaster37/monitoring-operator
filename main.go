@@ -198,12 +198,18 @@ func main() {
 	}
 	if isRouteCRD {
 		routeController := &controllers.RouteReconciler{
-			Client:     mgr.GetClient(),
-			Scheme:     mgr.GetScheme(),
-			Reconciler: controllers.Reconciler{},
+			Client: mgr.GetClient(),
+			Scheme: mgr.GetScheme(),
+			CentreonController: controllers.CentreonController{
+				Client: mgr.GetClient(),
+				Scheme: mgr.GetScheme(),
+			},
 		}
-		routeController.SetLogger(log.WithFields(logrus.Fields{
+		routeController.Reconciler.SetLogger(log.WithFields(logrus.Fields{
 			"type": "RouteController",
+		}))
+		routeController.CentreonController.SetLogger(log.WithFields(logrus.Fields{
+			"type": "CentreonController",
 		}))
 		routeController.SetRecorder(mgr.GetEventRecorderFor("route-controller"))
 		routeController.SetReconsiler(routeController)

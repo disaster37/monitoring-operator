@@ -2,10 +2,12 @@ package acctests
 
 import (
 	"context"
+	"fmt"
+	"sort"
 	"time"
 
 	"github.com/disaster37/go-centreon-rest/v21/models"
-	"github.com/disaster37/monitoring-operator/api/v1alpha1"
+	api "github.com/disaster37/monitoring-operator/api/v1alpha1"
 	"github.com/disaster37/monitoring-operator/controllers"
 	"github.com/disaster37/monitoring-operator/pkg/centreonhandler"
 	routev1 "github.com/openshift/api/route/v1"
@@ -22,7 +24,7 @@ import (
 func (t *AccTestSuite) TestRoute() {
 
 	var (
-		cs        *v1alpha1.CentreonService
+		cs        *api.CentreonService
 		ucs       *unstructured.Unstructured
 		s         *centreonhandler.CentreonService
 		expectedS *centreonhandler.CentreonService
@@ -39,16 +41,48 @@ func (t *AccTestSuite) TestRoute() {
 		t.T().Skip("Not Openshift cluster, skit it")
 	}
 
-	centreonServiceGVR := schema.GroupVersionResource{
-		Group:    "monitor.k8s.webcenter.fr",
-		Version:  "v1alpha1",
-		Resource: "centreonservices",
-	}
+	centreonServiceGVR := api.GroupVersion.WithResource("centreonservices")
+	templateCentreonServiceGVR := api.GroupVersion.WithResource("templatecentreonservices")
 
 	routeGVR := schema.GroupVersionResource{
 		Group:    "route.openshift.io",
 		Version:  "v1",
 		Resource: "routes",
+	}
+
+	/***
+	 * Create new template dedicated for ingress test
+	 */
+	 tcs := &api.TemplateCentreonService{
+		TypeMeta: v1.TypeMeta{
+			Kind:       "TemplateCentreonService",
+			APIVersion: fmt.Sprintf("%s/%s", api.GroupVersion.Group, api.GroupVersion.Version),
+		},
+		ObjectMeta: metav1.ObjectMeta{
+			Name: "check-route",
+		},
+		Spec: api.TemplateCentreonServiceSpec{
+			Template: `
+{{ $rule := index .rules 0}}
+{{ $path := index $rule.paths 0}}
+host: "localhost"
+name: "test-route-ping"
+template: "template-test"
+checkCommand: "ping"
+macros:
+  LABEL: "{{ .labels.foo }}"
+  SCHEME: "{{ $rule.scheme }}"
+  HOST: "{{ $rule.host }}"
+  PATH: "{{ $path }}"
+activate: true`,
+		},
+	}
+	tcsu, err := structuredToUntructured(tcs)
+	if err != nil {
+		t.T().Fatal(err)
+	}
+	if _, err = t.k8sclient.Resource(templateCentreonServiceGVR).Namespace("default").Create(context.Background(), tcsu, v1.CreateOptions{}); err != nil {
+		t.T().Fatal(err)
 	}
 
 	/***
@@ -58,12 +92,10 @@ func (t *AccTestSuite) TestRoute() {
 		ObjectMeta: metav1.ObjectMeta{
 			Name: "test-route",
 			Annotations: map[string]string{
-				"monitor.k8s.webcenter.fr/discover":               "true",
-				"centreon.monitor.k8s.webcenter.fr/name":          "test-route-ping",
-				"centreon.monitor.k8s.webcenter.fr/template":      "template-test",
-				"centreon.monitor.k8s.webcenter.fr/host":          "localhost",
-				"centreon.monitor.k8s.webcenter.fr/activated":     "1",
-				"centreon.monitor.k8s.webcenter.fr/check-command": "ping",
+				"monitor.k8s.webcenter.fr/templates": `[{"namespace":"default", "name": "check-route"}]`,
+			},
+			Labels: map[string]string{
+				"foo": "bar",
 			},
 		},
 		Spec: routev1.RouteSpec{
@@ -88,8 +120,29 @@ func (t *AccTestSuite) TestRoute() {
 		Comment:             "Managed by monitoring-operator",
 		Groups:              []string{},
 		Categories:          []string{},
-		Macros:              []*models.Macro{},
-		Activated:           "1",
+		Macros: []*models.Macro{
+			{
+				Name:   "LABEL",
+				Value:  "bar",
+				Source: "direct",
+			},
+			{
+				Name:   "SCHEME",
+				Value:  "http",
+				Source: "direct",
+			},
+			{
+				Name:   "HOST",
+				Value:  "front.local.local",
+				Source: "direct",
+			},
+			{
+				Name:   "PATH",
+				Value:  "/",
+				Source: "direct",
+			},
+		},
+		Activated: "1",
 	}
 	uRoute, err = structuredToUntructured(route)
 	if err != nil {
@@ -102,8 +155,8 @@ func (t *AccTestSuite) TestRoute() {
 	time.Sleep(20 * time.Second)
 
 	// Check that CentreonService created and in right status
-	cs = &v1alpha1.CentreonService{}
-	ucs, err = t.k8sclient.Resource(centreonServiceGVR).Namespace("default").Get(context.Background(), "test-route", v1.GetOptions{})
+	cs = &api.CentreonService{}
+	ucs, err = t.k8sclient.Resource(centreonServiceGVR).Namespace("default").Get(context.Background(), "check-route", v1.GetOptions{})
 	if err != nil {
 		assert.Fail(t.T(), err.Error())
 	}
@@ -120,6 +173,14 @@ func (t *AccTestSuite) TestRoute() {
 		t.T().Fatal(err)
 	}
 	assert.NotNil(t.T(), s)
+
+	// Sort macro to fix test
+	sort.Slice(expectedS.Macros, func(i, j int) bool {
+		return expectedS.Macros[i].Name < expectedS.Macros[j].Name
+	})
+	sort.Slice(s.Macros, func(i, j int) bool {
+		return s.Macros[i].Name < s.Macros[j].Name
+	})
 	assert.Equal(t.T(), expectedS, s)
 
 	/***
@@ -133,13 +194,7 @@ func (t *AccTestSuite) TestRoute() {
 	if err = unstructuredToStructured(uRoute, route); err != nil {
 		assert.Fail(t.T(), err.Error())
 	}
-	route.Annotations["centreon.monitor.k8s.webcenter.fr/groups"] = "sg1"
-	route.Annotations["centreon.monitor.k8s.webcenter.fr/categories"] = "Ping"
-	route.Annotations["centreon.monitor.k8s.webcenter.fr/arguments"] = "arg1"
-	route.Annotations["centreon.monitor.k8s.webcenter.fr/normal-check-interval"] = "60"
-	route.Annotations["centreon.monitor.k8s.webcenter.fr/retry-check-interval"] = "10"
-	route.Annotations["centreon.monitor.k8s.webcenter.fr/max-check-attempts"] = "2"
-	route.Annotations["centreon.monitor.k8s.webcenter.fr/macros"] = `{"MAC1": "value"}`
+	route.Labels = map[string]string{"foo": "bar2"}
 	uRoute, err = structuredToUntructured(route)
 	if err != nil {
 		assert.Fail(t.T(), err.Error())
@@ -153,20 +208,31 @@ func (t *AccTestSuite) TestRoute() {
 		PassiveCheckEnabled: "2",
 		ActiveCheckEnabled:  "2",
 		Comment:             "Managed by monitoring-operator",
-		Groups:              []string{"sg1"},
-		Categories:          []string{"Ping"},
+		Groups:              []string{},
+		Categories:          []string{},
 		Macros: []*models.Macro{
 			{
-				Name:   "MAC1",
-				Value:  "value",
+				Name:   "LABEL",
+				Value:  "bar2",
+				Source: "direct",
+			},
+			{
+				Name:   "SCHEME",
+				Value:  "http",
+				Source: "direct",
+			},
+			{
+				Name:   "HOST",
+				Value:  "front.local.local",
+				Source: "direct",
+			},
+			{
+				Name:   "PATH",
+				Value:  "/",
 				Source: "direct",
 			},
 		},
-		Activated:           "1",
-		NormalCheckInterval: "60",
-		RetryCheckInterval:  "10",
-		MaxCheckAttempts:    "2",
-		CheckCommandArgs:    "!arg1",
+		Activated: "1",
 	}
 	_, err = t.k8sclient.Resource(routeGVR).Namespace("default").Update(context.Background(), uRoute, v1.UpdateOptions{})
 	if err != nil {
@@ -174,13 +240,14 @@ func (t *AccTestSuite) TestRoute() {
 	}
 	time.Sleep(20 * time.Second)
 
-	ucs, err = t.k8sclient.Resource(centreonServiceGVR).Namespace("default").Get(context.Background(), "test-route", v1.GetOptions{})
+	ucs, err = t.k8sclient.Resource(centreonServiceGVR).Namespace("default").Get(context.Background(), "check-route", v1.GetOptions{})
 	if err != nil {
 		t.T().Fatal(err)
 	}
 	if err = unstructuredToStructured(ucs, cs); err != nil {
 		t.T().Fatal(err)
 	}
+	assert.Equal(t.T(), "bar2", cs.Spec.Macros["LABEL"])
 
 	// Check service updated on Centreon
 	s, err = t.centreon.GetService("localhost", "test-route-ping")
@@ -188,13 +255,120 @@ func (t *AccTestSuite) TestRoute() {
 		t.T().Fatal(err)
 	}
 	assert.NotNil(t.T(), s)
+
+	// Sort macro to fix test
+	sort.Slice(expectedS.Macros, func(i, j int) bool {
+		return expectedS.Macros[i].Name < expectedS.Macros[j].Name
+	})
+	sort.Slice(s.Macros, func(i, j int) bool {
+		return s.Macros[i].Name < s.Macros[j].Name
+	})
 	assert.Equal(t.T(), expectedS, s)
+
+	/***
+	 * Update route template
+	 */
+	 time.Sleep(30 * time.Second)
+	 tcsu, err = t.k8sclient.Resource(templateCentreonServiceGVR).Namespace("default").Get(context.Background(), "check-route", v1.GetOptions{})
+	 if err != nil {
+		 t.T().Fatal(err)
+	 }
+	 if err = unstructuredToStructured(tcsu, tcs); err != nil {
+		 t.T().Fatal(err)
+	 }
+	 tcs.Spec.Template = `
+ {{ $rule := index .rules 0}}
+ {{ $path := index $rule.paths 0}}
+ host: "localhost"
+ name: "test-ingress-ping"
+ template: "template-test"
+ checkCommand: "ping"
+ macros:
+	 LABEL: "{{ .labels.foo }}"
+	 SCHEME: "{{ $rule.scheme }}"
+	 HOST: "{{ $rule.host }}"
+	 PATH: "{{ $path }}"
+	 TEST: "plop"
+ activate: true`
+ 
+	 tcsu, err = structuredToUntructured(tcs)
+	 if err != nil {
+		 t.T().Fatal(err)
+	 }
+	 if _, err = t.k8sclient.Resource(templateCentreonServiceGVR).Namespace("default").Update(context.Background(), tcsu, v1.UpdateOptions{}); err != nil {
+		 t.T().Fatal(err)
+	 }
+ 
+	 expectedS = &centreonhandler.CentreonService{
+		 Host:                "localhost",
+		 Name:                "test-route-ping",
+		 CheckCommand:        "ping",
+		 Template:            "template-test",
+		 PassiveCheckEnabled: "2",
+		 ActiveCheckEnabled:  "2",
+		 Comment:             "Managed by monitoring-operator",
+		 Groups:              []string{},
+		 Categories:          []string{},
+		 Macros: []*models.Macro{
+			 {
+				 Name:   "LABEL",
+				 Value:  "bar2",
+				 Source: "direct",
+			 },
+			 {
+				 Name:   "SCHEME",
+				 Value:  "http",
+				 Source: "direct",
+			 },
+			 {
+				 Name:   "HOST",
+				 Value:  "front.local.local",
+				 Source: "direct",
+			 },
+			 {
+				 Name:   "PATH",
+				 Value:  "/",
+				 Source: "direct",
+			 },
+			 {
+				 Name:   "TEST",
+				 Value:  "plop",
+				 Source: "direct",
+			 },
+		 },
+		 Activated: "1",
+	 }
+	 time.Sleep(20 * time.Second)
+ 
+	 ucs, err = t.k8sclient.Resource(centreonServiceGVR).Namespace("default").Get(context.Background(), "check-route", v1.GetOptions{})
+	 if err != nil {
+		 t.T().Fatal(err)
+	 }
+	 if err = unstructuredToStructured(ucs, cs); err != nil {
+		 t.T().Fatal(err)
+	 }
+	 assert.Equal(t.T(), "plop", cs.Spec.Macros["TEST"])
+ 
+	 // Check service updated on Centreon
+	 s, err = t.centreon.GetService("localhost", "test-route-ping")
+	 if err != nil {
+		 t.T().Fatal(err)
+	 }
+	 assert.NotNil(t.T(), s)
+	 // Sort macro to fix test
+	 sort.Slice(expectedS.Macros, func(i, j int) bool {
+		 return expectedS.Macros[i].Name < expectedS.Macros[j].Name
+	 })
+	 sort.Slice(s.Macros, func(i, j int) bool {
+		 return s.Macros[i].Name < s.Macros[j].Name
+	 })
+	 assert.Equal(t.T(), expectedS, s)
 
 	/***
 	 * Delete route
 	 */
 	time.Sleep(20 * time.Second)
-	if err = t.k8sclient.Resource(routeGVR).Namespace("default").Delete(context.Background(), "test-route", *metav1.NewDeleteOptions(0)); err != nil {
+	if err = t.k8sclient.Resource(routeGVR).Namespace("default").Delete(context.Background(), "check-route", *metav1.NewDeleteOptions(0)); err != nil {
 		t.T().Fatal(err)
 	}
 	time.Sleep(20 * time.Second)
