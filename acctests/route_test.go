@@ -276,20 +276,20 @@ activate: true`,
 	 if err = unstructuredToStructured(tcsu, tcs); err != nil {
 		 t.T().Fatal(err)
 	 }
-	 tcs.Spec.Template = `
- {{ $rule := index .rules 0}}
- {{ $path := index $rule.paths 0}}
- host: "localhost"
- name: "test-ingress-ping"
- template: "template-test"
- checkCommand: "ping"
- macros:
-	 LABEL: "{{ .labels.foo }}"
-	 SCHEME: "{{ $rule.scheme }}"
-	 HOST: "{{ $rule.host }}"
-	 PATH: "{{ $path }}"
-	 TEST: "plop"
- activate: true`
+	tcs.Spec.Template = `
+{{ $rule := index .rules 0}}
+{{ $path := index $rule.paths 0}}
+host: "localhost"
+name: "test-ingress-ping"
+template: "template-test"
+checkCommand: "ping"
+macros:
+LABEL: "{{ .labels.foo }}"
+  SCHEME: "{{ $rule.scheme }}"
+  HOST: "{{ $rule.host }}"
+  PATH: "{{ $path }}"
+  TEST: "plop"
+activate: true`
  
 	 tcsu, err = structuredToUntructured(tcs)
 	 if err != nil {
