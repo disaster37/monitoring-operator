@@ -30,6 +30,8 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/handler"
+	"sigs.k8s.io/controller-runtime/pkg/source"
 )
 
 // IngressReconciler reconciles a Ingress object
@@ -37,6 +39,7 @@ type IngressReconciler struct {
 	Reconciler
 	client.Client
 	Scheme *runtime.Scheme
+	CentreonController
 }
 
 //+kubebuilder:rbac:groups=networking.k8s.io,resources=ingresses,verbs=get;list;watch
@@ -54,7 +57,7 @@ type IngressReconciler struct {
 // - https://pkg.go.dev/sigs.k8s.io/controller-runtime@v0.10.0/pkg/reconcile
 func (r *IngressReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 
-	reconciler, err := controller.NewStdReconciler(r.Client, "", r.reconciler, r.log, r.recorder, waitDurationWhenError)
+	reconciler, err := controller.NewStdReconciler(r.Client, "", r.reconciler, r.Reconciler.log, r.recorder, waitDurationWhenError)
 	if err != nil {
 		return ctrl.Result{}, err
 	}
@@ -72,7 +75,8 @@ func (r *IngressReconciler) SetupWithManager(mgr ctrl.Manager) error {
 		// Uncomment the following line adding a pointer to an instance of the controlled resource as an argument
 		For(&networkv1.Ingress{}).
 		Owns(&monitorv1alpha1.CentreonService{}).
-		WithEventFilter(viewResourceWithMonitoringAnnotationPredicate()).
+		WithEventFilter(viewResourceWithMonitoringTemplate()).
+		Watches(&source.Kind{Type: &v1alpha1.TemplateCentreonService{}}, handler.EnqueueRequestsFromMapFunc(watchCentreonTemplate(r.Client))).
 		Complete(r)
 }
 
@@ -94,7 +98,7 @@ func (r *IngressReconciler) Read(ctx context.Context, resource client.Object, da
 
 	switch platform.Spec.PlatformType {
 	case "centreon":
-		return r.readForCentreonPlatform(ctx, ingress, platform, data, meta)
+		return r.CentreonController.readTemplatingCentreonService(ctx, ingress, data, meta, generatePlaceholdersIngress(ingress))
 	default:
 		return res, errors.Errorf("Platform of type %s is not supported", platform.Spec.PlatformType)
 	}
@@ -113,7 +117,7 @@ func (r *IngressReconciler) Create(ctx context.Context, resource client.Object, 
 
 	switch platform.Spec.PlatformType {
 	case "centreon":
-		return r.createForCentreonPlatform(ctx, resource, data, meta)
+		return r.CentreonController.createOrUpdateCentreonServiceFromTemplate(ctx, resource, data, meta)
 	default:
 		return res, errors.Errorf("Platform of type %s is not supported", platform.Spec.PlatformType)
 	}
@@ -121,20 +125,7 @@ func (r *IngressReconciler) Create(ctx context.Context, resource client.Object, 
 
 // Update permit to update service object
 func (r *IngressReconciler) Update(ctx context.Context, resource client.Object, data map[string]interface{}, meta interface{}) (res ctrl.Result, err error) {
-	var d any
-
-	d, err = helper.Get(data, "platform")
-	if err != nil {
-		return res, err
-	}
-	platform := d.(*v1alpha1.Platform)
-
-	switch platform.Spec.PlatformType {
-	case "centreon":
-		return r.updateForCentreonPlatform(ctx, resource, data, meta)
-	default:
-		return res, errors.Errorf("Platform of type %s is not supported", platform.Spec.PlatformType)
-	}
+	return r.Create(ctx, resource, data, meta)
 }
 
 // Delete do nothink here
@@ -156,7 +147,7 @@ func (r *IngressReconciler) Diff(resource client.Object, data map[string]interfa
 
 	switch platform.Spec.PlatformType {
 	case "centreon":
-		return r.diffForCentreonPlatform(resource, data, data)
+		return r.CentreonController.diffCentreonService(resource, data, meta)
 	default:
 		return diff, errors.Errorf("Platform of type %s is not supported", platform.Spec.PlatformType)
 	}
@@ -165,7 +156,7 @@ func (r *IngressReconciler) Diff(resource client.Object, data map[string]interfa
 // OnError permit to set status condition on the right state and record error
 func (r *IngressReconciler) OnError(ctx context.Context, resource client.Object, data map[string]any, meta any, err error) {
 
-	r.log.Error(err)
+	r.Reconciler.log.Error(err)
 	r.recorder.Event(resource, core.EventTypeWarning, "Failed", fmt.Sprintf("Error when generate CentreonService: %s", err.Error()))
 
 }
@@ -187,8 +178,8 @@ func (r *IngressReconciler) OnSuccess(ctx context.Context, resource client.Objec
 }
 
 // It generate map of placeholders from ingress spec
-func generatePlaceholdersIngress(i *networkv1.Ingress) (placeholders map[string]string) {
-	placeholders = map[string]string{}
+func generatePlaceholdersIngress(i *networkv1.Ingress) (placeholders map[string]any) {
+	placeholders = map[string]any{}
 	if i == nil {
 		return placeholders
 	}
@@ -196,36 +187,35 @@ func generatePlaceholdersIngress(i *networkv1.Ingress) (placeholders map[string]
 	//Main properties
 	placeholders["name"] = i.Name
 	placeholders["namespace"] = i.Namespace
-
-	// Labels properties
-	for key, value := range i.GetLabels() {
-		placeholders[fmt.Sprintf("label.%s", key)] = value
-	}
-
-	// Annotations properties
-	for key, value := range i.GetAnnotations() {
-		placeholders[fmt.Sprintf("annotation.%s", key)] = value
-	}
+	placeholders["labels"] = i.GetLabels()
+	placeholders["annotations"] = i.GetAnnotations()
 
 	// Ingress properties
-	for j, rule := range i.Spec.Rules {
-		placeholders[fmt.Sprintf("rule.%d.host", j)] = rule.Host
+	rules := make([]map[string]any, 0, len(i.Spec.Rules))
+	for _, rule := range i.Spec.Rules {
+		r := map[string]any{
+			"host":   rule.Host,
+			"scheme": "http",
+		}
 
-		// Check if scheme is http or https
-		placeholders[fmt.Sprintf("rule.%d.scheme", j)] = "http"
+		// Check if scheme is https
 		for _, tls := range i.Spec.TLS {
 			for _, host := range tls.Hosts {
 				if host == rule.Host {
-					placeholders[fmt.Sprintf("rule.%d.scheme", j)] = "https"
+					r["scheme"] = "https"
 				}
 			}
 		}
 
 		// Add path
-		for k, path := range rule.HTTP.Paths {
-			placeholders[fmt.Sprintf("rule.%d.path.%d", j, k)] = path.Path
+		paths := make([]string, 0, len(rule.HTTP.Paths))
+		for _, path := range rule.HTTP.Paths {
+			paths = append(paths, path.Path)
 		}
+		r["paths"] = paths
+		rules = append(rules, r)
 	}
+	placeholders["rules"] = rules
 
 	return placeholders
 
