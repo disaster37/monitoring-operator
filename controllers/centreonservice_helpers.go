@@ -1,5 +1,6 @@
 package controllers
 
+/*
 import (
 	"encoding/json"
 	"fmt"
@@ -108,3 +109,4 @@ func initCentreonServiceDefaultValue(endpointSpec *v1alpha1.CentreonSpecEndpoint
 
 	cs.Spec.Name = helpers.PlaceholdersInString(endpointSpec.NameTemplate, placesholders)
 }
+*/

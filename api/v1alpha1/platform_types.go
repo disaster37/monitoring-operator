@@ -62,59 +62,6 @@ type PlatformSpecCentreonSettings struct {
 	// It need to have `username` and `password` key
 	// +operator-sdk:csv:customresourcedefinitions:type=spec
 	Secret string `json:"secret"`
-
-	// The endpoint default setting
-	// +operator-sdk:csv:customresourcedefinitions:type=spec
-	// +optional
-	Endpoint *CentreonSpecEndpoint `json:"endpoint,omitempty"`
-}
-
-// General configuration setting when handle monitring service from endpoint (Ingress / Route)
-// +k8s:openapi-gen=true
-type CentreonSpecEndpoint struct {
-
-	// The default service template to use when create service from endpoint
-	// It normally optional, but Centreon bug impose to set an existed template
-	// +operator-sdk:csv:customresourcedefinitions:type=spec
-	Template string `json:"template"`
-
-	// The default template name when create service from endpoint
-	// +optional
-	// +operator-sdk:csv:customresourcedefinitions:type=spec
-	NameTemplate string `json:"nameTemplate,omitempty"`
-
-	// The default host to attach service
-	// +optional
-	// +operator-sdk:csv:customresourcedefinitions:type=spec
-	DefaultHost string `json:"defaultHost,omitempty"`
-
-	// The default macro to set when create service
-	// You can use special tag to generate value on the flow
-	// +optional
-	// +operator-sdk:csv:customresourcedefinitions:type=spec
-	Macros map[string]string `json:"macros,omitempty"`
-
-	// The default command arguements to set when create service
-	// You can use special tag to generate value on the flow
-	// +optional
-	// +operator-sdk:csv:customresourcedefinitions:type=spec
-	Arguments []string `json:"arguments,omitempty"`
-
-	// By default, activate service when created it
-	// Default to true
-	// +optional
-	// +operator-sdk:csv:customresourcedefinitions:type=spec
-	ActivateService bool `json:"activeService,omitempty"`
-
-	// Default service groups
-	// +optional
-	// +operator-sdk:csv:customresourcedefinitions:type=spec
-	ServiceGroups []string `json:"serviceGroups,omitempty"`
-
-	// Default categories
-	// +optional
-	// +operator-sdk:csv:customresourcedefinitions:type=spec
-	Categories []string `json:"categories,omitempty"`
 }
 
 // PlatformStatus defines the observed state of Platform

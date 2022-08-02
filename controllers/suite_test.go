@@ -105,24 +105,10 @@ func (t *ControllerTestSuite) SetupSuite() {
 					Namespace: "default",
 				},
 				Spec: v1alpha1.PlatformSpec{
-					IsDefault:    true,
-					Name:         "default",
-					PlatformType: "centreon",
-					CentreonSettings: &v1alpha1.PlatformSpecCentreonSettings{
-						Endpoint: &v1alpha1.CentreonSpecEndpoint{
-							Template:     "template",
-							DefaultHost:  "localhost",
-							NameTemplate: "ping",
-							Macros: map[string]string{
-								"mac1": "value1",
-								"mac2": "value2",
-							},
-							Arguments:       []string{"arg1", "arg2"},
-							ActivateService: true,
-							ServiceGroups:   []string{"sg1"},
-							Categories:      []string{"cat1"},
-						},
-					},
+					IsDefault:        true,
+					Name:             "default",
+					PlatformType:     "centreon",
+					CentreonSettings: &v1alpha1.PlatformSpecCentreonSettings{},
 				},
 			},
 			client: t.mockCentreonHandler,
