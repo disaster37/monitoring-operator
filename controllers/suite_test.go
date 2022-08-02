@@ -181,9 +181,16 @@ func (t *ControllerTestSuite) SetupSuite() {
 	routeReconsiler := &RouteReconciler{
 		Client: k8sClient,
 		Scheme: scheme.Scheme,
+		CentreonController: CentreonController{
+			Client: k8sClient,
+			Scheme: scheme.Scheme,
+		},
 	}
-	routeReconsiler.SetLogger(logrus.WithFields(logrus.Fields{
+	routeReconsiler.Reconciler.SetLogger(logrus.WithFields(logrus.Fields{
 		"type": "routeController",
+	}))
+	routeReconsiler.CentreonController.SetLogger(logrus.WithFields(logrus.Fields{
+		"type": "centreonController",
 	}))
 	routeReconsiler.SetRecorder(k8sManager.GetEventRecorderFor("route-controller"))
 	routeReconsiler.SetReconsiler(mock.NewMockReconciler(routeReconsiler, t.mockCentreonHandler))
