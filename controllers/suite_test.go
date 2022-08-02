@@ -106,7 +106,6 @@ func (t *ControllerTestSuite) SetupSuite() {
 				},
 				Spec: v1alpha1.PlatformSpec{
 					IsDefault:        true,
-					Name:             "default",
 					PlatformType:     "centreon",
 					CentreonSettings: &v1alpha1.PlatformSpecCentreonSettings{},
 				},

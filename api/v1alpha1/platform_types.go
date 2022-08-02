@@ -29,10 +29,6 @@ type PlatformSpec struct {
 	// INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
 	// Important: Run "make" to regenerate code after modifying this file
 
-	// Name is the unique name for platform
-	// +operator-sdk:csv:customresourcedefinitions:type=spec
-	Name string `json:"name"`
-
 	// IsDefault is set to tru to use this plateform when is not specify on resource to create
 	// +operator-sdk:csv:customresourcedefinitions:type=spec
 	IsDefault bool `json:"isDefault"`

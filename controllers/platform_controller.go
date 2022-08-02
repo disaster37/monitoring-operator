@@ -208,7 +208,7 @@ func (r *PlatformReconciler) Create(ctx context.Context, resource client.Object,
 	if p.Spec.IsDefault {
 		r.platforms["default"] = d.(*ComputedPlatform)
 	}
-	r.platforms[p.Spec.Name] = d.(*ComputedPlatform)
+	r.platforms[p.Name] = d.(*ComputedPlatform)
 
 	return res, nil
 }
@@ -225,7 +225,7 @@ func (r *PlatformReconciler) Delete(ctx context.Context, resource client.Object,
 	if p.Spec.IsDefault {
 		delete(r.platforms, "default")
 	}
-	delete(r.platforms, p.Spec.Name)
+	delete(r.platforms, p.Name)
 
 	return nil
 }
@@ -247,7 +247,7 @@ func (r *PlatformReconciler) Diff(resource client.Object, data map[string]interf
 	}
 
 	// New platform
-	if r.platforms[p.Spec.Name] == nil {
+	if r.platforms[p.Name] == nil {
 		diff.NeedCreate = true
 		diff.Diff = "New plaform"
 
@@ -255,14 +255,14 @@ func (r *PlatformReconciler) Diff(resource client.Object, data map[string]interf
 	}
 
 	// Client change
-	if r.platforms[p.Spec.Name].hash != pTarget.hash {
+	if r.platforms[p.Name].hash != pTarget.hash {
 		diff.NeedUpdate = true
 		diff.Diff = "Secret change on platform"
 		return diff, nil
 	}
 
 	// Platform change
-	diffStr := cmp.Diff(r.platforms[p.Spec.Name].platform.Spec, p.Spec)
+	diffStr := cmp.Diff(r.platforms[p.Name].platform.Spec, p.Spec)
 	if diffStr != "" {
 		diff.NeedUpdate = true
 		diff.Diff = diffStr
@@ -359,7 +359,7 @@ func ComputedPlatformList(ctx context.Context, cd dynamic.Interface, c kubernete
 			if err != nil {
 				return nil, errors.Wrapf(err, "Error when compute platform %s", p.Name)
 			}
-			platforms[p.Spec.Name] = cp
+			platforms[p.Name] = cp
 			if p.Spec.IsDefault {
 				platforms["default"] = cp
 			}

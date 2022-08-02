@@ -61,16 +61,12 @@ spec:
                 description: IsDefault is set to tru to use this plateform when is
                   not specify on resource to create
                 type: boolean
-              name:
-                description: Name is the unique name for platform
-                type: string
               type:
                 description: PlatformType is the platform type. It support only `centreon`
                   at this time
                 type: string
             required:
             - isDefault
-            - name
             - type
             type: object
           status:
