@@ -1,6 +1,7 @@
 package controllers
 
 import (
+	"context"
 	"os"
 	"path/filepath"
 	"testing"
@@ -93,6 +94,13 @@ func (t *ControllerTestSuite) SetupSuite() {
 	}
 	k8sClient := k8sManager.GetClient()
 	t.k8sClient = k8sClient
+
+	if err := k8sManager.GetFieldIndexer().IndexField(context.Background(), &v1alpha1.Platform{}, "spec.centreonSettings.secret", func(o client.Object) []string {
+		p := o.(*v1alpha1.Platform)
+		return []string{p.Spec.CentreonSettings.Secret}
+	}); err != nil {
+		panic(err)
+	}
 
 	// Init controllers
 	os.Setenv("OPERATOR_NAMESPACE", "default")
