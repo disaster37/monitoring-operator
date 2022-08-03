@@ -34,6 +34,7 @@ import (
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/cache"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/healthz"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 
@@ -126,6 +127,15 @@ func main() {
 		os.Exit(1)
 	}
 
+	// Set indexers
+	if err := mgr.GetFieldIndexer().IndexField(context.Background(), &v1alpha1.Platform{}, "spec.centreonSettings.secret", func(o client.Object) []string {
+		p := o.(*v1alpha1.Platform)
+		return []string{p.Spec.CentreonSettings.Secret}
+	}); err != nil {
+		setupLog.Error(err, "unable to create indexers", "indexers", "Platform")
+		os.Exit(1)
+	}
+
 	// Get platforms
 	// Not block if errors, maybee not yet platform available
 	platforms, err := controllers.ComputedPlatformList(context.Background(), dynamic.NewForConfigOrDie(cfg), kubernetes.NewForConfigOrDie(cfg), log.WithFields(logrus.Fields{
@@ -165,15 +175,6 @@ func main() {
 	centreonServiceController.SetPlatforms(platforms)
 	if err = centreonServiceController.SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "CentreonService")
-		os.Exit(1)
-	}
-
-	// Set indexers
-	if err := mgr.GetFieldIndexer().IndexField(context.Background(), &v1alpha1.Platform{}, "spec.centreonSettings.secret", func(o client.Object) []string {
-		p := o.(*v1alpha1.Platform)
-		return []string{p.Spec.CentreonSettings.Secret}
-	}); err != nil {
-		setupLog.Error(err, "unable to create indexers", "indexers", "Platform")
 		os.Exit(1)
 	}
 
