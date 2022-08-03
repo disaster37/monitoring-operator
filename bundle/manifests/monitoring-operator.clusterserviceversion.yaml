@@ -21,35 +21,15 @@ metadata:
           "apiVersion": "monitor.k8s.webcenter.fr/v1alpha1",
           "kind": "Platform",
           "metadata": {
-            "name": "sample"
+            "name": "centreon"
           },
           "spec": {
             "centreonSettings": {
-              "endpoint": {
-                "activeService": true,
-                "arguments": [
-                  "\u003crule.0.host\u003e"
-                ],
-                "categories": [
-                  "cat1"
-                ],
-                "defaultHost": "kubernetes",
-                "macros": {
-                  "PROTOCOL": "\u003crule.0.scheme\u003e",
-                  "URLPATH": "\u003crule.0.path.0\u003e"
-                },
-                "nameTemplate": "App_\u003cnamespace\u003e_URL",
-                "serviceGroups": [
-                  "SG1"
-                ],
-                "template": "check-http"
-              },
               "secret": "centreon",
               "selfSignedCertificat": true,
               "url": "http://localhost:9090/centreon/api/index.php"
             },
             "isDefault": true,
-            "name": "centreon",
             "type": "centreon"
           }
         },
@@ -57,7 +37,7 @@ metadata:
           "apiVersion": "monitor.k8s.webcenter.fr/v1alpha1",
           "kind": "TemplateCentreonService",
           "metadata": {
-            "name": "template-sample"
+            "name": "templatecentreonservice-sample"
           },
           "spec": {
             "template": "host: localhost\nname: \"test-ping-{{ .namespace }}\"\ntemplate: template-test\nactivate: true\nmacros:\n  CHECKTYPE: quota\n  EXTRAOPTIONS: -sS\n  NAMESPACE: {{ .namespace }}\n"
@@ -157,37 +137,6 @@ spec:
       - description: CentreonSettings is the setting for Centreon plateform type
         displayName: Centreon Settings
         path: centreonSettings
-      - description: The endpoint default setting
-        displayName: Endpoint
-        path: centreonSettings.endpoint
-      - description: By default, activate service when created it Default to true
-        displayName: Activate Service
-        path: centreonSettings.endpoint.activeService
-      - description: The default command arguements to set when create service You
-          can use special tag to generate value on the flow
-        displayName: Arguments
-        path: centreonSettings.endpoint.arguments
-      - description: Default categories
-        displayName: Categories
-        path: centreonSettings.endpoint.categories
-      - description: The default host to attach service
-        displayName: Default Host
-        path: centreonSettings.endpoint.defaultHost
-      - description: The default macro to set when create service You can use special
-          tag to generate value on the flow
-        displayName: Macros
-        path: centreonSettings.endpoint.macros
-      - description: The default template name when create service from endpoint
-        displayName: Name Template
-        path: centreonSettings.endpoint.nameTemplate
-      - description: Default service groups
-        displayName: Service Groups
-        path: centreonSettings.endpoint.serviceGroups
-      - description: The default service template to use when create service from
-          endpoint It normally optional, but Centreon bug impose to set an existed
-          template
-        displayName: Template
-        path: centreonSettings.endpoint.template
       - description: Secret is the secret that store the username and password to
           access on Centreon API It need to have `username` and `password` key
         displayName: Secret
@@ -203,9 +152,6 @@ spec:
           on resource to create
         displayName: Is Default
         path: isDefault
-      - description: Name is the unique name for platform
-        displayName: Name
-        path: name
       - description: PlatformType is the platform type. It support only `centreon`
           at this time
         displayName: Platform Type
@@ -343,6 +289,16 @@ spec:
           - get
           - patch
           - update
+        - apiGroups:
+          - monitor.k8s.webcenter.fr
+          resources:
+          - templatecentreonservices
+          verbs:
+          - get
+          - list
+          - patch
+          - update
+          - watch
         - apiGroups:
           - networking.k8s.io
           resources:

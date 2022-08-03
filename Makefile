@@ -98,6 +98,11 @@ test: manifests generate mock-gen fmt envtest ## Run tests.
 test-acc:
 	go test ./acctests/... -v $(TESTARGS) -timeout 600s
 
+generate-json-schema:
+	curl -L https://raw.githubusercontent.com/yannh/kubeconform/master/scripts/openapi2jsonschema.py -o bin/openapi2jsonschema.py
+	mkdir -p json-schema
+	docker run --rm -ti -v $(PWD):/src -w /src/json-schema -e http_proxy=$(http_proxy) -e https_proxy=$(https_proxy)  -e FILENAME_FORMAT='{kind}-{group}-{version}' python sh -c "pip install pyyaml && python3 ../bin/openapi2jsonschema.py ../config/crd/bases/*.yaml"
+
 ##@ Build
 
 build: generate fmt vet ## Build manager binary.

@@ -44,6 +44,7 @@ type IngressReconciler struct {
 
 //+kubebuilder:rbac:groups=networking.k8s.io,resources=ingresses,verbs=get;list;watch
 //+kubebuilder:rbac:groups=monitor.k8s.webcenter.fr,resources=centreonServices,verbs=get;list;watch;create;update;patch;delete
+//+kubebuilder:rbac:groups="monitor.k8s.webcenter.fr",resources=templatecentreonservices,verbs=get;list;watch;update;patch
 //+kubebuilder:rbac:groups="",resources=events,verbs=patch;get;create
 
 // Reconcile is part of the main kubernetes reconciliation loop which aims to
