@@ -113,37 +113,6 @@ spec:
       - description: CentreonSettings is the setting for Centreon plateform type
         displayName: Centreon Settings
         path: centreonSettings
-      - description: The endpoint default setting
-        displayName: Endpoint
-        path: centreonSettings.endpoint
-      - description: By default, activate service when created it Default to true
-        displayName: Activate Service
-        path: centreonSettings.endpoint.activeService
-      - description: The default command arguements to set when create service You
-          can use special tag to generate value on the flow
-        displayName: Arguments
-        path: centreonSettings.endpoint.arguments
-      - description: Default categories
-        displayName: Categories
-        path: centreonSettings.endpoint.categories
-      - description: The default host to attach service
-        displayName: Default Host
-        path: centreonSettings.endpoint.defaultHost
-      - description: The default macro to set when create service You can use special
-          tag to generate value on the flow
-        displayName: Macros
-        path: centreonSettings.endpoint.macros
-      - description: The default template name when create service from endpoint
-        displayName: Name Template
-        path: centreonSettings.endpoint.nameTemplate
-      - description: Default service groups
-        displayName: Service Groups
-        path: centreonSettings.endpoint.serviceGroups
-      - description: The default service template to use when create service from
-          endpoint It normally optional, but Centreon bug impose to set an existed
-          template
-        displayName: Template
-        path: centreonSettings.endpoint.template
       - description: Secret is the secret that store the username and password to
           access on Centreon API It need to have `username` and `password` key
         displayName: Secret
@@ -159,9 +128,6 @@ spec:
           on resource to create
         displayName: Is Default
         path: isDefault
-      - description: Name is the unique name for platform
-        displayName: Name
-        path: name
       - description: PlatformType is the platform type. It support only `centreon`
           at this time
         displayName: Platform Type

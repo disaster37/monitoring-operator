@@ -95,6 +95,7 @@ func (t *ControllerTestSuite) SetupSuite() {
 	k8sClient := k8sManager.GetClient()
 	t.k8sClient = k8sClient
 
+	// Add indexers on Platform to track secret change
 	if err := k8sManager.GetFieldIndexer().IndexField(context.Background(), &v1alpha1.Platform{}, "spec.centreonSettings.secret", func(o client.Object) []string {
 		p := o.(*v1alpha1.Platform)
 		return []string{p.Spec.CentreonSettings.Secret}

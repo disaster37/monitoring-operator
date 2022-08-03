@@ -37,6 +37,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/healthz"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 
+	"github.com/disaster37/monitoring-operator/api/v1alpha1"
 	monitorv1alpha1 "github.com/disaster37/monitoring-operator/api/v1alpha1"
 	"github.com/disaster37/monitoring-operator/controllers"
 	"github.com/disaster37/monitoring-operator/pkg/helpers"
@@ -164,6 +165,15 @@ func main() {
 	centreonServiceController.SetPlatforms(platforms)
 	if err = centreonServiceController.SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "CentreonService")
+		os.Exit(1)
+	}
+
+	// Set indexers
+	if err := mgr.GetFieldIndexer().IndexField(context.Background(), &v1alpha1.Platform{}, "spec.centreonSettings.secret", func(o client.Object) []string {
+		p := o.(*v1alpha1.Platform)
+		return []string{p.Spec.CentreonSettings.Secret}
+	}); err != nil {
+		setupLog.Error(err, "unable to create indexers", "indexers", "Platform")
 		os.Exit(1)
 	}
 
