@@ -94,7 +94,6 @@ func (t *AccTestSuite) SetupSuite() {
 			Name: "default",
 		},
 		Spec: v1alpha1.PlatformSpec{
-			Name:         "centreon",
 			IsDefault:    true,
 			PlatformType: "centreon",
 			CentreonSettings: &v1alpha1.PlatformSpecCentreonSettings{

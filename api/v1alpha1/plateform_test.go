@@ -28,7 +28,6 @@ func (t *V1alpha1TestSuite) TestPlatformCRUD() {
 			Namespace: key.Namespace,
 		},
 		Spec: PlatformSpec{
-			Name:         "test",
 			IsDefault:    true,
 			PlatformType: "centreon",
 		},

@@ -21,6 +21,7 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
+	"fmt"
 
 	"github.com/disaster37/go-centreon-rest/v21"
 	"github.com/disaster37/go-centreon-rest/v21/models"
@@ -36,15 +37,18 @@ import (
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	condition "k8s.io/apimachinery/pkg/api/meta"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/kubernetes"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	"sigs.k8s.io/controller-runtime/pkg/event"
+	"sigs.k8s.io/controller-runtime/pkg/handler"
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
+	"sigs.k8s.io/controller-runtime/pkg/reconcile"
+	"sigs.k8s.io/controller-runtime/pkg/source"
 )
 
 const (
@@ -97,7 +101,7 @@ func (r *PlatformReconciler) Reconcile(ctx context.Context, req ctrl.Request) (c
 func (r *PlatformReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&v1alpha1.Platform{}).
-		Owns(&core.Secret{}).
+		Watches(&source.Kind{Type: &core.Secret{}}, handler.EnqueueRequestsFromMapFunc(watchCentreonPlatformSecret(r.Client))).
 		WithEventFilter(viewOperatorNamespacePredicate()).
 		Complete(r)
 }
@@ -121,6 +125,28 @@ func viewOperatorNamespacePredicate() predicate.Predicate {
 		GenericFunc: func(e event.GenericEvent) bool {
 			return e.Object.GetNamespace() == ns
 		},
+	}
+}
+
+// watchPlatformSecret permit to update client if platform secret change
+func watchCentreonPlatformSecret(c client.Client) handler.MapFunc {
+	return func(a client.Object) []reconcile.Request {
+
+		reconcileRequests := make([]reconcile.Request, 0, 0)
+		listPlatforms := &v1alpha1.PlatformList{}
+
+		fs := fields.ParseSelectorOrDie(fmt.Sprintf("spec.centreonSettings.secret=%s", a.GetName()))
+
+		// Get all platforms that use the current secret
+		if err := c.List(context.Background(), listPlatforms, &client.ListOptions{Namespace: a.GetNamespace(), FieldSelector: fs}); err != nil {
+			panic(err)
+		}
+
+		for _, p := range listPlatforms.Items {
+			reconcileRequests = append(reconcileRequests, reconcile.Request{NamespacedName: types.NamespacedName{Name: p.Name, Namespace: p.Namespace}})
+		}
+
+		return reconcileRequests
 	}
 }
 
@@ -164,7 +190,6 @@ func (r *PlatformReconciler) Read(ctx context.Context, resource client.Object, d
 				return res, errors.Errorf("Secret %s not yet exist", p.Spec.CentreonSettings.Secret)
 			}
 		}
-		data["secret"] = s
 
 		computedPlatform, err := getComputedCentreonPlatform(p, s, r.log)
 		if err != nil {
@@ -184,22 +209,7 @@ func (r *PlatformReconciler) Create(ctx context.Context, resource client.Object,
 	p := resource.(*v1alpha1.Platform)
 	var (
 		d any
-		s *core.Secret
 	)
-
-	// First, set owner on secret to track it
-	d, err = helper.Get(data, "secret")
-	if err != nil {
-		return res, err
-	}
-	s = d.(*core.Secret)
-	err = controllerutil.SetOwnerReference(p, s, r.Scheme)
-	if err != nil {
-		return res, err
-	}
-	if err = r.Client.Update(ctx, s); err != nil {
-		return res, errors.Wrapf(err, "Error when update owner on secret %s", s.Name)
-	}
 
 	d, err = helper.Get(data, "platform")
 	if err != nil {
@@ -208,7 +218,7 @@ func (r *PlatformReconciler) Create(ctx context.Context, resource client.Object,
 	if p.Spec.IsDefault {
 		r.platforms["default"] = d.(*ComputedPlatform)
 	}
-	r.platforms[p.Spec.Name] = d.(*ComputedPlatform)
+	r.platforms[p.Name] = d.(*ComputedPlatform)
 
 	return res, nil
 }
@@ -225,7 +235,7 @@ func (r *PlatformReconciler) Delete(ctx context.Context, resource client.Object,
 	if p.Spec.IsDefault {
 		delete(r.platforms, "default")
 	}
-	delete(r.platforms, p.Spec.Name)
+	delete(r.platforms, p.Name)
 
 	return nil
 }
@@ -247,7 +257,7 @@ func (r *PlatformReconciler) Diff(resource client.Object, data map[string]interf
 	}
 
 	// New platform
-	if r.platforms[p.Spec.Name] == nil {
+	if r.platforms[p.Name] == nil {
 		diff.NeedCreate = true
 		diff.Diff = "New plaform"
 
@@ -255,14 +265,14 @@ func (r *PlatformReconciler) Diff(resource client.Object, data map[string]interf
 	}
 
 	// Client change
-	if r.platforms[p.Spec.Name].hash != pTarget.hash {
+	if r.platforms[p.Name].hash != pTarget.hash {
 		diff.NeedUpdate = true
 		diff.Diff = "Secret change on platform"
 		return diff, nil
 	}
 
 	// Platform change
-	diffStr := cmp.Diff(r.platforms[p.Spec.Name].platform.Spec, p.Spec)
+	diffStr := cmp.Diff(r.platforms[p.Name].platform.Spec, p.Spec)
 	if diffStr != "" {
 		diff.NeedUpdate = true
 		diff.Diff = diffStr
@@ -359,7 +369,7 @@ func ComputedPlatformList(ctx context.Context, cd dynamic.Interface, c kubernete
 			if err != nil {
 				return nil, errors.Wrapf(err, "Error when compute platform %s", p.Name)
 			}
-			platforms[p.Spec.Name] = cp
+			platforms[p.Name] = cp
 			if p.Spec.IsDefault {
 				platforms["default"] = cp
 			}

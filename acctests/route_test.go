@@ -53,7 +53,7 @@ func (t *AccTestSuite) TestRoute() {
 	/***
 	 * Create new template dedicated for route test
 	 */
-	 tcs := &api.TemplateCentreonService{
+	tcs := &api.TemplateCentreonService{
 		TypeMeta: v1.TypeMeta{
 			Kind:       "TemplateCentreonService",
 			APIVersion: fmt.Sprintf("%s/%s", api.GroupVersion.Group, api.GroupVersion.Version),
@@ -268,14 +268,14 @@ activate: true`,
 	/***
 	 * Update route template
 	 */
-	 time.Sleep(30 * time.Second)
-	 tcsu, err = t.k8sclient.Resource(templateCentreonServiceGVR).Namespace("default").Get(context.Background(), "check-route", v1.GetOptions{})
-	 if err != nil {
-		 t.T().Fatal(err)
-	 }
-	 if err = unstructuredToStructured(tcsu, tcs); err != nil {
-		 t.T().Fatal(err)
-	 }
+	time.Sleep(30 * time.Second)
+	tcsu, err = t.k8sclient.Resource(templateCentreonServiceGVR).Namespace("default").Get(context.Background(), "check-route", v1.GetOptions{})
+	if err != nil {
+		t.T().Fatal(err)
+	}
+	if err = unstructuredToStructured(tcsu, tcs); err != nil {
+		t.T().Fatal(err)
+	}
 	tcs.Spec.Template = `
 {{ $rule := index .rules 0}}
 {{ $path := index $rule.paths 0}}
@@ -290,79 +290,79 @@ macros:
   PATH: "{{ $path }}"
   TEST: "plop"
 activate: true`
- 
-	 tcsu, err = structuredToUntructured(tcs)
-	 if err != nil {
-		 t.T().Fatal(err)
-	 }
-	 if _, err = t.k8sclient.Resource(templateCentreonServiceGVR).Namespace("default").Update(context.Background(), tcsu, v1.UpdateOptions{}); err != nil {
-		 t.T().Fatal(err)
-	 }
- 
-	 expectedS = &centreonhandler.CentreonService{
-		 Host:                "localhost",
-		 Name:                "test-route-ping",
-		 CheckCommand:        "ping",
-		 Template:            "template-test",
-		 PassiveCheckEnabled: "2",
-		 ActiveCheckEnabled:  "2",
-		 Comment:             "Managed by monitoring-operator",
-		 Groups:              []string{},
-		 Categories:          []string{},
-		 Macros: []*models.Macro{
-			 {
-				 Name:   "LABEL",
-				 Value:  "bar2",
-				 Source: "direct",
-			 },
-			 {
-				 Name:   "SCHEME",
-				 Value:  "http",
-				 Source: "direct",
-			 },
-			 {
-				 Name:   "HOST",
-				 Value:  "front.local.local",
-				 Source: "direct",
-			 },
-			 {
-				 Name:   "PATH",
-				 Value:  "/",
-				 Source: "direct",
-			 },
-			 {
-				 Name:   "TEST",
-				 Value:  "plop",
-				 Source: "direct",
-			 },
-		 },
-		 Activated: "1",
-	 }
-	 time.Sleep(20 * time.Second)
- 
-	 ucs, err = t.k8sclient.Resource(centreonServiceGVR).Namespace("default").Get(context.Background(), "check-route", v1.GetOptions{})
-	 if err != nil {
-		 t.T().Fatal(err)
-	 }
-	 if err = unstructuredToStructured(ucs, cs); err != nil {
-		 t.T().Fatal(err)
-	 }
-	 assert.Equal(t.T(), "plop", cs.Spec.Macros["TEST"])
- 
-	 // Check service updated on Centreon
-	 s, err = t.centreon.GetService("localhost", "test-route-ping")
-	 if err != nil {
-		 t.T().Fatal(err)
-	 }
-	 assert.NotNil(t.T(), s)
-	 // Sort macro to fix test
-	 sort.Slice(expectedS.Macros, func(i, j int) bool {
-		 return expectedS.Macros[i].Name < expectedS.Macros[j].Name
-	 })
-	 sort.Slice(s.Macros, func(i, j int) bool {
-		 return s.Macros[i].Name < s.Macros[j].Name
-	 })
-	 assert.Equal(t.T(), expectedS, s)
+
+	tcsu, err = structuredToUntructured(tcs)
+	if err != nil {
+		t.T().Fatal(err)
+	}
+	if _, err = t.k8sclient.Resource(templateCentreonServiceGVR).Namespace("default").Update(context.Background(), tcsu, v1.UpdateOptions{}); err != nil {
+		t.T().Fatal(err)
+	}
+
+	expectedS = &centreonhandler.CentreonService{
+		Host:                "localhost",
+		Name:                "test-route-ping",
+		CheckCommand:        "ping",
+		Template:            "template-test",
+		PassiveCheckEnabled: "2",
+		ActiveCheckEnabled:  "2",
+		Comment:             "Managed by monitoring-operator",
+		Groups:              []string{},
+		Categories:          []string{},
+		Macros: []*models.Macro{
+			{
+				Name:   "LABEL",
+				Value:  "bar2",
+				Source: "direct",
+			},
+			{
+				Name:   "SCHEME",
+				Value:  "http",
+				Source: "direct",
+			},
+			{
+				Name:   "HOST",
+				Value:  "front.local.local",
+				Source: "direct",
+			},
+			{
+				Name:   "PATH",
+				Value:  "/",
+				Source: "direct",
+			},
+			{
+				Name:   "TEST",
+				Value:  "plop",
+				Source: "direct",
+			},
+		},
+		Activated: "1",
+	}
+	time.Sleep(20 * time.Second)
+
+	ucs, err = t.k8sclient.Resource(centreonServiceGVR).Namespace("default").Get(context.Background(), "check-route", v1.GetOptions{})
+	if err != nil {
+		t.T().Fatal(err)
+	}
+	if err = unstructuredToStructured(ucs, cs); err != nil {
+		t.T().Fatal(err)
+	}
+	assert.Equal(t.T(), "plop", cs.Spec.Macros["TEST"])
+
+	// Check service updated on Centreon
+	s, err = t.centreon.GetService("localhost", "test-route-ping")
+	if err != nil {
+		t.T().Fatal(err)
+	}
+	assert.NotNil(t.T(), s)
+	// Sort macro to fix test
+	sort.Slice(expectedS.Macros, func(i, j int) bool {
+		return expectedS.Macros[i].Name < expectedS.Macros[j].Name
+	})
+	sort.Slice(s.Macros, func(i, j int) bool {
+		return s.Macros[i].Name < s.Macros[j].Name
+	})
+	assert.Equal(t.T(), expectedS, s)
 
 	/***
 	 * Delete route

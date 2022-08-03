@@ -1,5 +1,7 @@
 package controllers
 
+/*
+
 import (
 	"testing"
 
@@ -143,3 +145,4 @@ func TestInitCentreonServiceDefaultValue(t *testing.T) {
 	initCentreonServiceDefaultValue(endpointSpec, cs, placeholders)
 	assert.Equal(t, expectedCS, cs)
 }
+*/

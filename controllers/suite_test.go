@@ -1,6 +1,7 @@
 package controllers
 
 import (
+	"context"
 	"os"
 	"path/filepath"
 	"testing"
@@ -94,6 +95,14 @@ func (t *ControllerTestSuite) SetupSuite() {
 	k8sClient := k8sManager.GetClient()
 	t.k8sClient = k8sClient
 
+	// Add indexers on Platform to track secret change
+	if err := k8sManager.GetFieldIndexer().IndexField(context.Background(), &v1alpha1.Platform{}, "spec.centreonSettings.secret", func(o client.Object) []string {
+		p := o.(*v1alpha1.Platform)
+		return []string{p.Spec.CentreonSettings.Secret}
+	}); err != nil {
+		panic(err)
+	}
+
 	// Init controllers
 	os.Setenv("OPERATOR_NAMESPACE", "default")
 
@@ -105,24 +114,9 @@ func (t *ControllerTestSuite) SetupSuite() {
 					Namespace: "default",
 				},
 				Spec: v1alpha1.PlatformSpec{
-					IsDefault:    true,
-					Name:         "default",
-					PlatformType: "centreon",
-					CentreonSettings: &v1alpha1.PlatformSpecCentreonSettings{
-						Endpoint: &v1alpha1.CentreonSpecEndpoint{
-							Template:     "template",
-							DefaultHost:  "localhost",
-							NameTemplate: "ping",
-							Macros: map[string]string{
-								"mac1": "value1",
-								"mac2": "value2",
-							},
-							Arguments:       []string{"arg1", "arg2"},
-							ActivateService: true,
-							ServiceGroups:   []string{"sg1"},
-							Categories:      []string{"cat1"},
-						},
-					},
+					IsDefault:        true,
+					PlatformType:     "centreon",
+					CentreonSettings: &v1alpha1.PlatformSpecCentreonSettings{},
 				},
 			},
 			client: t.mockCentreonHandler,

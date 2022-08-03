@@ -75,26 +75,12 @@ func doCreatePlatformStep() test.TestStep {
 					Namespace: key.Namespace,
 				},
 				Spec: v1alpha1.PlatformSpec{
-					Name:         "test",
 					IsDefault:    false,
 					PlatformType: "centreon",
 					CentreonSettings: &v1alpha1.PlatformSpecCentreonSettings{
 						URL:                   "http://localhost",
 						SelfSignedCertificate: true,
 						Secret:                key.Name,
-						Endpoint: &v1alpha1.CentreonSpecEndpoint{
-							Template:     "template",
-							DefaultHost:  "localhost",
-							NameTemplate: "ping",
-							Macros: map[string]string{
-								"mac1": "value1",
-								"mac2": "value2",
-							},
-							Arguments:       []string{"arg1", "arg2"},
-							ActivateService: true,
-							ServiceGroups:   []string{"sg1"},
-							Categories:      []string{"cat1"},
-						},
 					},
 				},
 			}
@@ -129,12 +115,11 @@ func doCreatePlatformStep() test.TestStep {
 				t.Fatalf("Failed to get Platform: %s", err.Error())
 			}
 
-			assert.NotEmpty(t, platforms["test"])
-			assert.Equal(t, "test", platforms["test"].platform.Spec.Name)
-			assert.NotNil(t, platforms["test"].client)
-			assert.NotEmpty(t, platforms["test"].hash)
+			assert.NotEmpty(t, platforms[key.Name])
+			assert.NotNil(t, platforms[key.Name].client)
+			assert.NotEmpty(t, platforms[key.Name].hash)
 
-			data["platform"] = platforms["test"]
+			data["platform"] = platforms[key.Name]
 			return nil
 		},
 	}
@@ -199,9 +184,9 @@ func doUpdatePlatformStep() test.TestStep {
 				t.Fatalf("Failed to get platform: %s", err.Error())
 			}
 
-			assert.Equal(t, "http://localhost2", platforms["test"].platform.Spec.CentreonSettings.URL)
-			assert.NotEqual(t, platforms["test"].hash, platform.hash)
-			assert.NotEqual(t, platforms["test"].client, platform.client)
+			assert.Equal(t, "http://localhost2", platforms[key.Name].platform.Spec.CentreonSettings.URL)
+			assert.NotEqual(t, platforms[key.Name].hash, platform.hash)
+			assert.NotEqual(t, platforms[key.Name].client, platform.client)
 			return nil
 		},
 	}
@@ -250,7 +235,7 @@ func doUpdatePlatformSecretStep() test.TestStep {
 					t.Fatalf("Error when get Centreon service: %s", err.Error())
 				}
 
-				if platforms["test"].client == platform.client {
+				if platforms[key.Name].client == platform.client {
 					return errors.New("Not yet updated")
 				}
 
@@ -261,8 +246,8 @@ func doUpdatePlatformSecretStep() test.TestStep {
 				t.Fatalf("Failed to get platform: %s", err.Error())
 			}
 
-			assert.Equal(t, "http://localhost2", platforms["test"].platform.Spec.CentreonSettings.URL)
-			assert.NotEqual(t, platforms["test"].client, platform.client)
+			assert.Equal(t, "http://localhost2", platforms[key.Name].platform.Spec.CentreonSettings.URL)
+			assert.NotEqual(t, platforms[key.Name].client, platform.client)
 			return nil
 		},
 	}
@@ -299,7 +284,7 @@ func doListPlatformStep() test.TestStep {
 				t.Fatal(err)
 			}
 
-			assert.NotNil(t, platforms["test"])
+			assert.NotNil(t, platforms[key.Name])
 
 			return nil
 		},
@@ -353,7 +338,7 @@ func doDeletePlatformStep() test.TestStep {
 				t.Fatalf("Platform not deleted: %s", err.Error())
 			}
 			assert.True(t, isDeleted)
-			assert.Nil(t, platforms["test"])
+			assert.Nil(t, platforms[key.Name])
 
 			return nil
 		},
