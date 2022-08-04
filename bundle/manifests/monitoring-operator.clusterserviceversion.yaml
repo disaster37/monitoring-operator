@@ -218,6 +218,12 @@ spec:
         - apiGroups:
           - ""
           resources:
+          - namespaces/finalizers
+          verbs:
+          - update
+        - apiGroups:
+          - ""
+          resources:
           - secrets
           verbs:
           - get
@@ -308,6 +314,12 @@ spec:
           - list
           - watch
         - apiGroups:
+          - networking.k8s.io
+          resources:
+          - ingresses/finalizers
+          verbs:
+          - update
+        - apiGroups:
           - route.openshift.io
           resources:
           - routes
@@ -315,6 +327,12 @@ spec:
           - get
           - list
           - watch
+        - apiGroups:
+          - route.openshift.io
+          resources:
+          - routes/finalizers
+          verbs:
+          - update
         - apiGroups:
           - authentication.k8s.io
           resources:

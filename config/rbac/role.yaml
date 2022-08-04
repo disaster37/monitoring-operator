@@ -25,6 +25,12 @@ rules:
 - apiGroups:
   - ""
   resources:
+  - namespaces/finalizers
+  verbs:
+  - update
+- apiGroups:
+  - ""
+  resources:
   - secrets
   verbs:
   - get
@@ -115,6 +121,12 @@ rules:
   - list
   - watch
 - apiGroups:
+  - networking.k8s.io
+  resources:
+  - ingresses/finalizers
+  verbs:
+  - update
+- apiGroups:
   - route.openshift.io
   resources:
   - routes
@@ -122,3 +134,9 @@ rules:
   - get
   - list
   - watch
+- apiGroups:
+  - route.openshift.io
+  resources:
+  - routes/finalizers
+  verbs:
+  - update
