@@ -3,6 +3,7 @@ package main
 import (
 	"os"
 	osruntime "runtime"
+	"strings"
 	"time"
 
 	"github.com/go-logr/logr"
@@ -12,7 +13,7 @@ import (
 )
 
 func getZapLogLevel() zapcore.Level {
-	switch logLevel, _ := os.LookupEnv("LOG_LEVEL"); logLevel {
+	switch logLevel, _ := os.LookupEnv("LOG_LEVEL"); strings.ToLower(logLevel) {
 	case zapcore.DebugLevel.String():
 		return zapcore.DebugLevel
 	case zapcore.InfoLevel.String():
@@ -29,7 +30,7 @@ func getZapLogLevel() zapcore.Level {
 }
 
 func getLogrusLogLevel() logrus.Level {
-	switch logLevel, _ := os.LookupEnv("LOG_LEVEL"); logLevel {
+	switch logLevel, _ := os.LookupEnv("LOG_LEVEL"); strings.ToLower(logLevel) {
 	case logrus.DebugLevel.String():
 		return logrus.DebugLevel
 	case logrus.InfoLevel.String():
