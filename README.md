@@ -44,20 +44,6 @@ spec:
     url: "http://localhost:9090/centreon/api/index.php"
     selfSignedCertificat: true
     secret: centreon
-    endpoint:
-      template: "check-http"
-      nameTemplate: "App_<namespace>_URL"
-      defaultHost: "kubernetes"
-      macros:
-        PROTOCOL: "<rule.0.scheme>"
-        URLPATH: "<rule.0.path.0>"
-      arguments:
-        - "<rule.0.host>"
-      activeService: true
-      serviceGroups:
-        - "SG1"
-      categories:
-        - "cat1"
 ```
 
 Like you can see, you need to set credential to access on external monitoring API. The right way to do that on K8s is to use secret.
@@ -93,47 +79,6 @@ spec:
     url: "http://localhost:9090/centreon/api/index.php"
     selfSignedCertificat: true
     secret: centreon
-    endpoint:
-      # It enable service when it create it
-      # Optional
-      activeService: true
-
-      # The name template to use when it generate service name
-      # You can use placeholders
-      # Optional
-      nameTemplate: App_<namespace>_URL
-
-      # The service template to affect on service
-      # Optional
-      template: TS_App-Protocol-HTTP-MultiCheck
-
-      # The default host to link service on it
-      # Optional
-      defaultHost: HOST_KUBERNETES_HM-HPD
-
-      # The list service's arguments
-      # You can use placeholders
-      # Optional
-      arguments:
-      - <rule.0.host>
-
-      # The list of service's macros
-      # You can use placeholders
-      # Optional
-      macros:
-        CRITICALCONTENT: '%{code} != 200 or ${code} != 401'
-        PROTOCOL: <rule.0.scheme>
-        URLPATH: <rule.0.path.0>
-      
-      # The list of service's groups
-      # Optional
-      serviceGroups:
-      - SG_K8S_INGRESS
-
-      # The list of service's categories
-      # Optional
-      categories:
-      - Endpoint
 ```
 
 ### CentreonService
