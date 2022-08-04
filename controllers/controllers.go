@@ -7,11 +7,13 @@ import (
 	"github.com/disaster37/monitoring-operator/api/v1alpha1"
 	"github.com/disaster37/operator-sdk-extra/pkg/controller"
 	"github.com/pkg/errors"
+	"github.com/prometheus/client_golang/prometheus"
 	"github.com/sirupsen/logrus"
 	"k8s.io/client-go/discovery"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/record"
 	"sigs.k8s.io/controller-runtime/pkg/event"
+	"sigs.k8s.io/controller-runtime/pkg/metrics"
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
 )
 
@@ -26,6 +28,20 @@ type Reconciler struct {
 	log        *logrus.Entry
 	reconciler controller.Reconciler
 	platforms  map[string]*ComputedPlatform
+}
+
+var (
+	platformMetrics = prometheus.NewGauge(
+		prometheus.GaugeOpts{
+			Name: "platforms_total",
+			Help: "Number of monitoring platforms",
+		},
+	)
+)
+
+func init() {
+	// Register custom metrics with the global prometheus registry
+	metrics.Registry.MustRegister(platformMetrics)
 }
 
 func (r *Reconciler) SetLogger(log *logrus.Entry) {

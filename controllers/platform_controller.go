@@ -220,6 +220,9 @@ func (r *PlatformReconciler) Create(ctx context.Context, resource client.Object,
 	}
 	r.platforms[p.Name] = d.(*ComputedPlatform)
 
+	// Update prometheus mectric
+	platformMetrics.Inc()
+
 	return res, nil
 }
 
@@ -236,6 +239,9 @@ func (r *PlatformReconciler) Delete(ctx context.Context, resource client.Object,
 		delete(r.platforms, "default")
 	}
 	delete(r.platforms, p.Name)
+
+	// Update prometheus mectric
+	platformMetrics.Dec()
 
 	return nil
 }
