@@ -78,7 +78,7 @@ func viewResourceWithMonitoringTemplate() predicate.Predicate {
 			return isMonitoringTemplateAnnotation(e.Object.GetAnnotations()) || isTemplateCentreonService(e.Object)
 		},
 		GenericFunc: func(e event.GenericEvent) bool {
-			return isMonitoringAnnotation(e.Object.GetAnnotations()) || isTemplateCentreonService(e.Object)
+			return isMonitoringTemplateAnnotation(e.Object.GetAnnotations()) || isTemplateCentreonService(e.Object)
 		},
 	}
 }
@@ -91,37 +91,6 @@ func isMonitoringTemplateAnnotation(annotations map[string]string) bool {
 	watchKey := fmt.Sprintf("%s/templates", monitoringAnnotationKey)
 	for key, value := range annotations {
 		if key == watchKey && value != "" {
-			return true
-		}
-	}
-	return false
-}
-
-// Handle only resources that have the monitoring annotation
-func viewResourceWithMonitoringAnnotationPredicate() predicate.Predicate {
-	return predicate.Funcs{
-		UpdateFunc: func(e event.UpdateEvent) bool {
-			return isMonitoringAnnotation(e.ObjectOld.GetAnnotations()) || isMonitoringAnnotation(e.ObjectNew.GetAnnotations())
-		},
-		DeleteFunc: func(e event.DeleteEvent) bool {
-			return isMonitoringAnnotation(e.Object.GetAnnotations())
-		},
-		CreateFunc: func(e event.CreateEvent) bool {
-			return isMonitoringAnnotation(e.Object.GetAnnotations())
-		},
-		GenericFunc: func(e event.GenericEvent) bool {
-			return isMonitoringAnnotation(e.Object.GetAnnotations())
-		},
-	}
-}
-
-func isMonitoringAnnotation(annotations map[string]string) bool {
-	if annotations == nil {
-		return false
-	}
-	watchKey := fmt.Sprintf("%s/discover", monitoringAnnotationKey)
-	for key, value := range annotations {
-		if key == watchKey && value == "true" {
 			return true
 		}
 	}
