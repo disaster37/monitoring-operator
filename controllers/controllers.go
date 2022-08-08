@@ -31,17 +31,21 @@ type Reconciler struct {
 }
 
 var (
-	platformMetrics = prometheus.NewGauge(
-		prometheus.GaugeOpts{
-			Name: "platforms_total",
-			Help: "Number of monitoring platforms",
+	totalErrors = prometheus.NewCounter(
+		prometheus.CounterOpts{
+			Name: "total_errors",
+			Help: "Number of errors from all controllers",
 		},
 	)
+	controllerMetrics = prometheus.NewGaugeVec(prometheus.GaugeOpts{
+		Name: "resource_total",
+		Help: "Total number of resource handled per controller",
+	}, []string{"controller"})
 )
 
 func init() {
 	// Register custom metrics with the global prometheus registry
-	metrics.Registry.MustRegister(platformMetrics)
+	metrics.Registry.MustRegister(totalErrors, controllerMetrics)
 }
 
 func (r *Reconciler) SetLogger(log *logrus.Entry) {

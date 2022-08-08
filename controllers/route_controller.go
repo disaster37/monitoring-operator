@@ -44,6 +44,21 @@ type RouteReconciler struct {
 	client.Client
 	Scheme *runtime.Scheme
 	CentreonController
+	name string
+}
+
+func NewRouteReconciler(client client.Client, scheme *runtime.Scheme, centreonController CentreonController) *RouteReconciler {
+
+	r := &RouteReconciler{
+		Client:             client,
+		Scheme:             scheme,
+		CentreonController: centreonController,
+		name:               "route",
+	}
+
+	controllerMetrics.WithLabelValues(r.name).Add(0)
+
+	return r
 }
 
 //+kubebuilder:rbac:groups=route.openshift.io,resources=routes,verbs=get;list;watch;update
@@ -77,6 +92,7 @@ func (r *RouteReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl
 func (r *RouteReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
 		// Uncomment the following line adding a pointer to an instance of the controlled resource as an argument
+		Named(r.name).
 		For(&routev1.Route{}).
 		Owns(&monitorv1alpha1.CentreonService{}).
 		WithEventFilter(viewResourceWithMonitoringTemplate()).
@@ -119,6 +135,9 @@ func (r *RouteReconciler) Create(ctx context.Context, resource client.Object, da
 	}
 	platform := d.(*v1alpha1.Platform)
 
+	// Update prometheus mectric
+	controllerMetrics.WithLabelValues(r.name).Inc()
+
 	switch platform.Spec.PlatformType {
 	case "centreon":
 		return r.CentreonController.createOrUpdateCentreonServiceFromTemplate(ctx, resource, data, meta)
@@ -135,6 +154,9 @@ func (r *RouteReconciler) Update(ctx context.Context, resource client.Object, da
 // Delete do nothink here
 // We add parent link, so k8s auto delete children
 func (r *RouteReconciler) Delete(ctx context.Context, resource client.Object, data map[string]interface{}, meta interface{}) (err error) {
+
+	// Update prometheus mectric
+	controllerMetrics.WithLabelValues(r.name).Dec()
 
 	return nil
 }
@@ -162,6 +184,9 @@ func (r *RouteReconciler) OnError(ctx context.Context, resource client.Object, d
 
 	r.Reconciler.log.Error(err)
 	r.recorder.Event(resource, core.EventTypeWarning, "Failed", fmt.Sprintf("Error when generate CentreonService: %s", err.Error()))
+
+	// Update prometheus mectric
+	totalErrors.Inc()
 
 }
 

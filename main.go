@@ -146,10 +146,7 @@ func main() {
 		platforms = map[string]*controllers.ComputedPlatform{}
 	}
 	// Set platform controllers
-	platformController := &controllers.PlatformReconciler{
-		Client: mgr.GetClient(),
-		Scheme: mgr.GetScheme(),
-	}
+	platformController := controllers.NewPlatformReconciler(mgr.GetClient(), mgr.GetScheme())
 	platformController.SetLogger(log.WithFields(logrus.Fields{
 		"type": "PlatformController",
 	}))
@@ -161,12 +158,14 @@ func main() {
 		os.Exit(1)
 	}
 
-	// Set CentreonService controller
-	centreonServiceController := &controllers.CentreonServiceReconciler{
-		Client:     mgr.GetClient(),
-		Scheme:     mgr.GetScheme(),
-		Reconciler: controllers.Reconciler{},
+	// Centreon controller sub system
+	centreonController := controllers.CentreonController{
+		Client: mgr.GetClient(),
+		Scheme: mgr.GetScheme(),
 	}
+
+	// Set CentreonService controller
+	centreonServiceController := controllers.NewCentreonServiceReconciler(mgr.GetClient(), mgr.GetScheme())
 	centreonServiceController.SetLogger(log.WithFields(logrus.Fields{
 		"type": "CentreonServiceController",
 	}))
@@ -179,14 +178,7 @@ func main() {
 	}
 
 	// Set Ingress controller
-	ingressController := &controllers.IngressReconciler{
-		Client: mgr.GetClient(),
-		Scheme: mgr.GetScheme(),
-		CentreonController: controllers.CentreonController{
-			Client: mgr.GetClient(),
-			Scheme: mgr.GetScheme(),
-		},
-	}
+	ingressController := controllers.NewIngressReconciler(mgr.GetClient(), mgr.GetScheme(), centreonController)
 	ingressController.Reconciler.SetLogger(log.WithFields(logrus.Fields{
 		"type": "IngressController",
 	}))
@@ -208,14 +200,7 @@ func main() {
 		os.Exit(1)
 	}
 	if isRouteCRD {
-		routeController := &controllers.RouteReconciler{
-			Client: mgr.GetClient(),
-			Scheme: mgr.GetScheme(),
-			CentreonController: controllers.CentreonController{
-				Client: mgr.GetClient(),
-				Scheme: mgr.GetScheme(),
-			},
-		}
+		routeController := controllers.NewRouteReconciler(mgr.GetClient(), mgr.GetScheme(), centreonController)
 		routeController.Reconciler.SetLogger(log.WithFields(logrus.Fields{
 			"type": "RouteController",
 		}))
@@ -232,14 +217,7 @@ func main() {
 	}
 
 	// Set namespace
-	namespaceController := &controllers.NamespaceReconciler{
-		Client: mgr.GetClient(),
-		Scheme: mgr.GetScheme(),
-		CentreonController: controllers.CentreonController{
-			Client: mgr.GetClient(),
-			Scheme: mgr.GetScheme(),
-		},
-	}
+	namespaceController := controllers.NewNamespaceReconciler(mgr.GetClient(), mgr.GetScheme(), centreonController)
 	namespaceController.Reconciler.SetLogger(log.WithFields(logrus.Fields{
 		"type": "NamespaceController",
 	}))

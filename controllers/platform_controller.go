@@ -61,12 +61,26 @@ type PlatformReconciler struct {
 	Reconciler
 	client.Client
 	Scheme *runtime.Scheme
+	name   string
 }
 
 type ComputedPlatform struct {
 	client   any
 	platform *v1alpha1.Platform
 	hash     string
+}
+
+func NewPlatformReconciler(client client.Client, scheme *runtime.Scheme) *PlatformReconciler {
+
+	r := &PlatformReconciler{
+		Client: client,
+		Scheme: scheme,
+		name:   "platform",
+	}
+
+	controllerMetrics.WithLabelValues(r.name).Add(0)
+
+	return r
 }
 
 //+kubebuilder:rbac:groups=monitor.k8s.webcenter.fr,resources=platforms,verbs=get;list;watch;create;update;patch;delete
@@ -100,6 +114,7 @@ func (r *PlatformReconciler) Reconcile(ctx context.Context, req ctrl.Request) (c
 // SetupWithManager sets up the controller with the Manager.
 func (r *PlatformReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
+		Named(r.name).
 		For(&v1alpha1.Platform{}).
 		Watches(&source.Kind{Type: &core.Secret{}}, handler.EnqueueRequestsFromMapFunc(watchCentreonPlatformSecret(r.Client))).
 		WithEventFilter(viewOperatorNamespacePredicate()).
@@ -221,7 +236,7 @@ func (r *PlatformReconciler) Create(ctx context.Context, resource client.Object,
 	r.platforms[p.Name] = d.(*ComputedPlatform)
 
 	// Update prometheus mectric
-	platformMetrics.Inc()
+	controllerMetrics.WithLabelValues(r.name).Inc()
 
 	return res, nil
 }
@@ -241,7 +256,7 @@ func (r *PlatformReconciler) Delete(ctx context.Context, resource client.Object,
 	delete(r.platforms, p.Name)
 
 	// Update prometheus mectric
-	platformMetrics.Dec()
+	controllerMetrics.WithLabelValues(r.name).Dec()
 
 	return nil
 }
@@ -301,6 +316,9 @@ func (r *PlatformReconciler) OnError(ctx context.Context, resource client.Object
 		Reason:  "Failed",
 		Message: err.Error(),
 	})
+
+	// Update prometheus mectric
+	totalErrors.Inc()
 }
 
 // OnSuccess permit to set status condition on the right state is everithink is good

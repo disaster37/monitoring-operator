@@ -44,6 +44,21 @@ type IngressReconciler struct {
 	client.Client
 	Scheme *runtime.Scheme
 	CentreonController
+	name string
+}
+
+func NewIngressReconciler(client client.Client, scheme *runtime.Scheme, centreonController CentreonController) *IngressReconciler {
+
+	r := &IngressReconciler{
+		Client:             client,
+		Scheme:             scheme,
+		CentreonController: centreonController,
+		name:               "ingress",
+	}
+
+	controllerMetrics.WithLabelValues(r.name).Add(0)
+
+	return r
 }
 
 //+kubebuilder:rbac:groups=networking.k8s.io,resources=ingresses,verbs=get;list;watch;update
@@ -79,6 +94,7 @@ func (r *IngressReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 func (r *IngressReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
 		// Uncomment the following line adding a pointer to an instance of the controlled resource as an argument
+		Named(r.name).
 		For(&networkv1.Ingress{}).
 		Owns(&monitorv1alpha1.CentreonService{}).
 		WithEventFilter(viewResourceWithMonitoringTemplate()).
@@ -121,6 +137,9 @@ func (r *IngressReconciler) Create(ctx context.Context, resource client.Object, 
 	}
 	platform := d.(*v1alpha1.Platform)
 
+	// Update metrics
+	controllerMetrics.WithLabelValues(r.name).Inc()
+
 	switch platform.Spec.PlatformType {
 	case "centreon":
 		return r.CentreonController.createOrUpdateCentreonServiceFromTemplate(ctx, resource, data, meta)
@@ -137,6 +156,8 @@ func (r *IngressReconciler) Update(ctx context.Context, resource client.Object, 
 // Delete do nothink here
 // We add parent link, so k8s auto delete children
 func (r *IngressReconciler) Delete(ctx context.Context, resource client.Object, data map[string]interface{}, meta interface{}) (err error) {
+	// Update metrics
+	controllerMetrics.WithLabelValues(r.name).Dec()
 
 	return nil
 }
@@ -165,6 +186,8 @@ func (r *IngressReconciler) OnError(ctx context.Context, resource client.Object,
 	r.Reconciler.log.Error(err)
 	r.recorder.Event(resource, core.EventTypeWarning, "Failed", fmt.Sprintf("Error when generate CentreonService: %s", err.Error()))
 
+	// Update metrics
+	totalErrors.Inc()
 }
 
 // OnSuccess permit to set status condition on the right state is everithink is good

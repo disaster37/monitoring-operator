@@ -43,6 +43,21 @@ type NamespaceReconciler struct {
 	client.Client
 	Scheme *runtime.Scheme
 	CentreonController
+	name string
+}
+
+func NewNamespaceReconciler(client client.Client, scheme *runtime.Scheme, centreonController CentreonController) *NamespaceReconciler {
+
+	r := &NamespaceReconciler{
+		Client:             client,
+		Scheme:             scheme,
+		CentreonController: centreonController,
+		name:               "namespace",
+	}
+
+	controllerMetrics.WithLabelValues(r.name).Add(0)
+
+	return r
 }
 
 //+kubebuilder:rbac:groups="",resources=namespaces,verbs=get;list;watch;update
@@ -78,6 +93,7 @@ func (r *NamespaceReconciler) Reconcile(ctx context.Context, req ctrl.Request) (
 func (r *NamespaceReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
 		// Uncomment the following line adding a pointer to an instance of the controlled resource as an argument
+		Named(r.name).
 		For(&core.Namespace{}).
 		Owns(&monitorv1alpha1.CentreonService{}).
 		WithEventFilter(viewResourceWithMonitoringTemplate()).
@@ -120,6 +136,9 @@ func (r *NamespaceReconciler) Create(ctx context.Context, resource client.Object
 	}
 	platform := d.(*v1alpha1.Platform)
 
+	// Update metrics
+	controllerMetrics.WithLabelValues(r.name).Inc()
+
 	switch platform.Spec.PlatformType {
 	case "centreon":
 		return r.CentreonController.createOrUpdateCentreonServiceFromTemplate(ctx, resource, data, meta)
@@ -136,6 +155,9 @@ func (r *NamespaceReconciler) Update(ctx context.Context, resource client.Object
 // Delete do nothink here
 // We add parent link, so k8s auto delete children
 func (r *NamespaceReconciler) Delete(ctx context.Context, resource client.Object, data map[string]interface{}, meta interface{}) (err error) {
+
+	// Update metrics
+	controllerMetrics.WithLabelValues(r.name).Dec()
 
 	return nil
 }
@@ -163,6 +185,9 @@ func (r *NamespaceReconciler) OnError(ctx context.Context, resource client.Objec
 
 	r.Reconciler.log.Error(err)
 	r.recorder.Event(resource, core.EventTypeWarning, "Failed", fmt.Sprintf("Error when generate CentreonService: %s", err.Error()))
+
+	// Update metrics
+	totalErrors.Inc()
 
 }
 
