@@ -34,6 +34,10 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/source"
 )
 
+const (
+	RouteFinalizer = "route.monitor.k8s.webcenter.fr/finalizer"
+)
+
 // RouteReconciler reconciles a Route object
 type RouteReconciler struct {
 	Reconciler
@@ -42,7 +46,8 @@ type RouteReconciler struct {
 	CentreonController
 }
 
-//+kubebuilder:rbac:groups=route.openshift.io,resources=routes,verbs=get;list;watch
+//+kubebuilder:rbac:groups=route.openshift.io,resources=routes,verbs=get;list;watch;update
+//+kubebuilder:rbac:groups="route.openshift.io",resources=routes/finalizers,verbs=update
 //+kubebuilder:rbac:groups=monitor.k8s.webcenter.fr,resources=centreonServices,verbs=get;list;watch;create;update;patch;delete
 //+kubebuilder:rbac:groups="monitor.k8s.webcenter.fr",resources=templatecentreonservices,verbs=get;list;watch;update;patch
 //+kubebuilder:rbac:groups="",resources=events,verbs=patch;get;create
@@ -57,7 +62,7 @@ type RouteReconciler struct {
 // For more details, check Reconcile and its Result here:
 // - https://pkg.go.dev/sigs.k8s.io/controller-runtime@v0.10.0/pkg/reconcile
 func (r *RouteReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
-	reconciler, err := controller.NewStdReconciler(r.Client, "", r.reconciler, r.Reconciler.log, r.recorder, waitDurationWhenError)
+	reconciler, err := controller.NewStdReconciler(r.Client, RouteFinalizer, r.reconciler, r.Reconciler.log, r.recorder, waitDurationWhenError)
 	if err != nil {
 		return ctrl.Result{}, err
 	}
