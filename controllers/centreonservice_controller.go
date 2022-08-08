@@ -34,8 +34,8 @@ import (
 )
 
 const (
-	CentreonServicedFinalizer = "service.monitor.k8s.webcenter.fr/finalizer"
-	CentreonServiceCondition  = "UpdateCentreonService"
+	CentreonServiceFinalizer = "service.monitor.k8s.webcenter.fr/finalizer"
+	CentreonServiceCondition = "UpdateCentreonService"
 )
 
 // CentreonServiceReconciler reconciles a CentreonService object
@@ -74,7 +74,7 @@ func NewCentreonServiceReconciler(client client.Client, scheme *runtime.Scheme) 
 // For more details, check Reconcile and its Result here:
 // - https://pkg.go.dev/sigs.k8s.io/controller-runtime@v0.10.0/pkg/reconcile
 func (r *CentreonServiceReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
-	reconciler, err := controller.NewStdReconciler(r.Client, CentreonServicedFinalizer, r.reconciler, r.log, r.recorder, waitDurationWhenError)
+	reconciler, err := controller.NewStdReconciler(r.Client, CentreonServiceFinalizer, r.reconciler, r.log, r.recorder, waitDurationWhenError)
 	if err != nil {
 		return ctrl.Result{}, err
 	}
@@ -145,7 +145,7 @@ func (r *CentreonServiceReconciler) Create(ctx context.Context, resource client.
 	cs := resource.(*v1alpha1.CentreonService)
 
 	// Create service on Centreon
-	expectedCS, err := cs.ToCentreoonService()
+	expectedCS, err := cs.ToCentreonService()
 	if err != nil {
 		return res, errors.Wrap(err, "Error when convert to Centreon Service")
 	}
@@ -175,7 +175,7 @@ func (r *CentreonServiceReconciler) Update(ctx context.Context, resource client.
 	expectedService := d.(*centreonhandler.CentreonServiceDiff)
 
 	if err = cHandler.UpdateService(expectedService); err != nil {
-		return res, errors.Wrap(err, "Error when create service on Centreoon")
+		return res, errors.Wrap(err, "Error when update service on Centreoon")
 	}
 
 	cs.Status.Host = cs.Spec.Host
@@ -216,7 +216,7 @@ func (r *CentreonServiceReconciler) Diff(resource client.Object, data map[string
 	cs := resource.(*v1alpha1.CentreonService)
 	var d any
 
-	expectedCS, err := cs.ToCentreoonService()
+	expectedCS, err := cs.ToCentreonService()
 	if err != nil {
 		return diff, errors.Wrap(err, "Error when convert to Centreon Service")
 	}

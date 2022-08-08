@@ -145,6 +145,17 @@ func (t *ControllerTestSuite) SetupSuite() {
 		panic(err)
 	}
 
+	centreonServiceGroupReconsiler := NewCentreonServiceGroupReconciler(k8sClient, scheme.Scheme)
+	centreonServiceGroupReconsiler.SetLogger(logrus.WithFields(logrus.Fields{
+		"type": "centreonServiceGroupController",
+	}))
+	centreonServiceGroupReconsiler.SetRecorder(k8sManager.GetEventRecorderFor("centreonservicegroup-controller"))
+	centreonServiceGroupReconsiler.SetReconsiler(mock.NewMockReconciler(centreonServiceGroupReconsiler, t.mockCentreonHandler))
+	centreonServiceGroupReconsiler.SetPlatforms(platforms)
+	if err = centreonServiceGroupReconsiler.SetupWithManager(k8sManager); err != nil {
+		panic(err)
+	}
+
 	centreonController := CentreonController{
 		Client: k8sClient,
 		Scheme: scheme.Scheme,

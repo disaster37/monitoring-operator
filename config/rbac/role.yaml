@@ -54,6 +54,32 @@ rules:
 - apiGroups:
   - monitor.k8s.webcenter.fr
   resources:
+  - centreonservicegroups
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - monitor.k8s.webcenter.fr
+  resources:
+  - centreonservicegroups/finalizers
+  verbs:
+  - update
+- apiGroups:
+  - monitor.k8s.webcenter.fr
+  resources:
+  - centreonservicegroups/status
+  verbs:
+  - get
+  - patch
+  - update
+- apiGroups:
+  - monitor.k8s.webcenter.fr
+  resources:
   - centreonservices
   verbs:
   - create

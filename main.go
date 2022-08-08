@@ -177,6 +177,19 @@ func main() {
 		os.Exit(1)
 	}
 
+	// Set CentreonServiceGroup controller
+	centreonServiceGroupController := controllers.NewCentreonServiceGroupReconciler(mgr.GetClient(), mgr.GetScheme())
+	centreonServiceGroupController.SetLogger(log.WithFields(logrus.Fields{
+		"type": "CentreonServiceGroupController",
+	}))
+	centreonServiceGroupController.SetRecorder(mgr.GetEventRecorderFor("centreonservicegroup-controller"))
+	centreonServiceGroupController.SetReconsiler(centreonServiceGroupController)
+	centreonServiceGroupController.SetPlatforms(platforms)
+	if err = centreonServiceGroupController.SetupWithManager(mgr); err != nil {
+		setupLog.Error(err, "unable to create controller", "controller", "CentreonServiceGroup")
+		os.Exit(1)
+	}
+
 	// Set Ingress controller
 	ingressController := controllers.NewIngressReconciler(mgr.GetClient(), mgr.GetScheme(), centreonController)
 	ingressController.Reconciler.SetLogger(log.WithFields(logrus.Fields{
@@ -232,6 +245,13 @@ func main() {
 		os.Exit(1)
 	}
 
+	if err = (&controllers.CentreonServiceGroupReconciler{
+		Client: mgr.GetClient(),
+		Scheme: mgr.GetScheme(),
+	}).SetupWithManager(mgr); err != nil {
+		setupLog.Error(err, "unable to create controller", "controller", "CentreonServiceGroup")
+		os.Exit(1)
+	}
 	//+kubebuilder:scaffold:builder
 
 	if err := mgr.AddHealthzCheck("healthz", healthz.Ping); err != nil {

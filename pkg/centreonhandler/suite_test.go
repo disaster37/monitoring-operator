@@ -12,10 +12,11 @@ import (
 
 type CentreonHandlerTestSuite struct {
 	suite.Suite
-	mockClient  *mocks.MockAPI
-	mockService *mocks.MockServiceAPI
-	mockCtrl    *gomock.Controller
-	client      CentreonHandler
+	mockClient       *mocks.MockAPI
+	mockService      *mocks.MockServiceAPI
+	mockServiceGroup *mocks.MockServiceGroupAPI
+	mockCtrl         *gomock.Controller
+	client           CentreonHandler
 }
 
 func TestSuite(t *testing.T) {
@@ -28,6 +29,7 @@ func (t *CentreonHandlerTestSuite) SetupSuite() {
 	t.mockCtrl = gomock.NewController(t.T())
 	t.mockClient = mocks.NewMockAPI(t.mockCtrl)
 	t.mockService = mocks.NewMockServiceAPI(t.mockCtrl)
+	t.mockServiceGroup = mocks.NewMockServiceGroupAPI(t.mockCtrl)
 	t.client = &CentreonHandlerImpl{
 		client: &centreon.Client{
 			API: t.mockClient,
@@ -40,6 +42,7 @@ func (t *CentreonHandlerTestSuite) SetupSuite() {
 
 func (t *CentreonHandlerTestSuite) BeforeTest(suiteName, testName string) {
 	t.mockClient.EXPECT().Service().AnyTimes().Return(t.mockService)
+	t.mockClient.EXPECT().ServiceGroup().AnyTimes().Return(t.mockServiceGroup)
 	t.mockClient.EXPECT().Auth().AnyTimes().Return(nil)
 }
 

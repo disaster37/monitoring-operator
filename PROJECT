@@ -55,4 +55,13 @@ resources:
   kind: Template
   path: github.com/disaster37/monitoring-operator/api/v1alpha1
   version: v1alpha1
+- api:
+    crdVersion: v1
+    namespaced: true
+  controller: true
+  domain: k8s.webcenter.fr
+  group: monitor
+  kind: CentreonServiceGroup
+  path: github.com/disaster37/monitoring-operator/api/v1alpha1
+  version: v1alpha1
 version: "3"

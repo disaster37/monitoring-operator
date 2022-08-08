@@ -340,7 +340,7 @@ func doDeleteCentreonServiceStep() test.TestStep {
 			logrus.Infof("=== Delete Centreon Service %s/%s ===", key.Namespace, key.Name)
 
 			if o == nil {
-				return errors.New("ILM is null")
+				return errors.New("Centreon service is null")
 			}
 			cs := o.(*v1alpha1.CentreonService)
 

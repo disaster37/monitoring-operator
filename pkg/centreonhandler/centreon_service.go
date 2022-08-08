@@ -184,6 +184,7 @@ func (h *CentreonHandlerImpl) DeleteService(host, name string) (err error) {
 	return h.client.API.Service().Delete(host, name)
 }
 
+// DiffService permit to compare actual and expected service to compute what is modified
 func (h *CentreonHandlerImpl) DiffService(actual, expected *CentreonService) (diff *CentreonServiceDiff, err error) {
 	diff = &CentreonServiceDiff{
 		Host:           actual.Host,
@@ -301,6 +302,7 @@ func (h *CentreonHandlerImpl) DiffService(actual, expected *CentreonService) (di
 	return diff, nil
 }
 
+// GetService permit to get service by it name
 func (h *CentreonHandlerImpl) GetService(host, name string) (service *CentreonService, err error) {
 	if host == "" {
 		return nil, errors.New("Host must be provided")

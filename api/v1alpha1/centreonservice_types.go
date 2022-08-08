@@ -161,7 +161,7 @@ func (c *CentreonService) IsValid() bool {
 	return true
 }
 
-func (h *CentreonService) ToCentreoonService() (*centreonhandler.CentreonService, error) {
+func (h *CentreonService) ToCentreonService() (*centreonhandler.CentreonService, error) {
 	cs := &centreonhandler.CentreonService{
 		Host:                h.Spec.Host,
 		Name:                h.Spec.Name,
