@@ -123,10 +123,7 @@ func (t *ControllerTestSuite) SetupSuite() {
 		},
 	}
 	t.platforms = platforms
-	platformReconsiler := &PlatformReconciler{
-		Client: k8sClient,
-		Scheme: scheme.Scheme,
-	}
+	platformReconsiler := NewPlatformReconciler(k8sClient, scheme.Scheme)
 	platformReconsiler.SetLogger(logrus.WithFields(logrus.Fields{
 		"type": "platformController",
 	}))
@@ -137,10 +134,7 @@ func (t *ControllerTestSuite) SetupSuite() {
 		panic(err)
 	}
 
-	centreonServiceReconsiler := &CentreonServiceReconciler{
-		Client: k8sClient,
-		Scheme: scheme.Scheme,
-	}
+	centreonServiceReconsiler := NewCentreonServiceReconciler(k8sClient, scheme.Scheme)
 	centreonServiceReconsiler.SetLogger(logrus.WithFields(logrus.Fields{
 		"type": "centreonServiceController",
 	}))
@@ -151,14 +145,12 @@ func (t *ControllerTestSuite) SetupSuite() {
 		panic(err)
 	}
 
-	ingressReconsiler := &IngressReconciler{
+	centreonController := CentreonController{
 		Client: k8sClient,
 		Scheme: scheme.Scheme,
-		CentreonController: CentreonController{
-			Client: k8sClient,
-			Scheme: scheme.Scheme,
-		},
 	}
+
+	ingressReconsiler := NewIngressReconciler(k8sClient, scheme.Scheme, centreonController)
 	ingressReconsiler.Reconciler.SetLogger(logrus.WithFields(logrus.Fields{
 		"type": "ingressController",
 	}))
@@ -172,14 +164,7 @@ func (t *ControllerTestSuite) SetupSuite() {
 		panic(err)
 	}
 
-	routeReconsiler := &RouteReconciler{
-		Client: k8sClient,
-		Scheme: scheme.Scheme,
-		CentreonController: CentreonController{
-			Client: k8sClient,
-			Scheme: scheme.Scheme,
-		},
-	}
+	routeReconsiler := NewRouteReconciler(k8sClient, scheme.Scheme, centreonController)
 	routeReconsiler.Reconciler.SetLogger(logrus.WithFields(logrus.Fields{
 		"type": "routeController",
 	}))
@@ -193,14 +178,7 @@ func (t *ControllerTestSuite) SetupSuite() {
 		panic(err)
 	}
 
-	namespaceReconsiler := &NamespaceReconciler{
-		Client: k8sClient,
-		Scheme: scheme.Scheme,
-		CentreonController: CentreonController{
-			Client: k8sClient,
-			Scheme: scheme.Scheme,
-		},
-	}
+	namespaceReconsiler := NewNamespaceReconciler(k8sClient, scheme.Scheme, centreonController)
 	namespaceReconsiler.Reconciler.SetLogger(logrus.WithFields(logrus.Fields{
 		"type": "namespaceController",
 	}))

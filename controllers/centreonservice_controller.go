@@ -43,6 +43,20 @@ type CentreonServiceReconciler struct {
 	Reconciler
 	client.Client
 	Scheme *runtime.Scheme
+	name   string
+}
+
+func NewCentreonServiceReconciler(client client.Client, scheme *runtime.Scheme) *CentreonServiceReconciler {
+
+	r := &CentreonServiceReconciler{
+		Client: client,
+		Scheme: scheme,
+		name:   "centreonservice",
+	}
+
+	controllerMetrics.WithLabelValues(r.name).Add(0)
+
+	return r
 }
 
 //+kubebuilder:rbac:groups=monitor.k8s.webcenter.fr,resources=centreonservices,verbs=get;list;watch;create;update;patch;delete
@@ -74,6 +88,7 @@ func (r *CentreonServiceReconciler) Reconcile(ctx context.Context, req ctrl.Requ
 // SetupWithManager sets up the controller with the Manager.
 func (r *CentreonServiceReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
+		Named(r.name).
 		For(&v1alpha1.CentreonService{}).
 		Complete(r)
 }
@@ -141,6 +156,9 @@ func (r *CentreonServiceReconciler) Create(ctx context.Context, resource client.
 	cs.Status.Host = cs.Spec.Host
 	cs.Status.ServiceName = cs.Spec.Name
 
+	// Update metrics
+	controllerMetrics.WithLabelValues(r.name).Inc()
+
 	return res, nil
 }
 
@@ -184,6 +202,9 @@ func (r *CentreonServiceReconciler) Delete(ctx context.Context, resource client.
 	if err = cHandler.DeleteService(cs.Spec.Host, cs.Spec.Name); err != nil {
 		return errors.Wrap(err, "Error when delete service from Centreon")
 	}
+
+	// Update metrics
+	controllerMetrics.WithLabelValues(r.name).Dec()
 
 	return nil
 
@@ -243,6 +264,9 @@ func (r *CentreonServiceReconciler) OnError(ctx context.Context, resource client
 		Reason:  "Failed",
 		Message: err.Error(),
 	})
+
+	// Update metrics
+	totalErrors.Inc()
 }
 
 // OnSuccess permit to set status condition on the right state is everithink is good
