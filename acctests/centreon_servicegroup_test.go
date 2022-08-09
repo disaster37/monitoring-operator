@@ -21,7 +21,7 @@ func (t *AccTestSuite) TestCentreonServiceGroup() {
 		ucsg       *unstructured.Unstructured
 		sg         *centreonhandler.CentreonServiceGroup
 		expectedSG *centreonhandler.CentreonServiceGroup
-		err       error
+		err        error
 	)
 
 	centreonServiceGroupGVR := schema.GroupVersionResource{
@@ -42,16 +42,16 @@ func (t *AccTestSuite) TestCentreonServiceGroup() {
 			Name: "test",
 		},
 		Spec: v1alpha1.CentreonServiceGroupSpec{
-			Name:         "sg1",
+			Name:        "sg1",
 			Description: "my sg",
-			Activated:    true,
+			Activated:   true,
 		},
 	}
 	expectedSG = &centreonhandler.CentreonServiceGroup{
-		Name:                "sg1",
-		Comment:             "Managed by monitoring-operator",
+		Name:        "sg1",
+		Comment:     "Managed by monitoring-operator",
 		Description: "my sg",
-		Activated:           "1",
+		Activated:   "1",
 	}
 
 	ucsg, err = structuredToUntructured(csg)
@@ -101,10 +101,10 @@ func (t *AccTestSuite) TestCentreonServiceGroup() {
 		t.T().Fatal(err)
 	}
 	expectedSG = &centreonhandler.CentreonServiceGroup{
-		Name:                "sg1",
-		Comment:             "Managed by monitoring-operator",
+		Name:        "sg1",
+		Comment:     "Managed by monitoring-operator",
 		Description: "my sg2",
-		Activated: "1",
+		Activated:   "1",
 	}
 	_, err = t.k8sclient.Resource(centreonServiceGroupGVR).Namespace("default").Update(context.Background(), ucsg, v1.UpdateOptions{})
 	if err != nil {

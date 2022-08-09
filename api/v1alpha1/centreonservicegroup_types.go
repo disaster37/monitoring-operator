@@ -69,6 +69,7 @@ type CentreonServiceGroupStatus struct {
 //+kubebuilder:subresource:status
 
 // CentreonServiceGroup is the Schema for the centreonservicegroups API
+// +operator-sdk:csv:customresourcedefinitions:resources={{None,None,None}}
 type CentreonServiceGroup struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`

@@ -236,7 +236,7 @@ catalog-push: ## Push a catalog image.
 
 .PHONY: k8s
 k8s: ## Start and config k8s cluster to test OLM deployement
-	docker run --name centreon -d --privileged -t -p 80:80 disaster/centreon:21.10-configured
+	docker run --name centreon -d --privileged -t -p 9090:80 disaster/centreon:21.10-configured
 	go install sigs.k8s.io/kind@v0.14.0 && kind create cluster
 	kubectl config use-context kind-kind
 	kubectl config set-context --current --namespace=default

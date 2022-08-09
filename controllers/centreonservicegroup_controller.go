@@ -74,15 +74,16 @@ func NewCentreonServiceGroupReconciler(client client.Client, scheme *runtime.Sch
 // For more details, check Reconcile and its Result here:
 // - https://pkg.go.dev/sigs.k8s.io/controller-runtime@v0.12.1/pkg/reconcile
 func (r *CentreonServiceGroupReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
+
 	reconciler, err := controller.NewStdReconciler(r.Client, CentreonServiceGroupFinalizer, r.reconciler, r.log, r.recorder, waitDurationWhenError)
 	if err != nil {
 		return ctrl.Result{}, err
 	}
 
-	cs := &v1alpha1.CentreonServiceGroup{}
+	csg := &v1alpha1.CentreonServiceGroup{}
 	data := map[string]any{}
 
-	return reconciler.Reconcile(ctx, req, cs, data)
+	return reconciler.Reconcile(ctx, req, csg, data)
 }
 
 // SetupWithManager sets up the controller with the Manager.

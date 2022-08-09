@@ -41,6 +41,10 @@ spec:
       displayName: Centreon Service Group
       kind: CentreonServiceGroup
       name: centreonservicegroups.monitor.k8s.webcenter.fr
+      resources:
+      - kind: None
+        name: None
+        version: None
       specDescriptors:
       - description: Activate or disable service
         displayName: Activated
