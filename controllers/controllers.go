@@ -53,6 +53,9 @@ func (r *Reconciler) SetLogger(log *logrus.Entry) {
 }
 
 func (r *Reconciler) SetRecorder(recorder record.EventRecorder) {
+	if recorder == nil {
+		panic("Recorder can't be nil")
+	}
 	r.recorder = recorder
 }
 

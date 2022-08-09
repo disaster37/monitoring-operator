@@ -104,6 +104,7 @@ func (t *AccTestSuite) TestCentreonServiceGroup() {
 		Name:                "sg1",
 		Comment:             "Managed by monitoring-operator",
 		Description: "my sg2",
+		Activated: "1",
 	}
 	_, err = t.k8sclient.Resource(centreonServiceGroupGVR).Namespace("default").Update(context.Background(), ucsg, v1.UpdateOptions{})
 	if err != nil {
