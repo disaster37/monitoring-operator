@@ -96,7 +96,7 @@ test: manifests generate mock-gen fmt envtest ## Run tests.
 	KUBEBUILDER_ASSETS="$(shell $(ENVTEST) use $(ENVTEST_K8S_VERSION) -p path)" go test ./api/... ./pkg/... ./controllers/...  -v -coverprofile cover.out $(TESTARGS) -timeout 600s -v -count 1 -parallel 1
 
 test-acc:
-	go test ./acctests/... -v $(TESTARGS) -timeout 600s
+	go test ./acctests/... -v $(TESTARGS) -timeout 1200s
 
 generate-json-schema:
 	curl -L https://raw.githubusercontent.com/yannh/kubeconform/master/scripts/openapi2jsonschema.py -o bin/openapi2jsonschema.py
