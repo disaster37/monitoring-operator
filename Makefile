@@ -96,7 +96,7 @@ test: manifests generate mock-gen fmt envtest ## Run tests.
 	KUBEBUILDER_ASSETS="$(shell $(ENVTEST) use $(ENVTEST_K8S_VERSION) -p path)" go test ./api/... ./pkg/... ./controllers/...  -v -coverprofile cover.out $(TESTARGS) -timeout 600s -v -count 1 -parallel 1
 
 test-acc:
-	go test ./acctests/... -v $(TESTARGS) -timeout 600s
+	go test ./acctests/... -v $(TESTARGS) -timeout 1200s
 
 generate-json-schema:
 	curl -L https://raw.githubusercontent.com/yannh/kubeconform/master/scripts/openapi2jsonschema.py -o bin/openapi2jsonschema.py
@@ -236,7 +236,7 @@ catalog-push: ## Push a catalog image.
 
 .PHONY: k8s
 k8s: ## Start and config k8s cluster to test OLM deployement
-	docker run --name centreon -d --privileged -t -p 80:80 disaster/centreon:21.10-configured
+	docker run --name centreon -d --privileged -t -p 9090:80 disaster/centreon:21.10-configured
 	go install sigs.k8s.io/kind@v0.14.0 && kind create cluster
 	kubectl config use-context kind-kind
 	kubectl config set-context --current --namespace=default

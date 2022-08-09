@@ -36,6 +36,36 @@ spec:
         displayName: None
         path: none
       version: v1alpha1
+    - description: CentreonServiceGroup is the Schema for the centreonservicegroups
+        API
+      displayName: Centreon Service Group
+      kind: CentreonServiceGroup
+      name: centreonservicegroups.monitor.k8s.webcenter.fr
+      resources:
+      - kind: None
+        name: None
+        version: None
+      specDescriptors:
+      - description: Activate or disable service
+        displayName: Activated
+        path: activate
+      - description: The serviceGroup description
+        displayName: Description
+        path: description
+      - description: The serviceGroup name
+        displayName: Name
+        path: name
+      - description: PlatformRef is the target platform where to create serviceGroup
+        displayName: Platform Ref
+        path: platformRef
+      statusDescriptors:
+      - description: List of conditions
+        displayName: Conditions
+        path: conditions
+      - description: The service group name
+        displayName: Service Group Name
+        path: serviceGroupName
+      version: v1alpha1
     - description: CentreonService is the Schema for the centreonservices API
       displayName: Centreon Service
       kind: CentreonService

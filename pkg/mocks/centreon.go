@@ -49,6 +49,20 @@ func (mr *MockCentreonHandlerMockRecorder) CreateService(arg0 interface{}) *gomo
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateService", reflect.TypeOf((*MockCentreonHandler)(nil).CreateService), arg0)
 }
 
+// CreateServiceGroup mocks base method.
+func (m *MockCentreonHandler) CreateServiceGroup(arg0 *centreonhandler.CentreonServiceGroup) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "CreateServiceGroup", arg0)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// CreateServiceGroup indicates an expected call of CreateServiceGroup.
+func (mr *MockCentreonHandlerMockRecorder) CreateServiceGroup(arg0 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateServiceGroup", reflect.TypeOf((*MockCentreonHandler)(nil).CreateServiceGroup), arg0)
+}
+
 // DeleteService mocks base method.
 func (m *MockCentreonHandler) DeleteService(arg0, arg1 string) error {
 	m.ctrl.T.Helper()
@@ -61,6 +75,20 @@ func (m *MockCentreonHandler) DeleteService(arg0, arg1 string) error {
 func (mr *MockCentreonHandlerMockRecorder) DeleteService(arg0, arg1 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteService", reflect.TypeOf((*MockCentreonHandler)(nil).DeleteService), arg0, arg1)
+}
+
+// DeleteServiceGroup mocks base method.
+func (m *MockCentreonHandler) DeleteServiceGroup(arg0 string) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "DeleteServiceGroup", arg0)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// DeleteServiceGroup indicates an expected call of DeleteServiceGroup.
+func (mr *MockCentreonHandlerMockRecorder) DeleteServiceGroup(arg0 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteServiceGroup", reflect.TypeOf((*MockCentreonHandler)(nil).DeleteServiceGroup), arg0)
 }
 
 // DiffService mocks base method.
@@ -78,6 +106,21 @@ func (mr *MockCentreonHandlerMockRecorder) DiffService(arg0, arg1 interface{}) *
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DiffService", reflect.TypeOf((*MockCentreonHandler)(nil).DiffService), arg0, arg1)
 }
 
+// DiffServiceGroup mocks base method.
+func (m *MockCentreonHandler) DiffServiceGroup(arg0, arg1 *centreonhandler.CentreonServiceGroup) (*centreonhandler.CentreonServiceGroupDiff, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "DiffServiceGroup", arg0, arg1)
+	ret0, _ := ret[0].(*centreonhandler.CentreonServiceGroupDiff)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// DiffServiceGroup indicates an expected call of DiffServiceGroup.
+func (mr *MockCentreonHandlerMockRecorder) DiffServiceGroup(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DiffServiceGroup", reflect.TypeOf((*MockCentreonHandler)(nil).DiffServiceGroup), arg0, arg1)
+}
+
 // GetService mocks base method.
 func (m *MockCentreonHandler) GetService(arg0, arg1 string) (*centreonhandler.CentreonService, error) {
 	m.ctrl.T.Helper()
@@ -91,6 +134,21 @@ func (m *MockCentreonHandler) GetService(arg0, arg1 string) (*centreonhandler.Ce
 func (mr *MockCentreonHandlerMockRecorder) GetService(arg0, arg1 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetService", reflect.TypeOf((*MockCentreonHandler)(nil).GetService), arg0, arg1)
+}
+
+// GetServiceGroup mocks base method.
+func (m *MockCentreonHandler) GetServiceGroup(arg0 string) (*centreonhandler.CentreonServiceGroup, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetServiceGroup", arg0)
+	ret0, _ := ret[0].(*centreonhandler.CentreonServiceGroup)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetServiceGroup indicates an expected call of GetServiceGroup.
+func (mr *MockCentreonHandlerMockRecorder) GetServiceGroup(arg0 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetServiceGroup", reflect.TypeOf((*MockCentreonHandler)(nil).GetServiceGroup), arg0)
 }
 
 // SetLogger mocks base method.
@@ -117,4 +175,18 @@ func (m *MockCentreonHandler) UpdateService(arg0 *centreonhandler.CentreonServic
 func (mr *MockCentreonHandlerMockRecorder) UpdateService(arg0 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateService", reflect.TypeOf((*MockCentreonHandler)(nil).UpdateService), arg0)
+}
+
+// UpdateServiceGroup mocks base method.
+func (m *MockCentreonHandler) UpdateServiceGroup(arg0 *centreonhandler.CentreonServiceGroupDiff) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "UpdateServiceGroup", arg0)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// UpdateServiceGroup indicates an expected call of UpdateServiceGroup.
+func (mr *MockCentreonHandlerMockRecorder) UpdateServiceGroup(arg0 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateServiceGroup", reflect.TypeOf((*MockCentreonHandler)(nil).UpdateServiceGroup), arg0)
 }

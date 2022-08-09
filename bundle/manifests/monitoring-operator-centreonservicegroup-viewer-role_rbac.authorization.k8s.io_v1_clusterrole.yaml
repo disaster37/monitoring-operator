@@ -1,0 +1,20 @@
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  creationTimestamp: null
+  name: monitoring-operator-centreonservicegroup-viewer-role
+rules:
+- apiGroups:
+  - monitor.k8s.webcenter.fr
+  resources:
+  - centreonservicegroups
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
+  - monitor.k8s.webcenter.fr
+  resources:
+  - centreonservicegroups/status
+  verbs:
+  - get

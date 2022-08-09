@@ -19,6 +19,8 @@ resources:
   # Add cluster roles to handle custom resource by users
   - centreonservice_editor_role.yaml
   - centreonservice_viewer_role.yaml
+  - centreonservicegroup_editor_role.yaml
+  - centreonservicegroup_viewer_role.yaml
   - platform_editor_role.yaml
   - platform_viewer_role.yaml
   - templatecentreonservice_editor_role.yaml

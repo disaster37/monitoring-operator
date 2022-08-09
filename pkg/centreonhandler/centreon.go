@@ -11,6 +11,11 @@ type CentreonHandler interface {
 	DeleteService(host, service string) (err error)
 	GetService(host, name string) (service *CentreonService, err error)
 	DiffService(actual, expected *CentreonService) (diff *CentreonServiceDiff, err error)
+	CreateServiceGroup(sg *CentreonServiceGroup) (err error)
+	UpdateServiceGroup(sg *CentreonServiceGroupDiff) (err error)
+	DeleteServiceGroup(name string) (err error)
+	GetServiceGroup(name string) (sg *CentreonServiceGroup, err error)
+	DiffServiceGroup(actual, expected *CentreonServiceGroup) (diff *CentreonServiceGroupDiff, err error)
 
 	SetLogger(log *logrus.Entry)
 }
