@@ -49,6 +49,10 @@ spec:
             type: object
           status:
             description: TemplateStatus defines the observed state of Template
+            properties:
+              status:
+                description: Fake status to generate bundle manifest without error
+                type: string
             type: object
         type: object
     served: true

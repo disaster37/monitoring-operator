@@ -44,13 +44,17 @@ type TemplateStatus struct {
 	// INSERT ADDITIONAL STATUS FIELD - define observed state of cluster
 	// Important: Run "make" to regenerate code after modifying this file
 
+	// Fake status to generate bundle manifest without error
+	// +operator-sdk:csv:customresourcedefinitions:type=status
+	Status string `json:"status,omitempty"`
+
 }
 
 //+kubebuilder:object:root=true
 //+kubebuilder:subresource:status
 
 // Template is the Schema for the templates API
-// +operator-sdk:csv:customresourcedefinitions:resources={{None,None,None}}
+// +operator-sdk:csv:customresourcedefinitions:resources={{CentreonService,v1alpha1,centreonService}}
 type Template struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`

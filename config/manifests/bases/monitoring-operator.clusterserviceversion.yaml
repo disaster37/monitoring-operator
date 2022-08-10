@@ -17,25 +17,6 @@ spec:
   apiservicedefinitions: {}
   customresourcedefinitions:
     owned:
-    - description: CentreonServiceTemplate is the Schema for the centreonservicetemplates
-        API
-      displayName: Centreon Service template
-      kind: TemplateCentreonService
-      name: templatecentreonservices.monitor.k8s.webcenter.fr
-      resources:
-      - kind: CentreonService
-        name: centreonservices.monitor.k8s.webcenter.fr
-        version: v1alpha1
-      specDescriptors:
-      - description: The template contend on yaml format base on golang templating.
-          The contend is the CentreService spec.
-        displayName: Template
-        path: template
-      statusDescriptors:
-      - description: None
-        displayName: None
-        path: none
-      version: v1alpha1
     - description: CentreonServiceGroup is the Schema for the centreonservicegroups
         API
       displayName: Centreon Service Group
@@ -166,6 +147,27 @@ spec:
       - description: List of conditions
         displayName: Conditions
         path: conditions
+      version: v1alpha1
+    - description: Template is the Schema for the templates API
+      displayName: Template
+      kind: Template
+      name: templates.monitor.k8s.webcenter.fr
+      resources:
+      - kind: CentreonService
+        name: centreonService
+        version: v1alpha1
+      specDescriptors:
+      - description: Template is the CentreonService template base on golang templating
+          You need only provide the spec contend
+        displayName: Template
+        path: template
+      - description: Type is the object type it generate from template
+        displayName: Type
+        path: type
+      statusDescriptors:
+      - description: Fake status to generate bundle manifest without error
+        displayName: Status
+        path: status
       version: v1alpha1
   description: |
     A Kubernetes operator based on the Operator SDK for creating and managing monitoring resources on Centreon.

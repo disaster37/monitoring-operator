@@ -47,12 +47,13 @@ metadata:
         },
         {
           "apiVersion": "monitor.k8s.webcenter.fr/v1alpha1",
-          "kind": "TemplateCentreonService",
+          "kind": "Template",
           "metadata": {
             "name": "templatecentreonservice-sample"
           },
           "spec": {
-            "template": "host: localhost\nname: \"test-ping-{{ .namespace }}\"\ntemplate: template-test\nactivate: true\nmacros:\n  CHECKTYPE: quota\n  EXTRAOPTIONS: -sS\n  NAMESPACE: {{ .namespace }}\n"
+            "template": "host: localhost\nname: \"test-ping-{{ .namespace }}\"\ntemplate: template-test\nactivate: true\nmacros:\n  CHECKTYPE: quota\n  EXTRAOPTIONS: -sS\n  NAMESPACE: {{ .namespace }}\n",
+            "type": "CentreonService"
           }
         }
       ]
@@ -203,24 +204,26 @@ spec:
         displayName: Conditions
         path: conditions
       version: v1alpha1
-    - description: CentreonServiceTemplate is the Schema for the centreonservicetemplates
-        API
-      displayName: Centreon Service template
-      kind: TemplateCentreonService
-      name: templatecentreonservices.monitor.k8s.webcenter.fr
+    - description: Template is the Schema for the templates API
+      displayName: Template
+      kind: Template
+      name: templates.monitor.k8s.webcenter.fr
       resources:
       - kind: CentreonService
-        name: centreonservices.monitor.k8s.webcenter.fr
+        name: centreonService
         version: v1alpha1
       specDescriptors:
-      - description: The template contend on yaml format base on golang templating.
-          The contend is the CentreService spec.
+      - description: Template is the CentreonService template base on golang templating
+          You need only provide the spec contend
         displayName: Template
         path: template
+      - description: Type is the object type it generate from template
+        displayName: Type
+        path: type
       statusDescriptors:
-      - description: None
-        displayName: None
-        path: none
+      - description: Fake status to generate bundle manifest without error
+        displayName: Status
+        path: status
       version: v1alpha1
   description: |
     A Kubernetes operator based on the Operator SDK for creating and managing monitoring resources on Centreon.
