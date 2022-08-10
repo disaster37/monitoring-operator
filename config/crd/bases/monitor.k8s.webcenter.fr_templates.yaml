@@ -6,20 +6,20 @@ metadata:
   annotations:
     controller-gen.kubebuilder.io/version: v0.7.0
   creationTimestamp: null
-  name: templatecentreonservices.monitor.k8s.webcenter.fr
+  name: templates.monitor.k8s.webcenter.fr
 spec:
   group: monitor.k8s.webcenter.fr
   names:
-    kind: TemplateCentreonService
-    listKind: TemplateCentreonServiceList
-    plural: templatecentreonservices
-    singular: templatecentreonservice
+    kind: Template
+    listKind: TemplateList
+    plural: templates
+    singular: template
   scope: Namespaced
   versions:
   - name: v1alpha1
     schema:
       openAPIV3Schema:
-        description: TemplateCentreonService is the Schema for the templates API
+        description: Template is the Schema for the templates API
         properties:
           apiVersion:
             description: 'APIVersion defines the versioned schema of this representation
@@ -34,19 +34,25 @@ spec:
           metadata:
             type: object
           spec:
-            description: TemplateCentreonServiceSpec defines the desired state of
-              Template
+            description: TemplateSpec defines the desired state of Template
             properties:
               template:
                 description: Template is the CentreonService template base on golang
                   templating You need only provide the spec contend
                 type: string
+              type:
+                description: Type is the object type it generate from template
+                type: string
             required:
             - template
+            - type
             type: object
           status:
-            description: TemplateCentreonServiceStatus defines the observed state
-              of Template
+            description: TemplateStatus defines the observed state of Template
+            properties:
+              status:
+                description: Fake status to generate bundle manifest without error
+                type: string
             type: object
         type: object
     served: true

@@ -61,12 +61,13 @@ func doCreateNamespaceStep() test.TestStep {
 	return test.TestStep{
 		Name: "create",
 		Pre: func(c client.Client, data map[string]any) error {
-			csTemplate := &v1alpha1.TemplateCentreonService{
+			template := &v1alpha1.Template{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "template-namespace1",
 					Namespace: "default",
 				},
-				Spec: v1alpha1.TemplateCentreonServiceSpec{
+				Spec: v1alpha1.TemplateSpec{
+					Type: "CentreonService",
 					Template: `
 host: "localhost"
 name: "ping1"
@@ -84,17 +85,18 @@ categories:
   - "cat1"`,
 				},
 			}
-			if err := c.Create(context.Background(), csTemplate); err != nil {
+			if err := c.Create(context.Background(), template); err != nil {
 				return err
 			}
-			logrus.Infof("Create CentreonServiceTemplate template-namespace1")
+			logrus.Infof("Create template template-namespace1")
 
-			csTemplate = &v1alpha1.TemplateCentreonService{
+			template = &v1alpha1.Template{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "template-namespace2",
 					Namespace: "default",
 				},
-				Spec: v1alpha1.TemplateCentreonServiceSpec{
+				Spec: v1alpha1.TemplateSpec{
+					Type: "CentreonService",
 					Template: `
 host: "localhost"
 name: "ping2"
@@ -112,10 +114,10 @@ categories:
   - "cat1"`,
 				},
 			}
-			if err := c.Create(context.Background(), csTemplate); err != nil {
+			if err := c.Create(context.Background(), template); err != nil {
 				return err
 			}
-			logrus.Infof("Create CentreonServiceTemplate template-namespace2")
+			logrus.Infof("Create template template-namespace2")
 
 			return nil
 		},
@@ -221,13 +223,13 @@ func doUpdateNamespaceStep() test.TestStep {
 		Name: "update",
 		Pre: func(c client.Client, data map[string]any) error {
 
-			logrus.Info("Update CentreonServiceTemplate templat-namespace1")
-			csTemplate := &v1alpha1.TemplateCentreonService{}
-			if err := c.Get(context.Background(), types.NamespacedName{Namespace: "default", Name: "template-namespace1"}, csTemplate); err != nil {
+			logrus.Info("Update template templat-namespace1")
+			template := &v1alpha1.Template{}
+			if err := c.Get(context.Background(), types.NamespacedName{Namespace: "default", Name: "template-namespace1"}, template); err != nil {
 				return err
 			}
 
-			csTemplate.Spec.Template = `
+			template.Spec.Template = `
 host: "localhost"
 name: "ping1"
 template: "template1"
@@ -242,7 +244,7 @@ groups:
   - "sg1"
 categories:
   - "cat1"`
-			if err := c.Update(context.Background(), csTemplate); err != nil {
+			if err := c.Update(context.Background(), template); err != nil {
 				return err
 			}
 

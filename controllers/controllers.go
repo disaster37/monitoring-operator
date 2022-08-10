@@ -12,6 +12,7 @@ import (
 	"k8s.io/client-go/discovery"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/record"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/event"
 	"sigs.k8s.io/controller-runtime/pkg/metrics"
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
@@ -28,6 +29,12 @@ type Reconciler struct {
 	log        *logrus.Entry
 	reconciler controller.Reconciler
 	platforms  map[string]*ComputedPlatform
+}
+
+type CompareResource struct {
+	Current  client.Object
+	Expected client.Object
+	Diff     *controller.Diff
 }
 
 var (
@@ -72,16 +79,16 @@ func (r *Reconciler) SetPlatforms(p map[string]*ComputedPlatform) {
 func viewResourceWithMonitoringTemplate() predicate.Predicate {
 	return predicate.Funcs{
 		UpdateFunc: func(e event.UpdateEvent) bool {
-			return isMonitoringTemplateAnnotation(e.ObjectOld.GetAnnotations()) || isMonitoringTemplateAnnotation(e.ObjectNew.GetAnnotations()) || isTemplateCentreonService(e.ObjectNew)
+			return isMonitoringTemplateAnnotation(e.ObjectOld.GetAnnotations()) || isMonitoringTemplateAnnotation(e.ObjectNew.GetAnnotations()) || isTemplate(e.ObjectNew)
 		},
 		DeleteFunc: func(e event.DeleteEvent) bool {
-			return isMonitoringTemplateAnnotation(e.Object.GetAnnotations()) || isTemplateCentreonService(e.Object)
+			return isMonitoringTemplateAnnotation(e.Object.GetAnnotations()) || isTemplate(e.Object)
 		},
 		CreateFunc: func(e event.CreateEvent) bool {
-			return isMonitoringTemplateAnnotation(e.Object.GetAnnotations()) || isTemplateCentreonService(e.Object)
+			return isMonitoringTemplateAnnotation(e.Object.GetAnnotations()) || isTemplate(e.Object)
 		},
 		GenericFunc: func(e event.GenericEvent) bool {
-			return isMonitoringTemplateAnnotation(e.Object.GetAnnotations()) || isTemplateCentreonService(e.Object)
+			return isMonitoringTemplateAnnotation(e.Object.GetAnnotations()) || isTemplate(e.Object)
 		},
 	}
 }

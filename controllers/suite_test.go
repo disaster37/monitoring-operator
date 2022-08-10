@@ -158,15 +158,22 @@ func (t *ControllerTestSuite) SetupSuite() {
 
 	centreonController := CentreonController{
 		Client: k8sClient,
+	}
+	centreonController.SetLogger(logrus.WithFields(logrus.Fields{
+		"type": "centreonController",
+	}))
+
+	templateController := TemplateController{
+		Client: k8sClient,
 		Scheme: scheme.Scheme,
 	}
+	templateController.SetLogger(logrus.WithFields(logrus.Fields{
+		"type": "templateController",
+	}))
 
-	ingressReconsiler := NewIngressReconciler(k8sClient, scheme.Scheme, centreonController)
+	ingressReconsiler := NewIngressReconciler(k8sClient, scheme.Scheme, centreonController, templateController)
 	ingressReconsiler.Reconciler.SetLogger(logrus.WithFields(logrus.Fields{
 		"type": "ingressController",
-	}))
-	ingressReconsiler.CentreonController.SetLogger(logrus.WithFields(logrus.Fields{
-		"type": "centreonController",
 	}))
 	ingressReconsiler.SetRecorder(k8sManager.GetEventRecorderFor("ingress-controller"))
 	ingressReconsiler.SetReconsiler(mock.NewMockReconciler(ingressReconsiler, t.mockCentreonHandler))
@@ -175,12 +182,9 @@ func (t *ControllerTestSuite) SetupSuite() {
 		panic(err)
 	}
 
-	routeReconsiler := NewRouteReconciler(k8sClient, scheme.Scheme, centreonController)
+	routeReconsiler := NewRouteReconciler(k8sClient, scheme.Scheme, centreonController, templateController)
 	routeReconsiler.Reconciler.SetLogger(logrus.WithFields(logrus.Fields{
 		"type": "routeController",
-	}))
-	routeReconsiler.CentreonController.SetLogger(logrus.WithFields(logrus.Fields{
-		"type": "centreonController",
 	}))
 	routeReconsiler.SetRecorder(k8sManager.GetEventRecorderFor("route-controller"))
 	routeReconsiler.SetReconsiler(mock.NewMockReconciler(routeReconsiler, t.mockCentreonHandler))
@@ -189,12 +193,9 @@ func (t *ControllerTestSuite) SetupSuite() {
 		panic(err)
 	}
 
-	namespaceReconsiler := NewNamespaceReconciler(k8sClient, scheme.Scheme, centreonController)
+	namespaceReconsiler := NewNamespaceReconciler(k8sClient, scheme.Scheme, centreonController, templateController)
 	namespaceReconsiler.Reconciler.SetLogger(logrus.WithFields(logrus.Fields{
 		"type": "namespaceController",
-	}))
-	namespaceReconsiler.CentreonController.SetLogger(logrus.WithFields(logrus.Fields{
-		"type": "centreonController",
 	}))
 	namespaceReconsiler.SetRecorder(k8sManager.GetEventRecorderFor("namespace-controller"))
 	namespaceReconsiler.SetReconsiler(mock.NewMockReconciler(namespaceReconsiler, t.mockCentreonHandler))

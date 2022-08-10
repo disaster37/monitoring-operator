@@ -44,15 +44,17 @@ type IngressReconciler struct {
 	client.Client
 	Scheme *runtime.Scheme
 	CentreonController
+	TemplateController
 	name string
 }
 
-func NewIngressReconciler(client client.Client, scheme *runtime.Scheme, centreonController CentreonController) *IngressReconciler {
+func NewIngressReconciler(client client.Client, scheme *runtime.Scheme, centreonController CentreonController, templateController TemplateController) *IngressReconciler {
 
 	r := &IngressReconciler{
 		Client:             client,
 		Scheme:             scheme,
 		CentreonController: centreonController,
+		TemplateController: templateController,
 		name:               "ingress",
 	}
 
@@ -98,7 +100,7 @@ func (r *IngressReconciler) SetupWithManager(mgr ctrl.Manager) error {
 		For(&networkv1.Ingress{}).
 		Owns(&monitorv1alpha1.CentreonService{}).
 		WithEventFilter(viewResourceWithMonitoringTemplate()).
-		Watches(&source.Kind{Type: &v1alpha1.TemplateCentreonService{}}, handler.EnqueueRequestsFromMapFunc(watchCentreonTemplate(r.Client))).
+		Watches(&source.Kind{Type: &v1alpha1.Template{}}, handler.EnqueueRequestsFromMapFunc(watchTemplate(r.Client))).
 		Complete(r)
 }
 
@@ -120,7 +122,7 @@ func (r *IngressReconciler) Read(ctx context.Context, resource client.Object, da
 
 	switch platform.Spec.PlatformType {
 	case "centreon":
-		return r.CentreonController.readTemplatingCentreonService(ctx, ingress, data, meta, generatePlaceholdersIngress(ingress))
+		return r.TemplateController.readTemplating(ctx, ingress, data, meta, generatePlaceholdersIngress(ingress))
 	default:
 		return res, errors.Errorf("Platform of type %s is not supported", platform.Spec.PlatformType)
 	}

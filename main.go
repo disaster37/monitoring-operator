@@ -160,8 +160,19 @@ func main() {
 	// Centreon controller sub system
 	centreonController := controllers.CentreonController{
 		Client: mgr.GetClient(),
+	}
+	centreonController.SetLogger(log.WithFields(logrus.Fields{
+		"type": "CentreonController",
+	}))
+
+	// Template controller sub system
+	templateController := controllers.TemplateController{
+		Client: mgr.GetClient(),
 		Scheme: mgr.GetScheme(),
 	}
+	templateController.SetLogger(log.WithFields(logrus.Fields{
+		"type": "TemplateController",
+	}))
 
 	// Set CentreonService controller
 	centreonServiceController := controllers.NewCentreonServiceReconciler(mgr.GetClient(), mgr.GetScheme())
@@ -190,12 +201,9 @@ func main() {
 	}
 
 	// Set Ingress controller
-	ingressController := controllers.NewIngressReconciler(mgr.GetClient(), mgr.GetScheme(), centreonController)
+	ingressController := controllers.NewIngressReconciler(mgr.GetClient(), mgr.GetScheme(), centreonController, templateController)
 	ingressController.Reconciler.SetLogger(log.WithFields(logrus.Fields{
 		"type": "IngressController",
-	}))
-	ingressController.CentreonController.SetLogger(log.WithFields(logrus.Fields{
-		"type": "CentreonController",
 	}))
 	ingressController.SetRecorder(mgr.GetEventRecorderFor("ingress-controller"))
 	ingressController.SetReconsiler(ingressController)
@@ -212,12 +220,9 @@ func main() {
 		os.Exit(1)
 	}
 	if isRouteCRD {
-		routeController := controllers.NewRouteReconciler(mgr.GetClient(), mgr.GetScheme(), centreonController)
+		routeController := controllers.NewRouteReconciler(mgr.GetClient(), mgr.GetScheme(), centreonController, templateController)
 		routeController.Reconciler.SetLogger(log.WithFields(logrus.Fields{
 			"type": "RouteController",
-		}))
-		routeController.CentreonController.SetLogger(log.WithFields(logrus.Fields{
-			"type": "CentreonController",
 		}))
 		routeController.SetRecorder(mgr.GetEventRecorderFor("route-controller"))
 		routeController.SetReconsiler(routeController)
@@ -229,12 +234,9 @@ func main() {
 	}
 
 	// Set namespace
-	namespaceController := controllers.NewNamespaceReconciler(mgr.GetClient(), mgr.GetScheme(), centreonController)
+	namespaceController := controllers.NewNamespaceReconciler(mgr.GetClient(), mgr.GetScheme(), centreonController, templateController)
 	namespaceController.Reconciler.SetLogger(log.WithFields(logrus.Fields{
 		"type": "NamespaceController",
-	}))
-	namespaceController.CentreonController.SetLogger(log.WithFields(logrus.Fields{
-		"type": "CentreonController",
 	}))
 	namespaceController.SetRecorder(mgr.GetEventRecorderFor("namespace-controller"))
 	namespaceController.SetReconsiler(namespaceController)

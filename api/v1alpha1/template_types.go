@@ -23,11 +23,15 @@ import (
 // EDIT THIS FILE!  THIS IS SCAFFOLDING FOR YOU TO OWN!
 // NOTE: json tags are required.  Any new fields you add must have json tags for the fields to be serialized.
 
-// TemplateCentreonServiceSpec defines the desired state of Template
+// TemplateSpec defines the desired state of Template
 // +k8s:openapi-gen=true
-type TemplateCentreonServiceSpec struct {
+type TemplateSpec struct {
 	// INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
 	// Important: Run "make" to regenerate code after modifying this file
+
+	// Type is the object type it generate from template
+	// +operator-sdk:csv:customresourcedefinitions:type=spec
+	Type string `json:"type"`
 
 	// Template is the CentreonService template base on golang templating
 	// You need only provide the spec contend
@@ -35,35 +39,39 @@ type TemplateCentreonServiceSpec struct {
 	Template string `json:"template"`
 }
 
-// TemplateCentreonServiceStatus defines the observed state of Template
-type TemplateCentreonServiceStatus struct {
+// TemplateStatus defines the observed state of Template
+type TemplateStatus struct {
 	// INSERT ADDITIONAL STATUS FIELD - define observed state of cluster
 	// Important: Run "make" to regenerate code after modifying this file
+
+	// Fake status to generate bundle manifest without error
+	// +operator-sdk:csv:customresourcedefinitions:type=status
+	Status string `json:"status,omitempty"`
 
 }
 
 //+kubebuilder:object:root=true
 //+kubebuilder:subresource:status
 
-// TemplateCentreonService is the Schema for the templates API
-// +operator-sdk:csv:customresourcedefinitions:resources={{None,None,None}}
-type TemplateCentreonService struct {
+// Template is the Schema for the templates API
+// +operator-sdk:csv:customresourcedefinitions:resources={{CentreonService,v1alpha1,centreonService}}
+type Template struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
-	Spec   TemplateCentreonServiceSpec   `json:"spec,omitempty"`
-	Status TemplateCentreonServiceStatus `json:"status,omitempty"`
+	Spec   TemplateSpec   `json:"spec,omitempty"`
+	Status TemplateStatus `json:"status,omitempty"`
 }
 
 //+kubebuilder:object:root=true
 
-// TemplateCentreonServiceList contains a list of Template
-type TemplateCentreonServiceList struct {
+// TemplateList contains a list of Template
+type TemplateList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata,omitempty"`
-	Items           []TemplateCentreonService `json:"items"`
+	Items           []Template `json:"items"`
 }
 
 func init() {
-	SchemeBuilder.Register(&TemplateCentreonService{}, &TemplateCentreonServiceList{})
+	SchemeBuilder.Register(&Template{}, &TemplateList{})
 }

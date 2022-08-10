@@ -43,15 +43,17 @@ type NamespaceReconciler struct {
 	client.Client
 	Scheme *runtime.Scheme
 	CentreonController
+	TemplateController
 	name string
 }
 
-func NewNamespaceReconciler(client client.Client, scheme *runtime.Scheme, centreonController CentreonController) *NamespaceReconciler {
+func NewNamespaceReconciler(client client.Client, scheme *runtime.Scheme, centreonController CentreonController, templateController TemplateController) *NamespaceReconciler {
 
 	r := &NamespaceReconciler{
 		Client:             client,
 		Scheme:             scheme,
 		CentreonController: centreonController,
+		TemplateController: templateController,
 		name:               "namespace",
 	}
 
@@ -97,7 +99,7 @@ func (r *NamespaceReconciler) SetupWithManager(mgr ctrl.Manager) error {
 		For(&core.Namespace{}).
 		Owns(&monitorv1alpha1.CentreonService{}).
 		WithEventFilter(viewResourceWithMonitoringTemplate()).
-		Watches(&source.Kind{Type: &v1alpha1.TemplateCentreonService{}}, handler.EnqueueRequestsFromMapFunc(watchCentreonTemplate(r.Client))).
+		Watches(&source.Kind{Type: &v1alpha1.Template{}}, handler.EnqueueRequestsFromMapFunc(watchTemplate(r.Client))).
 		Complete(r)
 }
 
@@ -119,7 +121,7 @@ func (r *NamespaceReconciler) Read(ctx context.Context, resource client.Object, 
 
 	switch platform.Spec.PlatformType {
 	case "centreon":
-		return r.CentreonController.readTemplatingCentreonService(ctx, ns, data, meta, generatePlaceholdersNamespace(ns))
+		return r.TemplateController.readTemplating(ctx, ns, data, meta, generatePlaceholdersNamespace(ns))
 	default:
 		return res, errors.Errorf("Platform of type %s is not supported", platform.Spec.PlatformType)
 	}

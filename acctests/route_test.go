@@ -42,7 +42,7 @@ func (t *AccTestSuite) TestRoute() {
 	}
 
 	centreonServiceGVR := api.GroupVersion.WithResource("centreonservices")
-	templateCentreonServiceGVR := api.GroupVersion.WithResource("templatecentreonservices")
+	templateCentreonServiceGVR := api.GroupVersion.WithResource("templates")
 
 	routeGVR := schema.GroupVersionResource{
 		Group:    "route.openshift.io",
@@ -53,15 +53,16 @@ func (t *AccTestSuite) TestRoute() {
 	/***
 	 * Create new template dedicated for route test
 	 */
-	tcs := &api.TemplateCentreonService{
+	tcs := &api.Template{
 		TypeMeta: v1.TypeMeta{
-			Kind:       "TemplateCentreonService",
+			Kind:       "Template",
 			APIVersion: fmt.Sprintf("%s/%s", api.GroupVersion.Group, api.GroupVersion.Version),
 		},
 		ObjectMeta: metav1.ObjectMeta{
 			Name: "check-route",
 		},
-		Spec: api.TemplateCentreonServiceSpec{
+		Spec: api.TemplateSpec{
+			Type: "CentreonService",
 			Template: `
 {{ $rule := index .rules 0}}
 {{ $path := index $rule.paths 0}}

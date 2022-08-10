@@ -9,10 +9,10 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 )
 
-func (t *V1alpha1TestSuite) TestTemplateCentreonServiceCRUD() {
+func (t *V1alpha1TestSuite) TestTemplateCRUD() {
 	var (
 		key              types.NamespacedName
-		created, fetched *TemplateCentreonService
+		created, fetched *Template
 		err              error
 	)
 
@@ -22,12 +22,13 @@ func (t *V1alpha1TestSuite) TestTemplateCentreonServiceCRUD() {
 	}
 
 	// Create object
-	created = &TemplateCentreonService{
+	created = &Template{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      key.Name,
 			Namespace: key.Namespace,
 		},
-		Spec: TemplateCentreonServiceSpec{
+		Spec: TemplateSpec{
+			Type:     "CentreonService",
 			Template: "template",
 		},
 	}
@@ -35,7 +36,7 @@ func (t *V1alpha1TestSuite) TestTemplateCentreonServiceCRUD() {
 	assert.NoError(t.T(), err)
 
 	// Get object
-	fetched = &TemplateCentreonService{}
+	fetched = &Template{}
 	err = t.k8sClient.Get(context.Background(), key, fetched)
 	assert.NoError(t.T(), err)
 	assert.Equal(t.T(), created, fetched)

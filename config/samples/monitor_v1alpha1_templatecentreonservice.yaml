@@ -1,8 +1,9 @@
 apiVersion: monitor.k8s.webcenter.fr/v1alpha1
-kind: TemplateCentreonService
+kind: Template
 metadata:
   name: templatecentreonservice-sample
 spec:
+  type: "CentreonService"
   template: |
     host: localhost
     name: "test-ping-{{ .namespace }}"
