@@ -30,20 +30,21 @@ func (t *AccTestSuite) TestNamespace() {
 	)
 
 	centreonServiceGVR := api.GroupVersion.WithResource("centreonservices")
-	templateCentreonServiceGVR := api.GroupVersion.WithResource("templatecentreonservices")
+	templateCentreonServiceGVR := api.GroupVersion.WithResource("templates")
 
 	/***
 	 * Create new template dedicated for namespace test
 	 */
-	tcs := &api.TemplateCentreonService{
+	tcs := &api.Template{
 		TypeMeta: v1.TypeMeta{
-			Kind:       "TemplateCentreonService",
+			Kind:       "Template",
 			APIVersion: fmt.Sprintf("%s/%s", api.GroupVersion.Group, api.GroupVersion.Version),
 		},
 		ObjectMeta: metav1.ObjectMeta{
 			Name: "check-namespace",
 		},
-		Spec: api.TemplateCentreonServiceSpec{
+		Spec: api.TemplateSpec{
+			Type: "CentreonService",
 			Template: `
 host: "localhost"
 name: "test-namespace-ping"

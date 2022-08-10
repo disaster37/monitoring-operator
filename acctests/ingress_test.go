@@ -31,20 +31,21 @@ func (t *AccTestSuite) TestIngress() {
 	)
 
 	centreonServiceGVR := api.GroupVersion.WithResource("centreonservices")
-	templateCentreonServiceGVR := api.GroupVersion.WithResource("templatecentreonservices")
+	templateCentreonServiceGVR := api.GroupVersion.WithResource("templates")
 
 	/***
 	 * Create new template dedicated for ingress test
 	 */
-	tcs := &api.TemplateCentreonService{
+	tcs := &api.Template{
 		TypeMeta: v1.TypeMeta{
-			Kind:       "TemplateCentreonService",
+			Kind:       "Template",
 			APIVersion: fmt.Sprintf("%s/%s", api.GroupVersion.Group, api.GroupVersion.Version),
 		},
 		ObjectMeta: metav1.ObjectMeta{
 			Name: "check-ingress",
 		},
-		Spec: api.TemplateCentreonServiceSpec{
+		Spec: api.TemplateSpec{
+			Type: "CentreonService",
 			Template: `
 {{ $rule := index .rules 0}}
 {{ $path := index $rule.paths 0}}

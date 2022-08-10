@@ -44,15 +44,17 @@ type RouteReconciler struct {
 	client.Client
 	Scheme *runtime.Scheme
 	CentreonController
+	TemplateController
 	name string
 }
 
-func NewRouteReconciler(client client.Client, scheme *runtime.Scheme, centreonController CentreonController) *RouteReconciler {
+func NewRouteReconciler(client client.Client, scheme *runtime.Scheme, centreonController CentreonController, templateController TemplateController) *RouteReconciler {
 
 	r := &RouteReconciler{
 		Client:             client,
 		Scheme:             scheme,
 		CentreonController: centreonController,
+		TemplateController: templateController,
 		name:               "route",
 	}
 
@@ -96,7 +98,7 @@ func (r *RouteReconciler) SetupWithManager(mgr ctrl.Manager) error {
 		For(&routev1.Route{}).
 		Owns(&monitorv1alpha1.CentreonService{}).
 		WithEventFilter(viewResourceWithMonitoringTemplate()).
-		Watches(&source.Kind{Type: &v1alpha1.TemplateCentreonService{}}, handler.EnqueueRequestsFromMapFunc(watchCentreonTemplate(r.Client))).
+		Watches(&source.Kind{Type: &v1alpha1.Template{}}, handler.EnqueueRequestsFromMapFunc(watchTemplate(r.Client))).
 		Complete(r)
 }
 
@@ -118,7 +120,7 @@ func (r *RouteReconciler) Read(ctx context.Context, resource client.Object, data
 
 	switch platform.Spec.PlatformType {
 	case "centreon":
-		return r.CentreonController.readTemplatingCentreonService(ctx, route, data, meta, generatePlaceholdersRoute(route))
+		return r.TemplateController.readTemplating(ctx, route, data, meta, generatePlaceholdersRoute(route))
 	default:
 		return res, errors.Errorf("Platform of type %s is not supported", platform.Spec.PlatformType)
 	}

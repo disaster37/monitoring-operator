@@ -4,7 +4,7 @@
 resources:
 - bases/monitor.k8s.webcenter.fr_centreonservices.yaml
 - bases/monitor.k8s.webcenter.fr_platforms.yaml
-- bases/monitor.k8s.webcenter.fr_templatecentreonservices.yaml
+- bases/monitor.k8s.webcenter.fr_templates.yaml
 - bases/monitor.k8s.webcenter.fr_centreonservicegroups.yaml
 #+kubebuilder:scaffold:crdkustomizeresource
 

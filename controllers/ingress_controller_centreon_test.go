@@ -67,12 +67,13 @@ func doCreateIngressStep() test.TestStep {
 	return test.TestStep{
 		Name: "create",
 		Pre: func(c client.Client, data map[string]any) error {
-			csTemplate := &v1alpha1.TemplateCentreonService{
+			template := &v1alpha1.Template{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "template-ingress1",
 					Namespace: "default",
 				},
-				Spec: v1alpha1.TemplateCentreonServiceSpec{
+				Spec: v1alpha1.TemplateSpec{
+					Type: "CentreonService",
 					Template: `
 host: "localhost"
 name: "ping1"
@@ -90,17 +91,18 @@ categories:
   - "cat1"`,
 				},
 			}
-			if err := c.Create(context.Background(), csTemplate); err != nil {
+			if err := c.Create(context.Background(), template); err != nil {
 				return err
 			}
-			logrus.Infof("Create CentreonServiceTemplate template-ingress1")
+			logrus.Infof("Create template template-ingress1")
 
-			csTemplate = &v1alpha1.TemplateCentreonService{
+			template = &v1alpha1.Template{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "template-ingress2",
 					Namespace: "default",
 				},
-				Spec: v1alpha1.TemplateCentreonServiceSpec{
+				Spec: v1alpha1.TemplateSpec{
+					Type: "CentreonService",
 					Template: `
 host: "localhost"
 name: "ping2"
@@ -118,10 +120,10 @@ categories:
   - "cat1"`,
 				},
 			}
-			if err := c.Create(context.Background(), csTemplate); err != nil {
+			if err := c.Create(context.Background(), template); err != nil {
 				return err
 			}
-			logrus.Infof("Create CentreonServiceTemplate template-ingress2")
+			logrus.Infof("Create template template-ingress2")
 
 			return nil
 		},
@@ -287,12 +289,12 @@ func doUpdateIngressStep() test.TestStep {
 		Pre: func(c client.Client, data map[string]any) error {
 
 			logrus.Info("Update CentreonServiceTemplate template-ingress1")
-			csTemplate := &v1alpha1.TemplateCentreonService{}
-			if err := c.Get(context.Background(), types.NamespacedName{Namespace: "default", Name: "template-ingress1"}, csTemplate); err != nil {
+			template := &v1alpha1.Template{}
+			if err := c.Get(context.Background(), types.NamespacedName{Namespace: "default", Name: "template-ingress1"}, template); err != nil {
 				return err
 			}
 
-			csTemplate.Spec.Template = `
+			template.Spec.Template = `
 host: "localhost"
 name: "ping1"
 template: "template1"
@@ -307,7 +309,7 @@ groups:
   - "sg1"
 categories:
   - "cat1"`
-			if err := c.Update(context.Background(), csTemplate); err != nil {
+			if err := c.Update(context.Background(), template); err != nil {
 				return err
 			}
 
