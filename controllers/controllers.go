@@ -19,9 +19,8 @@ import (
 )
 
 const (
-	monitoringAnnotationKey         = "monitor.k8s.webcenter.fr"
-	centreonMonitoringAnnotationKey = "centreon.monitor.k8s.webcenter.fr"
-	waitDurationWhenError           = 1 * time.Minute
+	monitoringAnnotationKey = "monitor.k8s.webcenter.fr"
+	waitDurationWhenError   = 1 * time.Minute
 )
 
 type Reconciler struct {

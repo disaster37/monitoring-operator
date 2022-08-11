@@ -7,12 +7,15 @@ import (
 	"fmt"
 	"html/template"
 	"reflect"
+	"strings"
 
 	"github.com/Masterminds/sprig/v3"
 	"github.com/davecgh/go-spew/spew"
 	"github.com/disaster37/monitoring-operator/api/v1alpha1"
 	"github.com/disaster37/monitoring-operator/pkg/helpers"
 	"github.com/disaster37/operator-sdk-extra/pkg/controller"
+	"github.com/disaster37/operator-sdk-extra/pkg/helper"
+	"github.com/google/go-cmp/cmp"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
@@ -45,6 +48,8 @@ func isTemplate(o client.Object) bool {
 func watchTemplate(c client.Client) handler.MapFunc {
 	return func(a client.Object) []reconcile.Request {
 
+		var listRessources client.ObjectList
+
 		reconcileRequests := make([]reconcile.Request, 0, 0)
 		template := a.(*v1alpha1.Template)
 		selectors, err := labels.Parse(fmt.Sprintf("%s/template-name=%s,%s/template-namespace=%s", monitoringAnnotationKey, a.GetName(), monitoringAnnotationKey, a.GetNamespace()))
@@ -55,19 +60,31 @@ func watchTemplate(c client.Client) handler.MapFunc {
 		// Get object type
 		switch template.Spec.Type {
 		case "CentreonService":
-			// Get all resources created from this template
-			listCentreonService := &v1alpha1.CentreonServiceList{}
-			if err := c.List(context.Background(), listCentreonService, &client.ListOptions{LabelSelector: selectors}); err != nil {
-				panic(err)
-			}
 
-			for _, cs := range listCentreonService.Items {
-				// Search parent to reconcile parent
-				for _, parent := range cs.OwnerReferences {
-					reconcileRequests = append(reconcileRequests, reconcile.Request{NamespacedName: types.NamespacedName{Name: parent.Name, Namespace: cs.Namespace}})
-				}
-			}
+			listRessources = &v1alpha1.CentreonServiceList{}
 			break
+		case "CentreonServiceGroup":
+			listRessources = &v1alpha1.CentreonServiceGroupList{}
+			break
+		default:
+			return reconcileRequests
+		}
+
+		// Get all resources created from this template
+		if err := c.List(context.Background(), listRessources, &client.ListOptions{LabelSelector: selectors}); err != nil {
+			panic(err)
+		}
+
+		items, err := GetItems(listRessources)
+		if err != nil {
+			panic(err)
+		}
+
+		for _, item := range items {
+			// Search parent to reconcile parent
+			for _, parent := range item.GetOwnerReferences() {
+				reconcileRequests = append(reconcileRequests, reconcile.Request{NamespacedName: types.NamespacedName{Name: parent.Name, Namespace: item.GetNamespace()}})
+			}
 		}
 
 		return reconcileRequests
@@ -87,7 +104,6 @@ func (r *TemplateController) readTemplating(ctx context.Context, resource client
 	var (
 		currentResource  client.Object
 		expectedResource client.Object
-		objectType       string
 	)
 
 	// Get Templates from annotations
@@ -107,7 +123,7 @@ func (r *TemplateController) readTemplating(ctx context.Context, resource client
 	}
 
 	// Get currents resources and compute expected resources
-	comparedResources := map[string][]CompareResource{}
+	listcomparedResource := make([]CompareResource, 0, len(listNamespacedName))
 	for _, namespacedName := range listNamespacedName {
 		r.log.Debugf("Process template %s/%s", namespacedName.Namespace, namespacedName.Name)
 
@@ -126,10 +142,6 @@ func (r *TemplateController) readTemplating(ctx context.Context, resource client
 		// Generate the right object depend of template type
 		switch templateO.Spec.Type {
 		case "CentreonService":
-			objectType = "centreonServiceCompareResources"
-			if comparedResources[objectType] == nil {
-				comparedResources[objectType] = make([]CompareResource, 0)
-			}
 			currentResource = &v1alpha1.CentreonService{}
 			centreonServiceSpec := &v1alpha1.CentreonServiceSpec{}
 			// Compute expected resource spec
@@ -152,6 +164,30 @@ func (r *TemplateController) readTemplating(ctx context.Context, resource client
 				return res, fmt.Errorf("Generated CentreonService is not valid: %+v", centreonService.Spec)
 			}
 			expectedResource = centreonService
+			break
+		case "CentreonServiceGroup":
+			currentResource = &v1alpha1.CentreonServiceGroup{}
+			centreonServiceGroupSpec := &v1alpha1.CentreonServiceGroupSpec{}
+			// Compute expected resource spec
+			if err = yaml.Unmarshal(rawTemplate, centreonServiceGroupSpec); err != nil {
+				return res, errors.Wrap(err, "Error when unmarshall expected spec")
+			}
+
+			centreonServiceGroup := &v1alpha1.CentreonServiceGroup{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:        namespacedName.Name,
+					Namespace:   namespace,
+					Labels:      helpers.CopyMapString(resource.GetLabels()),
+					Annotations: helpers.CopyMapString(resource.GetAnnotations()),
+				},
+				Spec: *centreonServiceGroupSpec,
+			}
+
+			// Check CentreonServiceGroup is valid
+			if !centreonServiceGroup.IsValid() {
+				return res, fmt.Errorf("Generated CentreonServiceGroup is not valid: %+v", centreonServiceGroup.Spec)
+			}
+			expectedResource = centreonServiceGroup
 			break
 		default:
 			return res, errors.Errorf("Template of type %s is not supported", templateO.Spec.Type)
@@ -180,13 +216,103 @@ func (r *TemplateController) readTemplating(ctx context.Context, resource client
 			},
 		}
 
-		comparedResources[objectType] = append(comparedResources[objectType], compareResource)
+		listcomparedResource = append(listcomparedResource, compareResource)
 	}
 
-	r.log.Tracef("List of compare resources: %s", spew.Sdump(comparedResources))
+	r.log.Tracef("List of compare resources: %s", spew.Sdump(listcomparedResource))
 
-	for key, value := range comparedResources {
-		data[key] = value
+	data["compareResources"] = listcomparedResource
+
+	return res, nil
+}
+
+// diffRessourcesFromTemplate permit to diff ressources generated by templating
+func (r *TemplateController) diffRessourcesFromTemplate(resource client.Object, data map[string]interface{}, meta interface{}) (diff controller.Diff, err error) {
+	var d any
+
+	diff = controller.Diff{
+		NeedCreate: false,
+		NeedUpdate: false,
+	}
+
+	d, err = helper.Get(data, "compareResources")
+	if err != nil {
+		return diff, err
+	}
+	listCompareResource := d.([]CompareResource)
+	if listCompareResource == nil {
+		return diff, nil
+	}
+
+	var sb strings.Builder
+
+	for _, compareResource := range listCompareResource {
+
+		// New ressource
+		if reflect.ValueOf(compareResource.Current).IsNil() {
+			compareResource.Diff.NeedCreate = true
+			compareResource.Diff.Diff = fmt.Sprintf("Ressource %s not exist", compareResource.Expected.GetName())
+			diff.NeedCreate = true
+			sb.WriteString(compareResource.Diff.Diff)
+		} else {
+			// Existing ressource
+			currentSpec, err := GetSpec(compareResource.Current)
+			if err != nil {
+				return diff, err
+			}
+			expectedSpec, err := GetSpec(compareResource.Expected)
+			if err != nil {
+				return diff, err
+			}
+			diffSpec := cmp.Diff(currentSpec, expectedSpec)
+			diffLabels := cmp.Diff(compareResource.Current.GetLabels(), compareResource.Expected.GetLabels())
+			diffAnnotations := cmp.Diff(compareResource.Current.GetAnnotations(), compareResource.Expected.GetAnnotations())
+			if diffSpec != "" || diffLabels != "" || diffAnnotations != "" {
+				compareResource.Diff.NeedUpdate = true
+				compareResource.Diff.Diff = fmt.Sprintf("%s\n%s\n%s", diffLabels, diffAnnotations, diffSpec)
+				compareResource.Current.SetLabels(compareResource.Expected.GetLabels())
+				compareResource.Current.SetAnnotations(compareResource.Expected.GetAnnotations())
+				err = SetSpec(compareResource.Current, expectedSpec)
+				if err != nil {
+					return diff, err
+				}
+				diff.NeedUpdate = true
+				sb.WriteString(compareResource.Diff.Diff)
+			}
+		}
+	}
+
+	diff.Diff = sb.String()
+
+	return diff, nil
+
+}
+
+// createOrUpdateRessourcesFromTemplate permit to create or update ressources computing from templates
+func (r *TemplateController) createOrUpdateRessourcesFromTemplate(ctx context.Context, resource client.Object, data map[string]interface{}, meta interface{}) (res ctrl.Result, err error) {
+	var d any
+
+	d, err = helper.Get(data, "compareResources")
+	if err != nil {
+		return res, err
+	}
+	listCompareResource := d.([]CompareResource)
+	if listCompareResource == nil {
+		return res, nil
+	}
+
+	for _, compareResource := range listCompareResource {
+		if compareResource.Diff.NeedCreate {
+			r.log.Debugf("Create ressource %s/%s", compareResource.Expected.GetNamespace(), compareResource.Expected.GetName())
+			if err = r.Client.Create(ctx, compareResource.Expected); err != nil {
+				return res, errors.Wrapf(err, "Error when create ressource %s", compareResource.Expected.GetName())
+			}
+		} else if compareResource.Diff.NeedUpdate {
+			r.log.Debugf("Update ressource %s/%s", compareResource.Current.GetNamespace(), compareResource.Current.GetName())
+			if err = r.Client.Update(ctx, compareResource.Current); err != nil {
+				return res, errors.Wrapf(err, "Error when update ressource %s", compareResource.Current.GetName())
+			}
+		}
 	}
 
 	return res, nil

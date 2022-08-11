@@ -91,6 +91,15 @@ func init() {
 	SchemeBuilder.Register(&CentreonServiceGroup{}, &CentreonServiceGroupList{})
 }
 
+// IsValid check Centreon service is valid for Centreon
+func (h *CentreonServiceGroup) IsValid() bool {
+	if h.Spec.Name == "" || h.Spec.Description == "" {
+		return false
+	}
+
+	return true
+}
+
 // ToCentreonServiceGroup permit to convert current spec to centreonServiceGroup object
 func (h *CentreonServiceGroup) ToCentreonServiceGroup() (*centreonhandler.CentreonServiceGroup, error) {
 	csg := &centreonhandler.CentreonServiceGroup{
