@@ -47,7 +47,6 @@ type TemplateStatus struct {
 	// Fake status to generate bundle manifest without error
 	// +operator-sdk:csv:customresourcedefinitions:type=status
 	Status string `json:"status,omitempty"`
-
 }
 
 //+kubebuilder:object:root=true

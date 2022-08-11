@@ -72,3 +72,36 @@ func TestToCentreonServiceGroup(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, expectedCsg, currentCsg)
 }
+
+func TestCentreonServiceGroupIsValid(t *testing.T) {
+	var centreonServiceGroup *CentreonServiceGroup
+
+	// When is valid
+	centreonServiceGroup = &CentreonServiceGroup{
+		Spec: CentreonServiceGroupSpec{
+			Name:        "sg1",
+			Description: "my sg",
+		},
+	}
+	assert.True(t, centreonServiceGroup.IsValid())
+
+	// When invalid
+	centreonServiceGroup = &CentreonServiceGroup{
+		Spec: CentreonServiceGroupSpec{
+			Name:        "",
+			Description: "my sg",
+		},
+	}
+	assert.False(t, centreonServiceGroup.IsValid())
+
+	centreonServiceGroup = &CentreonServiceGroup{
+		Spec: CentreonServiceGroupSpec{
+			Name:        "sg1",
+			Description: "",
+		},
+	}
+	assert.False(t, centreonServiceGroup.IsValid())
+
+	centreonServiceGroup = &CentreonServiceGroup{}
+	assert.False(t, centreonServiceGroup.IsValid())
+}

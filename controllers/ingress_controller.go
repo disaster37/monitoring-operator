@@ -23,8 +23,6 @@ import (
 	"github.com/disaster37/monitoring-operator/api/v1alpha1"
 	monitorv1alpha1 "github.com/disaster37/monitoring-operator/api/v1alpha1"
 	"github.com/disaster37/operator-sdk-extra/pkg/controller"
-	"github.com/disaster37/operator-sdk-extra/pkg/helper"
-	"github.com/pkg/errors"
 	core "k8s.io/api/core/v1"
 	networkv1 "k8s.io/api/networking/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -43,17 +41,15 @@ type IngressReconciler struct {
 	Reconciler
 	client.Client
 	Scheme *runtime.Scheme
-	CentreonController
 	TemplateController
 	name string
 }
 
-func NewIngressReconciler(client client.Client, scheme *runtime.Scheme, centreonController CentreonController, templateController TemplateController) *IngressReconciler {
+func NewIngressReconciler(client client.Client, scheme *runtime.Scheme, templateController TemplateController) *IngressReconciler {
 
 	r := &IngressReconciler{
 		Client:             client,
 		Scheme:             scheme,
-		CentreonController: centreonController,
 		TemplateController: templateController,
 		name:               "ingress",
 	}
@@ -113,41 +109,12 @@ func (r *IngressReconciler) Configure(ctx context.Context, req ctrl.Request, res
 // Read permit to compute expected monitoring service that reflect ingress
 func (r *IngressReconciler) Read(ctx context.Context, resource client.Object, data map[string]any, meta any) (res ctrl.Result, err error) {
 	ingress := resource.(*networkv1.Ingress)
-
-	_, platform, err := getClient(ingress.Annotations[fmt.Sprintf("%s/platform-ref", centreonMonitoringAnnotationKey)], r.platforms)
-	if err != nil {
-		return res, errors.Wrap(err, "Error when get platform")
-	}
-	data["platform"] = platform
-
-	switch platform.Spec.PlatformType {
-	case "centreon":
-		return r.TemplateController.readTemplating(ctx, ingress, data, meta, generatePlaceholdersIngress(ingress))
-	default:
-		return res, errors.Errorf("Platform of type %s is not supported", platform.Spec.PlatformType)
-	}
-
+	return r.TemplateController.readTemplating(ctx, ingress, data, meta, generatePlaceholdersIngress(ingress))
 }
 
 // Create add new service object
 func (r *IngressReconciler) Create(ctx context.Context, resource client.Object, data map[string]interface{}, meta interface{}) (res ctrl.Result, err error) {
-	var d any
-
-	d, err = helper.Get(data, "platform")
-	if err != nil {
-		return res, err
-	}
-	platform := d.(*v1alpha1.Platform)
-
-	// Update metrics
-	controllerMetrics.WithLabelValues(r.name).Inc()
-
-	switch platform.Spec.PlatformType {
-	case "centreon":
-		return r.CentreonController.createOrUpdateCentreonServiceFromTemplate(ctx, resource, data, meta)
-	default:
-		return res, errors.Errorf("Platform of type %s is not supported", platform.Spec.PlatformType)
-	}
+	return r.TemplateController.createOrUpdateRessourcesFromTemplate(ctx, resource, data, meta)
 }
 
 // Update permit to update service object
@@ -166,20 +133,8 @@ func (r *IngressReconciler) Delete(ctx context.Context, resource client.Object, 
 
 // Diff permit to check if diff between actual and expected CentreonService exist
 func (r *IngressReconciler) Diff(resource client.Object, data map[string]interface{}, meta interface{}) (diff controller.Diff, err error) {
-	var d any
 
-	d, err = helper.Get(data, "platform")
-	if err != nil {
-		return diff, err
-	}
-	platform := d.(*v1alpha1.Platform)
-
-	switch platform.Spec.PlatformType {
-	case "centreon":
-		return r.CentreonController.diffCentreonService(resource, data, meta)
-	default:
-		return diff, errors.Errorf("Platform of type %s is not supported", platform.Spec.PlatformType)
-	}
+	return r.TemplateController.diffRessourcesFromTemplate(resource, data, meta)
 }
 
 // OnError permit to set status condition on the right state and record error

@@ -157,14 +157,6 @@ func main() {
 		os.Exit(1)
 	}
 
-	// Centreon controller sub system
-	centreonController := controllers.CentreonController{
-		Client: mgr.GetClient(),
-	}
-	centreonController.SetLogger(log.WithFields(logrus.Fields{
-		"type": "CentreonController",
-	}))
-
 	// Template controller sub system
 	templateController := controllers.TemplateController{
 		Client: mgr.GetClient(),
@@ -201,7 +193,7 @@ func main() {
 	}
 
 	// Set Ingress controller
-	ingressController := controllers.NewIngressReconciler(mgr.GetClient(), mgr.GetScheme(), centreonController, templateController)
+	ingressController := controllers.NewIngressReconciler(mgr.GetClient(), mgr.GetScheme(), templateController)
 	ingressController.Reconciler.SetLogger(log.WithFields(logrus.Fields{
 		"type": "IngressController",
 	}))
@@ -220,7 +212,7 @@ func main() {
 		os.Exit(1)
 	}
 	if isRouteCRD {
-		routeController := controllers.NewRouteReconciler(mgr.GetClient(), mgr.GetScheme(), centreonController, templateController)
+		routeController := controllers.NewRouteReconciler(mgr.GetClient(), mgr.GetScheme(), templateController)
 		routeController.Reconciler.SetLogger(log.WithFields(logrus.Fields{
 			"type": "RouteController",
 		}))
@@ -234,7 +226,7 @@ func main() {
 	}
 
 	// Set namespace
-	namespaceController := controllers.NewNamespaceReconciler(mgr.GetClient(), mgr.GetScheme(), centreonController, templateController)
+	namespaceController := controllers.NewNamespaceReconciler(mgr.GetClient(), mgr.GetScheme(), templateController)
 	namespaceController.Reconciler.SetLogger(log.WithFields(logrus.Fields{
 		"type": "NamespaceController",
 	}))

@@ -23,8 +23,6 @@ import (
 	"github.com/disaster37/monitoring-operator/api/v1alpha1"
 	monitorv1alpha1 "github.com/disaster37/monitoring-operator/api/v1alpha1"
 	"github.com/disaster37/operator-sdk-extra/pkg/controller"
-	"github.com/disaster37/operator-sdk-extra/pkg/helper"
-	"github.com/pkg/errors"
 	core "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -42,17 +40,15 @@ type NamespaceReconciler struct {
 	Reconciler
 	client.Client
 	Scheme *runtime.Scheme
-	CentreonController
 	TemplateController
 	name string
 }
 
-func NewNamespaceReconciler(client client.Client, scheme *runtime.Scheme, centreonController CentreonController, templateController TemplateController) *NamespaceReconciler {
+func NewNamespaceReconciler(client client.Client, scheme *runtime.Scheme, templateController TemplateController) *NamespaceReconciler {
 
 	r := &NamespaceReconciler{
 		Client:             client,
 		Scheme:             scheme,
-		CentreonController: centreonController,
 		TemplateController: templateController,
 		name:               "namespace",
 	}
@@ -112,41 +108,12 @@ func (r *NamespaceReconciler) Configure(ctx context.Context, req ctrl.Request, r
 // Read permit to compute expected monitoring service that reflect namespace
 func (r *NamespaceReconciler) Read(ctx context.Context, resource client.Object, data map[string]any, meta any) (res ctrl.Result, err error) {
 	ns := resource.(*core.Namespace)
-
-	_, platform, err := getClient(ns.Annotations[fmt.Sprintf("%s/platform-ref", centreonMonitoringAnnotationKey)], r.platforms)
-	if err != nil {
-		return res, errors.Wrap(err, "Error when get platform")
-	}
-	data["platform"] = platform
-
-	switch platform.Spec.PlatformType {
-	case "centreon":
-		return r.TemplateController.readTemplating(ctx, ns, data, meta, generatePlaceholdersNamespace(ns))
-	default:
-		return res, errors.Errorf("Platform of type %s is not supported", platform.Spec.PlatformType)
-	}
-
+	return r.TemplateController.readTemplating(ctx, ns, data, meta, generatePlaceholdersNamespace(ns))
 }
 
 // Create add new service object
 func (r *NamespaceReconciler) Create(ctx context.Context, resource client.Object, data map[string]interface{}, meta interface{}) (res ctrl.Result, err error) {
-	var d any
-
-	d, err = helper.Get(data, "platform")
-	if err != nil {
-		return res, err
-	}
-	platform := d.(*v1alpha1.Platform)
-
-	// Update metrics
-	controllerMetrics.WithLabelValues(r.name).Inc()
-
-	switch platform.Spec.PlatformType {
-	case "centreon":
-		return r.CentreonController.createOrUpdateCentreonServiceFromTemplate(ctx, resource, data, meta)
-	default:
-		return res, errors.Errorf("Platform of type %s is not supported", platform.Spec.PlatformType)
-	}
+	return r.TemplateController.createOrUpdateRessourcesFromTemplate(ctx, resource, data, meta)
 }
 
 // Update permit to update service object
@@ -166,20 +133,7 @@ func (r *NamespaceReconciler) Delete(ctx context.Context, resource client.Object
 
 // Diff permit to check if diff between actual and expected CentreonService exist
 func (r *NamespaceReconciler) Diff(resource client.Object, data map[string]interface{}, meta interface{}) (diff controller.Diff, err error) {
-	var d any
-
-	d, err = helper.Get(data, "platform")
-	if err != nil {
-		return diff, err
-	}
-	platform := d.(*v1alpha1.Platform)
-
-	switch platform.Spec.PlatformType {
-	case "centreon":
-		return r.CentreonController.diffCentreonService(resource, data, meta)
-	default:
-		return diff, errors.Errorf("Platform of type %s is not supported", platform.Spec.PlatformType)
-	}
+	return r.TemplateController.diffRessourcesFromTemplate(resource, data, meta)
 }
 
 // OnError permit to set status condition on the right state and record error

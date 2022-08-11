@@ -23,9 +23,7 @@ import (
 	"github.com/disaster37/monitoring-operator/api/v1alpha1"
 	monitorv1alpha1 "github.com/disaster37/monitoring-operator/api/v1alpha1"
 	"github.com/disaster37/operator-sdk-extra/pkg/controller"
-	"github.com/disaster37/operator-sdk-extra/pkg/helper"
 	routev1 "github.com/openshift/api/route/v1"
-	"github.com/pkg/errors"
 	core "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -43,17 +41,15 @@ type RouteReconciler struct {
 	Reconciler
 	client.Client
 	Scheme *runtime.Scheme
-	CentreonController
 	TemplateController
 	name string
 }
 
-func NewRouteReconciler(client client.Client, scheme *runtime.Scheme, centreonController CentreonController, templateController TemplateController) *RouteReconciler {
+func NewRouteReconciler(client client.Client, scheme *runtime.Scheme, templateController TemplateController) *RouteReconciler {
 
 	r := &RouteReconciler{
 		Client:             client,
 		Scheme:             scheme,
-		CentreonController: centreonController,
 		TemplateController: templateController,
 		name:               "route",
 	}
@@ -111,41 +107,12 @@ func (r *RouteReconciler) Configure(ctx context.Context, req ctrl.Request, resou
 // Read permit to compute expected monitoring service that reflect route
 func (r *RouteReconciler) Read(ctx context.Context, resource client.Object, data map[string]any, meta any) (res ctrl.Result, err error) {
 	route := resource.(*routev1.Route)
-
-	_, platform, err := getClient(route.Annotations[fmt.Sprintf("%s/platform-ref", centreonMonitoringAnnotationKey)], r.platforms)
-	if err != nil {
-		return res, errors.Wrap(err, "Error when get platform")
-	}
-	data["platform"] = platform
-
-	switch platform.Spec.PlatformType {
-	case "centreon":
-		return r.TemplateController.readTemplating(ctx, route, data, meta, generatePlaceholdersRoute(route))
-	default:
-		return res, errors.Errorf("Platform of type %s is not supported", platform.Spec.PlatformType)
-	}
-
+	return r.TemplateController.readTemplating(ctx, route, data, meta, generatePlaceholdersRoute(route))
 }
 
 // Create add new monitoring service object
 func (r *RouteReconciler) Create(ctx context.Context, resource client.Object, data map[string]interface{}, meta interface{}) (res ctrl.Result, err error) {
-	var d any
-
-	d, err = helper.Get(data, "platform")
-	if err != nil {
-		return res, err
-	}
-	platform := d.(*v1alpha1.Platform)
-
-	// Update prometheus mectric
-	controllerMetrics.WithLabelValues(r.name).Inc()
-
-	switch platform.Spec.PlatformType {
-	case "centreon":
-		return r.CentreonController.createOrUpdateCentreonServiceFromTemplate(ctx, resource, data, meta)
-	default:
-		return res, errors.Errorf("Platform of type %s is not supported", platform.Spec.PlatformType)
-	}
+	return r.TemplateController.createOrUpdateRessourcesFromTemplate(ctx, resource, data, meta)
 }
 
 // Update permit to update monitoring service object
@@ -165,20 +132,7 @@ func (r *RouteReconciler) Delete(ctx context.Context, resource client.Object, da
 
 // Diff permit to check if diff between actual and expected CentreonService exist
 func (r *RouteReconciler) Diff(resource client.Object, data map[string]interface{}, meta interface{}) (diff controller.Diff, err error) {
-	var d any
-
-	d, err = helper.Get(data, "platform")
-	if err != nil {
-		return diff, err
-	}
-	platform := d.(*v1alpha1.Platform)
-
-	switch platform.Spec.PlatformType {
-	case "centreon":
-		return r.CentreonController.diffCentreonService(resource, data, meta)
-	default:
-		return diff, errors.Errorf("Platform of type %s is not supported", platform.Spec.PlatformType)
-	}
+	return r.TemplateController.diffRessourcesFromTemplate(resource, data, meta)
 }
 
 // OnError permit to set status condition on the right state and record error

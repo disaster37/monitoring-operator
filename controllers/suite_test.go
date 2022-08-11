@@ -156,13 +156,6 @@ func (t *ControllerTestSuite) SetupSuite() {
 		panic(err)
 	}
 
-	centreonController := CentreonController{
-		Client: k8sClient,
-	}
-	centreonController.SetLogger(logrus.WithFields(logrus.Fields{
-		"type": "centreonController",
-	}))
-
 	templateController := TemplateController{
 		Client: k8sClient,
 		Scheme: scheme.Scheme,
@@ -171,7 +164,7 @@ func (t *ControllerTestSuite) SetupSuite() {
 		"type": "templateController",
 	}))
 
-	ingressReconsiler := NewIngressReconciler(k8sClient, scheme.Scheme, centreonController, templateController)
+	ingressReconsiler := NewIngressReconciler(k8sClient, scheme.Scheme, templateController)
 	ingressReconsiler.Reconciler.SetLogger(logrus.WithFields(logrus.Fields{
 		"type": "ingressController",
 	}))
@@ -182,7 +175,7 @@ func (t *ControllerTestSuite) SetupSuite() {
 		panic(err)
 	}
 
-	routeReconsiler := NewRouteReconciler(k8sClient, scheme.Scheme, centreonController, templateController)
+	routeReconsiler := NewRouteReconciler(k8sClient, scheme.Scheme, templateController)
 	routeReconsiler.Reconciler.SetLogger(logrus.WithFields(logrus.Fields{
 		"type": "routeController",
 	}))
@@ -193,7 +186,7 @@ func (t *ControllerTestSuite) SetupSuite() {
 		panic(err)
 	}
 
-	namespaceReconsiler := NewNamespaceReconciler(k8sClient, scheme.Scheme, centreonController, templateController)
+	namespaceReconsiler := NewNamespaceReconciler(k8sClient, scheme.Scheme, templateController)
 	namespaceReconsiler.Reconciler.SetLogger(logrus.WithFields(logrus.Fields{
 		"type": "namespaceController",
 	}))
