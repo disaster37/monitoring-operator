@@ -96,7 +96,7 @@ activate: true`,
 		},
 		Activated: "1",
 	}
-	namespace, err = t.k8sclientStd.CoreV1().Namespaces().Create(context.Background(), namespace, v1.CreateOptions{})
+	_, err = t.k8sclientStd.CoreV1().Namespaces().Create(context.Background(), namespace, v1.CreateOptions{})
 	if err != nil {
 		t.T().Fatal(err)
 	}
@@ -256,7 +256,7 @@ activate: true`
 	time.Sleep(20 * time.Second)
 
 	// Check CentreonService delete on k8s
-	ucs, err = t.k8sclient.Resource(centreonServiceGVR).Namespace("test-namespace").Get(context.Background(), "template1", v1.GetOptions{})
+	_, err = t.k8sclient.Resource(centreonServiceGVR).Namespace("test-namespace").Get(context.Background(), "template1", v1.GetOptions{})
 	if err == nil || !errors.IsNotFound(err) {
 		assert.Fail(t.T(), "CentreonService not delete on k8s after delete namespace")
 	}

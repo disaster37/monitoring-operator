@@ -394,7 +394,7 @@ activate: true`
 	time.Sleep(20 * time.Second)
 
 	// Check CentreonService delete on k8s
-	ucs, err = t.k8sclient.Resource(centreonServiceGVR).Namespace("default").Get(context.Background(), "check-ingress", v1.GetOptions{})
+	_, err = t.k8sclient.Resource(centreonServiceGVR).Namespace("default").Get(context.Background(), "check-ingress", v1.GetOptions{})
 	if err == nil || !errors.IsNotFound(err) {
 		assert.Fail(t.T(), "CentreonService not delete on k8s after delete ingress")
 	}

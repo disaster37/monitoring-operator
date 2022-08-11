@@ -24,7 +24,12 @@ jobs:
       - name: Setup operator-sdk
         uses: jpkrohling/setup-operator-sdk@v1.1.0
         with:
-          operator-sdk-version: v1.15.0
+          operator-sdk-version: v1.22.0
+      - name: golangci-lint
+        uses: golangci/golangci-lint-action@v3
+        with:
+          version: latest
+          args: --timeout 600s
       - name: Run build
         run: make build
       - name: Run unit tests
@@ -165,7 +170,7 @@ jobs:
       - name: Setup operator-sdk
         uses: jpkrohling/setup-operator-sdk@v1.1.0
         with:
-          operator-sdk-version: v1.15.0
+          operator-sdk-version: v1.22.0
       - name: Checkout
         uses: actions/checkout@v2
       - name: Set up QEMU

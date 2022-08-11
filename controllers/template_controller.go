@@ -38,10 +38,7 @@ type TemplateController struct {
 
 // Return true if object type is Template
 func isTemplate(o client.Object) bool {
-	if reflect.TypeOf(o).Elem().Name() == "Template" {
-		return true
-	}
-	return false
+	return reflect.TypeOf(o).Elem().Name() == "Template"
 }
 
 // watchTemplate permit to search resource created from Template to reconcil parents of them
@@ -50,7 +47,7 @@ func watchTemplate(c client.Client) handler.MapFunc {
 
 		var listRessources client.ObjectList
 
-		reconcileRequests := make([]reconcile.Request, 0, 0)
+		reconcileRequests := make([]reconcile.Request, 0)
 		template := a.(*v1alpha1.Template)
 		selectors, err := labels.Parse(fmt.Sprintf("%s/template-name=%s,%s/template-namespace=%s", monitoringAnnotationKey, a.GetName(), monitoringAnnotationKey, a.GetNamespace()))
 		if err != nil {
@@ -60,12 +57,9 @@ func watchTemplate(c client.Client) handler.MapFunc {
 		// Get object type
 		switch template.Spec.Type {
 		case "CentreonService":
-
 			listRessources = &v1alpha1.CentreonServiceList{}
-			break
 		case "CentreonServiceGroup":
 			listRessources = &v1alpha1.CentreonServiceGroupList{}
-			break
 		default:
 			return reconcileRequests
 		}
@@ -164,7 +158,6 @@ func (r *TemplateController) readTemplating(ctx context.Context, resource client
 				return res, fmt.Errorf("Generated CentreonService is not valid: %+v", centreonService.Spec)
 			}
 			expectedResource = centreonService
-			break
 		case "CentreonServiceGroup":
 			currentResource = &v1alpha1.CentreonServiceGroup{}
 			centreonServiceGroupSpec := &v1alpha1.CentreonServiceGroupSpec{}
@@ -188,7 +181,6 @@ func (r *TemplateController) readTemplating(ctx context.Context, resource client
 				return res, fmt.Errorf("Generated CentreonServiceGroup is not valid: %+v", centreonServiceGroup.Spec)
 			}
 			expectedResource = centreonServiceGroup
-			break
 		default:
 			return res, errors.Errorf("Template of type %s is not supported", templateO.Spec.Type)
 		}
@@ -205,7 +197,10 @@ func (r *TemplateController) readTemplating(ctx context.Context, resource client
 		setLabelsOnExpectedResource(expectedResource, namespacedName)
 
 		// Set resource as the owner
-		ctrl.SetControllerReference(resource, expectedResource, r.Scheme)
+		err = ctrl.SetControllerReference(resource, expectedResource, r.Scheme)
+		if err != nil {
+			return res, errors.Wrapf(err, "Error when set as owner reference")
+		}
 
 		compareResource := CompareResource{
 			Current:  currentResource,
@@ -321,7 +316,7 @@ func (r *TemplateController) createOrUpdateRessourcesFromTemplate(ctx context.Co
 // readListTemplateFromAnnotation return the list of template resource
 func readListTemplateFromAnnotation(resource client.Object) (listNamespacedName []types.NamespacedName, err error) {
 	targetTemplates := resource.GetAnnotations()[fmt.Sprintf("%s/templates", monitoringAnnotationKey)]
-	listNamespacedName = make([]types.NamespacedName, 0, 0)
+	listNamespacedName = make([]types.NamespacedName, 0)
 	if targetTemplates != "" {
 		if err = json.Unmarshal([]byte(targetTemplates), &listNamespacedName); err != nil {
 			return nil, errors.Wrap(err, "Error when unmarshall the list of template")
@@ -337,14 +332,12 @@ func getComputedNamespaceName(resource client.Object) (namespace string, err err
 	switch resource.GetObjectKind().GroupVersionKind().Kind {
 	case "Namespace":
 		namespace = resource.GetName()
-		break
 	case "Node":
 		ns, err := helpers.GetOperatorNamespace()
 		if err != nil {
 			return namespace, err
 		}
 		namespace = ns
-		break
 	default:
 		namespace = resource.GetNamespace()
 	}

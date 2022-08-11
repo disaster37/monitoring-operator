@@ -44,10 +44,6 @@ import (
 	//+kubebuilder:scaffold:imports
 )
 
-const (
-	MONITORING_CENTREON = "centreon"
-)
-
 var (
 	scheme   = runtime.NewScheme()
 	setupLog = ctrl.Log.WithName("setup")

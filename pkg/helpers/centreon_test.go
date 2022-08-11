@@ -14,6 +14,6 @@ func TestGetOperatorNamespace(t *testing.T) {
 	assert.Equal(t, "test", ns)
 
 	os.Unsetenv(operatorNamespaceEnvVar)
-	ns, err = GetOperatorNamespace()
+	_, err = GetOperatorNamespace()
 	assert.Error(t, err)
 }

@@ -245,7 +245,6 @@ func RunWithTimeout(f func() error, timeout time.Duration, interval time.Duratio
 			}
 		}
 		control <- true
-		return
 	}()
 
 	select {

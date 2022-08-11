@@ -23,10 +23,10 @@ func TestGetSpec(t *testing.T) {
 
 	// When KO
 	var i2 *networkv1.Ingress
-	currentSpec, err = GetSpec(i2)
+	_, err = GetSpec(i2)
 	assert.Error(t, err)
 
-	currentSpec, err = GetSpec(nil)
+	_, err = GetSpec(nil)
 	assert.Error(t, err)
 }
 
