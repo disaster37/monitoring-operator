@@ -47,7 +47,7 @@ func GetItems(o client.ObjectList) (items []client.Object, err error) {
 	valueField := val.FieldByName("Items")
 
 	items = make([]client.Object, valueField.Len())
-	for i, _ := range items {
+	for i := range items {
 		items[i] = valueField.Index(i).Addr().Interface().(client.Object)
 	}
 

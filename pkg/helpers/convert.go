@@ -45,7 +45,7 @@ func StringToSlice(value, separator string) (result []string) {
 }
 
 func CheckArgumentsToString(args []string) string {
-	if args == nil || len(args) == 0 {
+	if len(args) == 0 {
 		return ""
 	}
 

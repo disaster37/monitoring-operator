@@ -147,7 +147,7 @@ func viewOperatorNamespacePredicate() predicate.Predicate {
 func watchCentreonPlatformSecret(c client.Client) handler.MapFunc {
 	return func(a client.Object) []reconcile.Request {
 
-		reconcileRequests := make([]reconcile.Request, 0, 0)
+		reconcileRequests := make([]reconcile.Request, 0)
 		listPlatforms := &v1alpha1.PlatformList{}
 
 		fs := fields.ParseSelectorOrDie(fmt.Sprintf("spec.centreonSettings.secret=%s", a.GetName()))

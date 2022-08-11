@@ -166,7 +166,7 @@ func (t *AccTestSuite) TestCentreonService() {
 	 * Delete service
 	 */
 	time.Sleep(20 * time.Second)
-	err = t.k8sclient.Resource(centreonServiceGVR).Namespace("default").Delete(context.Background(), "test", *&v1.DeleteOptions{})
+	err = t.k8sclient.Resource(centreonServiceGVR).Namespace("default").Delete(context.Background(), "test", v1.DeleteOptions{})
 	if err != nil {
 		t.T().Fatal(err)
 	}

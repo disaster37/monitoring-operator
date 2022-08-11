@@ -374,7 +374,7 @@ activate: true`
 	time.Sleep(20 * time.Second)
 
 	// Check CentreonService deleted
-	ucs, err = t.k8sclient.Resource(centreonServiceGVR).Namespace("default").Get(context.Background(), "check-route", v1.GetOptions{})
+	_, err = t.k8sclient.Resource(centreonServiceGVR).Namespace("default").Get(context.Background(), "check-route", v1.GetOptions{})
 	if err == nil || !errors.IsNotFound(err) {
 		assert.Fail(t.T(), "CentreonService not deleted after delete route")
 	}
