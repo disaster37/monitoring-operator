@@ -29,7 +29,7 @@ jobs:
         uses: golangci/golangci-lint-action@v3
         with:
           version: latest
-          args: --timeout 600
+          args: --timeout 600s
       - name: Run build
         run: make build
       - name: Run unit tests
