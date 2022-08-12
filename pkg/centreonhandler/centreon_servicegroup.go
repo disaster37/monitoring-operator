@@ -2,6 +2,7 @@ package centreonhandler
 
 import (
 	"github.com/pkg/errors"
+	"github.com/thoas/go-funk"
 )
 
 // CreateServiceGroup permit to create new serviceGroup on Centreon from spec
@@ -83,7 +84,7 @@ func (h *CentreonHandlerImpl) DeleteServiceGroup(name string) (err error) {
 }
 
 // DiffServiceGroup permit to diff actual and expected serviceGroup to know what it need to modify
-func (h *CentreonHandlerImpl) DiffServiceGroup(actual, expected *CentreonServiceGroup) (diff *CentreonServiceGroupDiff, err error) {
+func (h *CentreonHandlerImpl) DiffServiceGroup(actual, expected *CentreonServiceGroup, ignoreFields []string) (diff *CentreonServiceGroupDiff, err error) {
 	diff = &CentreonServiceGroupDiff{
 		Name:        actual.Name,
 		IsDiff:      false,
@@ -91,16 +92,16 @@ func (h *CentreonHandlerImpl) DiffServiceGroup(actual, expected *CentreonService
 	}
 
 	// Check params
-	if actual.Name != expected.Name {
+	if !funk.Contains(ignoreFields, "name") && actual.Name != expected.Name {
 		diff.ParamsToSet["name"] = expected.Name
 	}
-	if actual.Activated != expected.Activated {
+	if !funk.Contains(ignoreFields, "activate") && actual.Activated != expected.Activated {
 		diff.ParamsToSet["activate"] = expected.Activated
 	}
-	if actual.Description != expected.Description {
+	if !funk.Contains(ignoreFields, "description") && actual.Description != expected.Description {
 		diff.ParamsToSet["alias"] = expected.Description
 	}
-	if actual.Comment != expected.Comment {
+	if !funk.Contains(ignoreFields, "comment") && actual.Comment != expected.Comment {
 		diff.ParamsToSet["comment"] = expected.Comment
 	}
 

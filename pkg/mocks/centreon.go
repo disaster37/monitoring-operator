@@ -92,33 +92,33 @@ func (mr *MockCentreonHandlerMockRecorder) DeleteServiceGroup(arg0 interface{}) 
 }
 
 // DiffService mocks base method.
-func (m *MockCentreonHandler) DiffService(arg0, arg1 *centreonhandler.CentreonService) (*centreonhandler.CentreonServiceDiff, error) {
+func (m *MockCentreonHandler) DiffService(arg0, arg1 *centreonhandler.CentreonService, arg2 []string) (*centreonhandler.CentreonServiceDiff, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "DiffService", arg0, arg1)
+	ret := m.ctrl.Call(m, "DiffService", arg0, arg1, arg2)
 	ret0, _ := ret[0].(*centreonhandler.CentreonServiceDiff)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // DiffService indicates an expected call of DiffService.
-func (mr *MockCentreonHandlerMockRecorder) DiffService(arg0, arg1 interface{}) *gomock.Call {
+func (mr *MockCentreonHandlerMockRecorder) DiffService(arg0, arg1, arg2 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DiffService", reflect.TypeOf((*MockCentreonHandler)(nil).DiffService), arg0, arg1)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DiffService", reflect.TypeOf((*MockCentreonHandler)(nil).DiffService), arg0, arg1, arg2)
 }
 
 // DiffServiceGroup mocks base method.
-func (m *MockCentreonHandler) DiffServiceGroup(arg0, arg1 *centreonhandler.CentreonServiceGroup) (*centreonhandler.CentreonServiceGroupDiff, error) {
+func (m *MockCentreonHandler) DiffServiceGroup(arg0, arg1 *centreonhandler.CentreonServiceGroup, arg2 []string) (*centreonhandler.CentreonServiceGroupDiff, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "DiffServiceGroup", arg0, arg1)
+	ret := m.ctrl.Call(m, "DiffServiceGroup", arg0, arg1, arg2)
 	ret0, _ := ret[0].(*centreonhandler.CentreonServiceGroupDiff)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // DiffServiceGroup indicates an expected call of DiffServiceGroup.
-func (mr *MockCentreonHandlerMockRecorder) DiffServiceGroup(arg0, arg1 interface{}) *gomock.Call {
+func (mr *MockCentreonHandlerMockRecorder) DiffServiceGroup(arg0, arg1, arg2 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DiffServiceGroup", reflect.TypeOf((*MockCentreonHandler)(nil).DiffServiceGroup), arg0, arg1)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DiffServiceGroup", reflect.TypeOf((*MockCentreonHandler)(nil).DiffServiceGroup), arg0, arg1, arg2)
 }
 
 // GetService mocks base method.

@@ -144,6 +144,12 @@ func (r *CentreonServiceReconciler) Create(ctx context.Context, resource client.
 	cHandler := meta.(centreonhandler.CentreonHandler)
 	cs := resource.(*v1alpha1.CentreonService)
 
+	// Check policy
+	if cs.Spec.Policy.NoCreate {
+		r.log.Info("Skip create service (policy NoCreate)")
+		return res, nil
+	}
+
 	// Create service on Centreon
 	expectedCS, err := cs.ToCentreonService()
 	if err != nil {
@@ -168,6 +174,12 @@ func (r *CentreonServiceReconciler) Update(ctx context.Context, resource client.
 	cs := resource.(*v1alpha1.CentreonService)
 	var d any
 
+	// Check policy
+	if cs.Spec.Policy.NoUpdate {
+		r.log.Info("Skip update service (policy NoUpdate)")
+		return res, nil
+	}
+
 	d, err = helper.Get(data, "expectedService")
 	if err != nil {
 		return res, err
@@ -188,6 +200,12 @@ func (r *CentreonServiceReconciler) Update(ctx context.Context, resource client.
 func (r *CentreonServiceReconciler) Delete(ctx context.Context, resource client.Object, data map[string]interface{}, meta interface{}) (err error) {
 	cHandler := meta.(centreonhandler.CentreonHandler)
 	cs := resource.(*v1alpha1.CentreonService)
+
+	// Check policy
+	if cs.Spec.Policy.NoDelete {
+		r.log.Info("Skip delete service (policy NoDelete)")
+		return nil
+	}
 
 	actualCS, err := cHandler.GetService(cs.Spec.Host, cs.Spec.Name)
 	if err != nil {
@@ -237,10 +255,11 @@ func (r *CentreonServiceReconciler) Diff(resource client.Object, data map[string
 		return diff, nil
 	}
 
-	currentDiff, err := cHandler.DiffService(currentService, expectedCS)
+	currentDiff, err := cHandler.DiffService(currentService, expectedCS, cs.Spec.Policy.ExcludeFieldsOnDiff)
 	if err != nil {
 		return diff, errors.Wrap(err, "Error when diff Centreon service")
 	}
+
 	if currentDiff.IsDiff {
 		diff.NeedUpdate = true
 		diff.Diff = currentDiff.String()

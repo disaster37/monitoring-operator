@@ -185,109 +185,119 @@ func (h *CentreonHandlerImpl) DeleteService(host, name string) (err error) {
 }
 
 // DiffService permit to compare actual and expected service to compute what is modified
-func (h *CentreonHandlerImpl) DiffService(actual, expected *CentreonService) (diff *CentreonServiceDiff, err error) {
+func (h *CentreonHandlerImpl) DiffService(actual, expected *CentreonService, ignoreFields []string) (diff *CentreonServiceDiff, err error) {
 	diff = &CentreonServiceDiff{
-		Host:           actual.Host,
-		Name:           actual.Name,
-		IsDiff:         false,
-		ParamsToSet:    map[string]string{},
-		MacrosToSet:    make([]*models.Macro, 0),
-		MacrosToDelete: make([]*models.Macro, 0),
+		Host:               actual.Host,
+		Name:               actual.Name,
+		IsDiff:             false,
+		ParamsToSet:        map[string]string{},
+		MacrosToSet:        make([]*models.Macro, 0),
+		MacrosToDelete:     make([]*models.Macro, 0),
+		GroupsToSet:        make([]string, 0),
+		GroupsToDelete:     make([]string, 0),
+		CategoriesToSet:    make([]string, 0),
+		CategoriesToDelete: make([]string, 0),
 	}
 
 	// Check params
-	if actual.Name != expected.Name {
+	if !funk.Contains(ignoreFields, "name") && actual.Name != expected.Name {
 		diff.ParamsToSet["description"] = expected.Name
 	}
-	if actual.Activated != expected.Activated {
+	if !funk.Contains(ignoreFields, "activate") && actual.Activated != expected.Activated {
 		diff.ParamsToSet["activate"] = expected.Activated
 	}
-	if actual.ActiveCheckEnabled != expected.ActiveCheckEnabled {
+	if !funk.Contains(ignoreFields, "activeChecksEnabled") && actual.ActiveCheckEnabled != expected.ActiveCheckEnabled {
 		diff.ParamsToSet["active_checks_enabled"] = expected.ActiveCheckEnabled
 	}
-	if actual.CheckCommand != expected.CheckCommand {
+	if !funk.Contains(ignoreFields, "checkCommand") && actual.CheckCommand != expected.CheckCommand {
 		diff.ParamsToSet["check_command"] = expected.CheckCommand
 	}
-	if actual.CheckCommandArgs != expected.CheckCommandArgs {
+	if !funk.Contains(ignoreFields, "arguments") && actual.CheckCommandArgs != expected.CheckCommandArgs {
 		diff.ParamsToSet["check_command_arguments"] = expected.CheckCommandArgs
 	}
-	if actual.MaxCheckAttempts != expected.MaxCheckAttempts {
+	if !funk.Contains(ignoreFields, "maxCheckAttempts") && actual.MaxCheckAttempts != expected.MaxCheckAttempts {
 		diff.ParamsToSet["max_check_attempts"] = expected.MaxCheckAttempts
 	}
-	if actual.NormalCheckInterval != expected.NormalCheckInterval {
+	if !funk.Contains(ignoreFields, "normalCheckInterval") && actual.NormalCheckInterval != expected.NormalCheckInterval {
 		diff.ParamsToSet["normal_check_interval"] = expected.NormalCheckInterval
 	}
-	if actual.PassiveCheckEnabled != expected.PassiveCheckEnabled {
+	if !funk.Contains(ignoreFields, "passiveChecksEnabled") && actual.PassiveCheckEnabled != expected.PassiveCheckEnabled {
 		diff.ParamsToSet["passive_checks_enabled"] = expected.PassiveCheckEnabled
 	}
-	if actual.RetryCheckInterval != expected.RetryCheckInterval {
+	if !funk.Contains(ignoreFields, "retryCheckInterval") && actual.RetryCheckInterval != expected.RetryCheckInterval {
 		diff.ParamsToSet["retry_check_interval"] = expected.RetryCheckInterval
 	}
-	if actual.Template != expected.Template {
+	if !funk.Contains(ignoreFields, "template") && actual.Template != expected.Template {
 		diff.ParamsToSet["template"] = expected.Template
 	}
-	if actual.Comment != expected.Comment {
+	if !funk.Contains(ignoreFields, "comment") && actual.Comment != expected.Comment {
 		diff.ParamsToSet["comment"] = expected.Comment
 	}
 
 	// Check the host
-	if actual.Host != expected.Host {
+	if !funk.Contains(ignoreFields, "host") && actual.Host != expected.Host {
 		diff.HostToSet = expected.Host
 	}
 
 	// Check the service groups
-	sgNeed, sgDelete := funk.Difference(expected.Groups, actual.Groups)
-	diff.GroupsToSet = sgNeed.([]string)
-	diff.GroupsToDelete = sgDelete.([]string)
+	if !funk.Contains(ignoreFields, "groups") {
+		sgNeed, sgDelete := funk.Difference(expected.Groups, actual.Groups)
+		diff.GroupsToSet = sgNeed.([]string)
+		diff.GroupsToDelete = sgDelete.([]string)
+	}
 
 	// Check the categories
-	catNeed, catDelete := funk.Difference(expected.Categories, actual.Categories)
-	diff.CategoriesToSet = catNeed.([]string)
-	diff.CategoriesToDelete = catDelete.([]string)
+	if !funk.Contains(ignoreFields, "categories") {
+		catNeed, catDelete := funk.Difference(expected.Categories, actual.Categories)
+		diff.CategoriesToSet = catNeed.([]string)
+		diff.CategoriesToDelete = catDelete.([]string)
+	}
 
 	// Check macros
-	if actual.Macros == nil {
-		actual.Macros = make([]*models.Macro, 0)
-	}
-	if expected.Macros == nil {
-		expected.Macros = make([]*models.Macro, 0)
-	}
+	if !funk.Contains(ignoreFields, "macros") {
+		if actual.Macros == nil {
+			actual.Macros = make([]*models.Macro, 0)
+		}
+		if expected.Macros == nil {
+			expected.Macros = make([]*models.Macro, 0)
+		}
 
-	macros := make([]*models.Macro, len(actual.Macros))
-	copy(macros, actual.Macros)
-	// The IsPassword macro with value "" or "0" is the same
-	// We mitigeate this behavior here
-	for _, macro := range macros {
-		if macro.IsPassword == "" {
-			macro.IsPassword = "0"
-		}
-	}
-	for _, macro := range expected.Macros {
-		if macro.IsPassword == "" {
-			macro.IsPassword = "0"
-		}
-	}
-	for _, expectedMacro := range expected.Macros {
-		isFound := false
-		for i, actualMacro := range macros {
-			if actualMacro.Name == expectedMacro.Name {
-				if actualMacro.Value == expectedMacro.Value && actualMacro.IsPassword == expectedMacro.IsPassword {
-					isFound = true
-				}
-				macros = append(macros[:i], macros[i+1:]...)
-				break
+		macros := make([]*models.Macro, len(actual.Macros))
+		copy(macros, actual.Macros)
+		// The IsPassword macro with value "" or "0" is the same
+		// We mitigeate this behavior here
+		for _, macro := range macros {
+			if macro.IsPassword == "" {
+				macro.IsPassword = "0"
 			}
 		}
-
-		if !isFound {
-			diff.MacrosToSet = append(diff.MacrosToSet, expectedMacro)
+		for _, macro := range expected.Macros {
+			if macro.IsPassword == "" {
+				macro.IsPassword = "0"
+			}
 		}
-	}
-	// Remove indirect macro herited by templates or command (direct and null value)
-	// There are no way to differentiate macro setted between service and command
-	for _, macro := range macros {
-		if macro.Source == "direct" && macro.Value != "" {
-			diff.MacrosToDelete = append(diff.MacrosToDelete, macro)
+		for _, expectedMacro := range expected.Macros {
+			isFound := false
+			for i, actualMacro := range macros {
+				if actualMacro.Name == expectedMacro.Name {
+					if actualMacro.Value == expectedMacro.Value && actualMacro.IsPassword == expectedMacro.IsPassword {
+						isFound = true
+					}
+					macros = append(macros[:i], macros[i+1:]...)
+					break
+				}
+			}
+
+			if !isFound {
+				diff.MacrosToSet = append(diff.MacrosToSet, expectedMacro)
+			}
+		}
+		// Remove indirect macro herited by templates or command (direct and null value)
+		// There are no way to differentiate macro setted between service and command
+		for _, macro := range macros {
+			if macro.Source == "direct" && macro.Value != "" {
+				diff.MacrosToDelete = append(diff.MacrosToDelete, macro)
+			}
 		}
 	}
 

@@ -107,6 +107,7 @@ func (t *CentreonHandlerTestSuite) TestDiffServiceGroup() {
 		ActualService   *CentreonServiceGroup
 		ExpectedService *CentreonServiceGroup
 		ExpectedDiff    *CentreonServiceGroupDiff
+		IgnoreFields    []string
 	}{
 		{
 			Name: "no need update and extra infos is nil",
@@ -166,10 +167,36 @@ func (t *CentreonHandlerTestSuite) TestDiffServiceGroup() {
 				},
 			},
 		},
+		{
+			Name: "Need update all properties but all fields ignored",
+			ActualService: &CentreonServiceGroup{
+				Name:        "sg1",
+				Activated:   "0",
+				Comment:     "comment",
+				Description: "my sg",
+			},
+			ExpectedService: &CentreonServiceGroup{
+				Name:        "sg1",
+				Activated:   "1",
+				Comment:     "comment2",
+				Description: "my sg2",
+			},
+			IgnoreFields: []string{
+				"name",
+				"activate",
+				"description",
+				"comment",
+			},
+			ExpectedDiff: &CentreonServiceGroupDiff{
+				IsDiff:      false,
+				Name:        "sg1",
+				ParamsToSet: map[string]string{},
+			},
+		},
 	}
 
 	for _, test := range tests {
-		diff, err := t.client.DiffServiceGroup(test.ActualService, test.ExpectedService)
+		diff, err := t.client.DiffServiceGroup(test.ActualService, test.ExpectedService, test.IgnoreFields)
 		assert.NoErrorf(t.T(), err, test.Name)
 		assert.Equalf(t.T(), test.ExpectedDiff, diff, test.Name)
 	}

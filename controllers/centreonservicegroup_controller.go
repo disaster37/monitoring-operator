@@ -143,6 +143,12 @@ func (r *CentreonServiceGroupReconciler) Create(ctx context.Context, resource cl
 	cHandler := meta.(centreonhandler.CentreonHandler)
 	csg := resource.(*v1alpha1.CentreonServiceGroup)
 
+	// Check policy
+	if csg.Spec.Policy.NoCreate {
+		r.log.Info("Skip create serviceGroup (policy NoCreate)")
+		return res, nil
+	}
+
 	// Create serviceGroup on Centreon
 	expectedCSG, err := csg.ToCentreonServiceGroup()
 	if err != nil {
@@ -166,6 +172,12 @@ func (r *CentreonServiceGroupReconciler) Update(ctx context.Context, resource cl
 	csg := resource.(*v1alpha1.CentreonServiceGroup)
 	var d any
 
+	// Check policy
+	if csg.Spec.Policy.NoUpdate {
+		r.log.Info("Skip update serviceGroup (policy NoUpdate)")
+		return res, nil
+	}
+
 	d, err = helper.Get(data, "expectedServiceGroup")
 	if err != nil {
 		return res, err
@@ -185,6 +197,12 @@ func (r *CentreonServiceGroupReconciler) Update(ctx context.Context, resource cl
 func (r *CentreonServiceGroupReconciler) Delete(ctx context.Context, resource client.Object, data map[string]interface{}, meta interface{}) (err error) {
 	cHandler := meta.(centreonhandler.CentreonHandler)
 	csg := resource.(*v1alpha1.CentreonServiceGroup)
+
+	// Check policy
+	if csg.Spec.Policy.NoDelete {
+		r.log.Info("Skip delete serviceGroup (policy NoDelete)")
+		return nil
+	}
 
 	actualCSG, err := cHandler.GetServiceGroup(csg.Spec.Name)
 	if err != nil {
@@ -234,7 +252,7 @@ func (r *CentreonServiceGroupReconciler) Diff(resource client.Object, data map[s
 		return diff, nil
 	}
 
-	currentDiff, err := cHandler.DiffServiceGroup(currentServiceGroup, expectedCSG)
+	currentDiff, err := cHandler.DiffServiceGroup(currentServiceGroup, expectedCSG, csg.Spec.Policy.ExcludeFieldsOnDiff)
 	if err != nil {
 		return diff, errors.Wrap(err, "Error when diff Centreon serviceGroup")
 	}
