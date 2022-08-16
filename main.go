@@ -234,6 +234,19 @@ func main() {
 		os.Exit(1)
 	}
 
+	// Set node
+	nodeController := controllers.NewNodeReconciler(mgr.GetClient(), mgr.GetScheme(), templateController)
+	nodeController.Reconciler.SetLogger(log.WithFields(logrus.Fields{
+		"type": "NodeController",
+	}))
+	nodeController.SetRecorder(mgr.GetEventRecorderFor("node-controller"))
+	nodeController.SetReconsiler(nodeController)
+	nodeController.SetPlatforms(platforms)
+	if err = nodeController.SetupWithManager(mgr); err != nil {
+		setupLog.Error(err, "unable to create controller", "controller", "Node")
+		os.Exit(1)
+	}
+
 	//+kubebuilder:scaffold:builder
 
 	if err := mgr.AddHealthzCheck("healthz", healthz.Ping); err != nil {

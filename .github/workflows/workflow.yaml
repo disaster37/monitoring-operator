@@ -64,8 +64,8 @@ jobs:
         run: |
           #!/bin/bash
           set -e
-          docker run --name centreon -d --privileged -t -p 80:80 disaster/centreon:21.10-configured
-          until $(curl --output /dev/null --silent --head --fail http://localhost/centreon/index.php); do sleep 5; done
+          docker run --name centreon -d --privileged -t -p 9090:80 disaster/centreon:21.10-configured
+          until $(curl --output /dev/null --silent --head --fail http://localhost:9090/centreon/index.php); do sleep 5; done
       - name: Run acceptance tests
         run: |
           #!/bin/bash

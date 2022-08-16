@@ -62,7 +62,7 @@ func NewRouteReconciler(client client.Client, scheme *runtime.Scheme, templateCo
 //+kubebuilder:rbac:groups=route.openshift.io,resources=routes,verbs=get;list;watch;update
 //+kubebuilder:rbac:groups="route.openshift.io",resources=routes/finalizers,verbs=update
 //+kubebuilder:rbac:groups=monitor.k8s.webcenter.fr,resources=centreonServices,verbs=get;list;watch;create;update;patch;delete
-//+kubebuilder:rbac:groups="monitor.k8s.webcenter.fr",resources=templatecentreonservices,verbs=get;list;watch;update;patch
+//+kubebuilder:rbac:groups="monitor.k8s.webcenter.fr",resources=templates,verbs=get;list;watch;update;patch
 //+kubebuilder:rbac:groups="",resources=events,verbs=patch;get;create
 
 // Reconcile is part of the main kubernetes reconciliation loop which aims to

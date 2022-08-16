@@ -32,6 +32,21 @@ rules:
 - apiGroups:
   - ""
   resources:
+  - nodes
+  verbs:
+  - get
+  - list
+  - update
+  - watch
+- apiGroups:
+  - ""
+  resources:
+  - nodes/finalizers
+  verbs:
+  - update
+- apiGroups:
+  - ""
+  resources:
   - secrets
   verbs:
   - get
@@ -132,7 +147,7 @@ rules:
 - apiGroups:
   - monitor.k8s.webcenter.fr
   resources:
-  - templatecentreonservices
+  - templates
   verbs:
   - get
   - list

@@ -430,7 +430,7 @@ func doDeleteIngressStep() test.TestStep {
 	}
 }
 
-func TestGeneratePlaceholdersIngressCentreonService(t *testing.T) {
+func TestGeneratePlaceholdersIngress(t *testing.T) {
 
 	var (
 		ingress    *networkv1.Ingress

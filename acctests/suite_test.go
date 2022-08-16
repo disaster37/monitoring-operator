@@ -23,7 +23,7 @@ import (
 )
 
 const (
-	centreonURL      = "http://localhost/centreon/api/index.php"
+	centreonURL      = "http://localhost:9090/centreon/api/index.php"
 	centreonUsername = "admin"
 	centreonPassword = "admin"
 )

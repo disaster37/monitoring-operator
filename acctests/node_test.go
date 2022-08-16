@@ -18,14 +18,14 @@ import (
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 )
 
-func (t *AccTestSuite) TestNamespace() {
+func (t *AccTestSuite) TestNode() {
 
 	var (
 		cs        *api.CentreonService
 		ucs       *unstructured.Unstructured
 		s         *centreonhandler.CentreonService
 		expectedS *centreonhandler.CentreonService
-		namespace *core.Namespace
+		node      *core.Node
 		err       error
 	)
 
@@ -33,7 +33,7 @@ func (t *AccTestSuite) TestNamespace() {
 	templateCentreonServiceGVR := api.GroupVersion.WithResource("templates")
 
 	/***
-	 * Create new template dedicated for namespace test
+	 * Create new template dedicated for node test
 	 */
 	tcs := &api.Template{
 		TypeMeta: v1.TypeMeta{
@@ -41,13 +41,13 @@ func (t *AccTestSuite) TestNamespace() {
 			APIVersion: fmt.Sprintf("%s/%s", api.GroupVersion.Group, api.GroupVersion.Version),
 		},
 		ObjectMeta: metav1.ObjectMeta{
-			Name: "check-namespace",
+			Name: "check-node",
 		},
 		Spec: api.TemplateSpec{
 			Type: "CentreonService",
 			Template: `
 host: "localhost"
-name: "test-namespace-ping"
+name: "test-node-ping"
 template: "template-test"
 checkCommand: "ping"
 macros:
@@ -64,13 +64,13 @@ activate: true`,
 	}
 
 	/***
-	 * Create new namespace
+	 * Create new node
 	 */
-	namespace = &core.Namespace{
+	node = &core.Node{
 		ObjectMeta: metav1.ObjectMeta{
-			Name: "test-namespace",
+			Name: "test-node",
 			Annotations: map[string]string{
-				"monitor.k8s.webcenter.fr/templates": `[{"namespace":"default", "name": "check-namespace"}]`,
+				"monitor.k8s.webcenter.fr/templates": `[{"namespace":"default", "name": "check-node"}]`,
 			},
 			Labels: map[string]string{
 				"foo": "bar",
@@ -79,7 +79,7 @@ activate: true`,
 	}
 	expectedS = &centreonhandler.CentreonService{
 		Host:                "localhost",
-		Name:                "test-namespace-ping",
+		Name:                "test-node-ping",
 		CheckCommand:        "ping",
 		Template:            "template-test",
 		PassiveCheckEnabled: "2",
@@ -96,7 +96,7 @@ activate: true`,
 		},
 		Activated: "1",
 	}
-	_, err = t.k8sclientStd.CoreV1().Namespaces().Create(context.Background(), namespace, v1.CreateOptions{})
+	_, err = t.k8sclientStd.CoreV1().Nodes().Create(context.Background(), node, v1.CreateOptions{})
 	if err != nil {
 		t.T().Fatal(err)
 	}
@@ -104,7 +104,7 @@ activate: true`,
 
 	// Check that CentreonService created and in right status
 	cs = &api.CentreonService{}
-	ucs, err = t.k8sclient.Resource(centreonServiceGVR).Namespace("test-namespace").Get(context.Background(), "check-namespace", v1.GetOptions{})
+	ucs, err = t.k8sclient.Resource(centreonServiceGVR).Namespace("default").Get(context.Background(), "check-node", v1.GetOptions{})
 	if err != nil {
 		assert.Fail(t.T(), err.Error())
 	}
@@ -112,11 +112,11 @@ activate: true`,
 		assert.Fail(t.T(), err.Error())
 	}
 	assert.Equal(t.T(), "localhost", cs.Status.Host)
-	assert.Equal(t.T(), "test-namespace-ping", cs.Status.ServiceName)
+	assert.Equal(t.T(), "test-node-ping", cs.Status.ServiceName)
 	assert.True(t.T(), condition.IsStatusConditionPresentAndEqual(cs.Status.Conditions, controllers.CentreonServiceCondition, v1.ConditionTrue))
 
 	// Check ressource created on Centreon
-	s, err = t.centreon.GetService("localhost", "test-namespace-ping")
+	s, err = t.centreon.GetService("localhost", "test-node-ping")
 	if err != nil {
 		t.T().Fatal(err)
 	}
@@ -124,18 +124,18 @@ activate: true`,
 	assert.Equal(t.T(), expectedS, s)
 
 	/***
-	 * Update namespace
+	 * Update node
 	 */
 	time.Sleep(30 * time.Second)
-	namespace, err = t.k8sclientStd.CoreV1().Namespaces().Get(context.Background(), "test-namespace", v1.GetOptions{})
+	node, err = t.k8sclientStd.CoreV1().Nodes().Get(context.Background(), "test-node", v1.GetOptions{})
 	if err != nil {
 		t.T().Fatal(err)
 	}
-	namespace.Labels = map[string]string{"foo": "bar2"}
+	node.Labels = map[string]string{"foo": "bar2"}
 
 	expectedS = &centreonhandler.CentreonService{
 		Host:                "localhost",
-		Name:                "test-namespace-ping",
+		Name:                "test-node-ping",
 		CheckCommand:        "ping",
 		Template:            "template-test",
 		PassiveCheckEnabled: "2",
@@ -152,13 +152,13 @@ activate: true`,
 		},
 		Activated: "1",
 	}
-	_, err = t.k8sclientStd.CoreV1().Namespaces().Update(context.Background(), namespace, v1.UpdateOptions{})
+	_, err = t.k8sclientStd.CoreV1().Nodes().Update(context.Background(), node, v1.UpdateOptions{})
 	if err != nil {
 		t.T().Fatal(err)
 	}
 	time.Sleep(20 * time.Second)
 
-	ucs, err = t.k8sclient.Resource(centreonServiceGVR).Namespace("test-namespace").Get(context.Background(), "check-namespace", v1.GetOptions{})
+	ucs, err = t.k8sclient.Resource(centreonServiceGVR).Namespace("default").Get(context.Background(), "check-node", v1.GetOptions{})
 	if err != nil {
 		t.T().Fatal(err)
 	}
@@ -168,7 +168,7 @@ activate: true`,
 	assert.Equal(t.T(), "bar2", cs.Spec.Macros["LABEL"])
 
 	// Check service updated on Centreon
-	s, err = t.centreon.GetService("localhost", "test-namespace-ping")
+	s, err = t.centreon.GetService("localhost", "test-node-ping")
 	if err != nil {
 		t.T().Fatal(err)
 	}
@@ -176,10 +176,10 @@ activate: true`,
 	assert.Equal(t.T(), expectedS, s)
 
 	/***
-	 * Update namespace template
+	 * Update node template
 	 */
 	time.Sleep(30 * time.Second)
-	tcsu, err = t.k8sclient.Resource(templateCentreonServiceGVR).Namespace("default").Get(context.Background(), "check-namespace", v1.GetOptions{})
+	tcsu, err = t.k8sclient.Resource(templateCentreonServiceGVR).Namespace("default").Get(context.Background(), "check-node", v1.GetOptions{})
 	if err != nil {
 		t.T().Fatal(err)
 	}
@@ -188,7 +188,7 @@ activate: true`,
 	}
 	tcs.Spec.Template = `
 host: "localhost"
-name: "test-namespace-ping"
+name: "test-node-ping"
 template: "template-test"
 checkCommand: "ping"
 macros:
@@ -205,7 +205,7 @@ activate: true`
 
 	expectedS = &centreonhandler.CentreonService{
 		Host:                "localhost",
-		Name:                "test-namespace-ping",
+		Name:                "test-node-ping",
 		CheckCommand:        "ping",
 		Template:            "template-test",
 		PassiveCheckEnabled: "2",
@@ -229,7 +229,7 @@ activate: true`
 	}
 	time.Sleep(20 * time.Second)
 
-	ucs, err = t.k8sclient.Resource(centreonServiceGVR).Namespace("test-namespace").Get(context.Background(), "check-namespace", v1.GetOptions{})
+	ucs, err = t.k8sclient.Resource(centreonServiceGVR).Namespace("default").Get(context.Background(), "check-node", v1.GetOptions{})
 	if err != nil {
 		t.T().Fatal(err)
 	}
@@ -239,7 +239,7 @@ activate: true`
 	assert.Equal(t.T(), "plop", cs.Spec.Macros["TEST"])
 
 	// Check service updated on Centreon
-	s, err = t.centreon.GetService("localhost", "test-namespace-ping")
+	s, err = t.centreon.GetService("localhost", "test-node-ping")
 	if err != nil {
 		t.T().Fatal(err)
 	}
@@ -247,22 +247,22 @@ activate: true`
 	assert.Equal(t.T(), expectedS, s)
 
 	/***
-	 * Delete namespace
+	 * Delete node
 	 */
 	time.Sleep(20 * time.Second)
-	if err = t.k8sclientStd.CoreV1().Namespaces().Delete(context.Background(), "test-namespace", *metav1.NewDeleteOptions(0)); err != nil {
+	if err = t.k8sclientStd.CoreV1().Nodes().Delete(context.Background(), "test-node", *metav1.NewDeleteOptions(0)); err != nil {
 		t.T().Fatal(err)
 	}
 	time.Sleep(20 * time.Second)
 
 	// Check CentreonService delete on k8s
-	_, err = t.k8sclient.Resource(centreonServiceGVR).Namespace("test-namespace").Get(context.Background(), "check-namespace", v1.GetOptions{})
+	_, err = t.k8sclient.Resource(centreonServiceGVR).Namespace("default").Get(context.Background(), "check-node", v1.GetOptions{})
 	if err == nil || !errors.IsNotFound(err) {
-		assert.Fail(t.T(), "CentreonService not delete on k8s after delete namespace")
+		assert.Fail(t.T(), "CentreonService not delete on k8s after delete node")
 	}
 
 	// Check service is delete from centreon
-	s, err = t.centreon.GetService("localhost", "test-namespace-ping")
+	s, err = t.centreon.GetService("localhost", "test-node-ping")
 	assert.NoError(t.T(), err)
 	assert.Nil(t.T(), s)
 }
