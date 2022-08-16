@@ -17,6 +17,7 @@ limitations under the License.
 package v1alpha1
 
 import (
+	"github.com/disaster37/monitoring-operator/api/shared"
 	"github.com/disaster37/monitoring-operator/pkg/centreonhandler"
 	"github.com/disaster37/monitoring-operator/pkg/helpers"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -49,6 +50,11 @@ type CentreonServiceGroupSpec struct {
 	// +operator-sdk:csv:customresourcedefinitions:type=spec
 	// +optional
 	Activated bool `json:"activate,omitempty"`
+
+	// Policy define the policy that controller need to respect when it reconcile resource
+	// +operator-sdk:csv:customresourcedefinitions:type=spec
+	// +optional
+	Policy shared.Policy `json:"policy,omitempty"`
 }
 
 // CentreonServiceGroupStatus defines the observed state of CentreonServiceGroup

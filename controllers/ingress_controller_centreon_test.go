@@ -49,7 +49,7 @@ func doMockIngress(mockCS *mocks.MockCentreonHandler) func(stepName *string, dat
 
 		mockCS.EXPECT().GetService(gomock.Any(), gomock.Any()).AnyTimes().Return(nil, nil)
 
-		mockCS.EXPECT().DiffService(gomock.Any(), gomock.Any()).AnyTimes().Return(&centreonhandler.CentreonServiceDiff{
+		mockCS.EXPECT().DiffService(gomock.Any(), gomock.Any(), gomock.Any()).AnyTimes().Return(&centreonhandler.CentreonServiceDiff{
 			IsDiff: false,
 		}, nil)
 

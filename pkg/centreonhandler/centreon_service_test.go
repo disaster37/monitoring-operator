@@ -247,6 +247,7 @@ func (t *CentreonHandlerTestSuite) TestDiffService() {
 		ActualService   *CentreonService
 		ExpectedService *CentreonService
 		ExpectedDiff    *CentreonServiceDiff
+		IgnoreFields    []string
 	}{
 		{
 			Name: "no need update and extra infos is nil",
@@ -484,10 +485,90 @@ func (t *CentreonHandlerTestSuite) TestDiffService() {
 				MacrosToDelete:     make([]*models.Macro, 0),
 			},
 		},
+		{
+			Name: "Need update all properties but all fields are exclued",
+			ActualService: &CentreonService{
+				Host:                "central",
+				Name:                "ping",
+				Activated:           "0",
+				Template:            "template",
+				CheckCommand:        "ping",
+				NormalCheckInterval: "30s",
+				RetryCheckInterval:  "1s",
+				MaxCheckAttempts:    "5",
+				ActiveCheckEnabled:  "0",
+				PassiveCheckEnabled: "0",
+				CheckCommandArgs:    "!arg1",
+				Comment:             "comment",
+				Groups:              []string{"sg1"},
+				Categories:          []string{"cat1"},
+				Macros: []*models.Macro{
+					{
+						Name:       "macro1",
+						Value:      "value1",
+						Source:     "direct",
+						IsPassword: "0",
+					},
+				},
+			},
+			ExpectedService: &CentreonService{
+				Host:                "central",
+				Name:                "ping",
+				Activated:           "1",
+				Template:            "template2",
+				CheckCommand:        "ping2",
+				NormalCheckInterval: "31s",
+				RetryCheckInterval:  "2s",
+				MaxCheckAttempts:    "6",
+				ActiveCheckEnabled:  "1",
+				PassiveCheckEnabled: "1",
+				CheckCommandArgs:    "!arg2",
+				Comment:             "comment2",
+				Groups:              []string{"sg2"},
+				Categories:          []string{"cat2"},
+				Macros: []*models.Macro{
+					{
+						Name:       "macro2",
+						Value:      "value2",
+						Source:     "direct",
+						IsPassword: "0",
+					},
+				},
+			},
+			IgnoreFields: []string{
+				"host",
+				"name",
+				"activate",
+				"template",
+				"checkCommand",
+				"normalCheckInterval",
+				"retryCheckInterval",
+				"maxCheckAttempts",
+				"activeChecksEnabled",
+				"passiveChecksEnabled",
+				"arguments",
+				"comment",
+				"groups",
+				"categories",
+				"macros",
+			},
+			ExpectedDiff: &CentreonServiceDiff{
+				IsDiff:             false,
+				Host:               "central",
+				Name:               "ping",
+				ParamsToSet:        map[string]string{},
+				GroupsToSet:        make([]string, 0),
+				GroupsToDelete:     make([]string, 0),
+				CategoriesToSet:    make([]string, 0),
+				CategoriesToDelete: make([]string, 0),
+				MacrosToSet:        make([]*models.Macro, 0),
+				MacrosToDelete:     make([]*models.Macro, 0),
+			},
+		},
 	}
 
 	for _, test := range tests {
-		diff, err := t.client.DiffService(test.ActualService, test.ExpectedService)
+		diff, err := t.client.DiffService(test.ActualService, test.ExpectedService, test.IgnoreFields)
 		assert.NoErrorf(t.T(), err, test.Name)
 		assert.Equalf(t.T(), test.ExpectedDiff, diff, test.Name)
 	}

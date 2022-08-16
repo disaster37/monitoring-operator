@@ -46,7 +46,7 @@ func doMockNamespace(mockCS *mocks.MockCentreonHandler) func(stepName *string, d
 
 		// Mock Centreon client
 		mockCS.EXPECT().GetService(gomock.Any(), gomock.Any()).AnyTimes().Return(nil, nil)
-		mockCS.EXPECT().DiffService(gomock.Any(), gomock.Any()).AnyTimes().Return(&centreonhandler.CentreonServiceDiff{
+		mockCS.EXPECT().DiffService(gomock.Any(), gomock.Any(), gomock.Any()).AnyTimes().Return(&centreonhandler.CentreonServiceDiff{
 			IsDiff: false,
 		}, nil)
 		mockCS.EXPECT().CreateService(gomock.Any()).AnyTimes().Return(nil)

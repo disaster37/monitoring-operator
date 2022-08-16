@@ -49,7 +49,7 @@ func doMockTemplate(mockCS *mocks.MockCentreonHandler) func(stepName *string, da
 
 		// Service
 		mockCS.EXPECT().GetService(gomock.Any(), gomock.Any()).AnyTimes().Return(nil, nil)
-		mockCS.EXPECT().DiffService(gomock.Any(), gomock.Any()).AnyTimes().Return(&centreonhandler.CentreonServiceDiff{
+		mockCS.EXPECT().DiffService(gomock.Any(), gomock.Any(), gomock.Any()).AnyTimes().Return(&centreonhandler.CentreonServiceDiff{
 			IsDiff: false,
 		}, nil)
 		mockCS.EXPECT().CreateService(gomock.Any()).AnyTimes().Return(nil)
@@ -58,7 +58,7 @@ func doMockTemplate(mockCS *mocks.MockCentreonHandler) func(stepName *string, da
 
 		// ServiceGroup
 		mockCS.EXPECT().GetServiceGroup(gomock.Any()).AnyTimes().Return(nil, nil)
-		mockCS.EXPECT().DiffServiceGroup(gomock.Any(), gomock.Any()).AnyTimes().Return(&centreonhandler.CentreonServiceGroupDiff{
+		mockCS.EXPECT().DiffServiceGroup(gomock.Any(), gomock.Any(), gomock.Any()).AnyTimes().Return(&centreonhandler.CentreonServiceGroupDiff{
 			IsDiff: false,
 		}, nil)
 		mockCS.EXPECT().CreateServiceGroup(gomock.Any()).AnyTimes().Return(nil)

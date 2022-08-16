@@ -20,6 +20,7 @@ import (
 	"strings"
 
 	"github.com/disaster37/go-centreon-rest/v21/models"
+	"github.com/disaster37/monitoring-operator/api/shared"
 	"github.com/disaster37/monitoring-operator/pkg/centreonhandler"
 	"github.com/disaster37/monitoring-operator/pkg/helpers"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -106,6 +107,11 @@ type CentreonServiceSpec struct {
 	// +operator-sdk:csv:customresourcedefinitions:type=spec
 	// +optional
 	Activated bool `json:"activate,omitempty"`
+
+	// Policy define the policy that controller need to respect when it reconcile resource
+	// +operator-sdk:csv:customresourcedefinitions:type=spec
+	// +optional
+	Policy shared.Policy `json:"policy,omitempty"`
 }
 
 // CentreonServiceStatus defines the observed state of CentreonService
