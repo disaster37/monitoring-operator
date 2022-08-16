@@ -628,7 +628,7 @@ func doPolicyNoCreateCentreonServiceStep() test.TestStep {
 			cs := &v1alpha1.CentreonService{}
 			isCreated := false
 
-			isTimeout, err := RunWithTimeout(func() error {
+			isTimeout, _ := RunWithTimeout(func() error {
 				if err := c.Get(context.Background(), key, cs); err != nil {
 					t.Fatal("Centreon service not found")
 				}
@@ -668,7 +668,7 @@ func doPolicyNoUpdateCentreonServiceStep() test.TestStep {
 			cs := &v1alpha1.CentreonService{}
 			isUpdated := false
 
-			isTimeout, err := RunWithTimeout(func() error {
+			isTimeout, _ := RunWithTimeout(func() error {
 				if err := c.Get(context.Background(), key, cs); err != nil {
 					t.Fatal(err)
 				}
@@ -710,7 +710,7 @@ func doPolicyExcludeFieldsCentreonServiceStep() test.TestStep {
 			cs := &v1alpha1.CentreonService{}
 			isUpdated := false
 
-			isTimeout, err := RunWithTimeout(func() error {
+			isTimeout, _ := RunWithTimeout(func() error {
 				if err := c.Get(context.Background(), key, cs); err != nil {
 					t.Fatal(err)
 				}

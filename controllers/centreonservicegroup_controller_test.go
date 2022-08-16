@@ -433,7 +433,7 @@ func doPolicyNoCreateCentreonServiceGroupStep() test.TestStep {
 			csg := &v1alpha1.CentreonServiceGroup{}
 			isCreated := false
 
-			isTimeout, err := RunWithTimeout(func() error {
+			isTimeout, _ := RunWithTimeout(func() error {
 				if err := c.Get(context.Background(), key, csg); err != nil {
 					t.Fatal("Centreon serviceGroup not found")
 				}
@@ -478,7 +478,7 @@ func doPolicyNoUpdateCentreonServiceGroupStep() test.TestStep {
 			csg := &v1alpha1.CentreonServiceGroup{}
 			isUpdated := false
 
-			isTimeout, err := RunWithTimeout(func() error {
+			isTimeout, _ := RunWithTimeout(func() error {
 				if err := c.Get(context.Background(), key, csg); err != nil {
 					t.Fatal(err)
 				}
@@ -525,7 +525,7 @@ func doPolicyExcludeFieldsCentreonServiceGroupStep() test.TestStep {
 			csg := &v1alpha1.CentreonServiceGroup{}
 			isUpdated := false
 
-			isTimeout, err := RunWithTimeout(func() error {
+			isTimeout, _ := RunWithTimeout(func() error {
 				if err := c.Get(context.Background(), key, csg); err != nil {
 					t.Fatal(err)
 				}
