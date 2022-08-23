@@ -33,6 +33,11 @@ type TemplateSpec struct {
 	// +operator-sdk:csv:customresourcedefinitions:type=spec
 	Type string `json:"type"`
 
+	// Name is the resource name generated from template
+	// +operator-sdk:csv:customresourcedefinitions:type=spec
+	// +optional
+	Name string `json:"name,omitempty"`
+
 	// Template is the CentreonService template base on golang templating
 	// You need only provide the spec contend
 	// +operator-sdk:csv:customresourcedefinitions:type=spec

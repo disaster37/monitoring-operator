@@ -127,6 +127,14 @@ func (r *TemplateController) readTemplating(ctx context.Context, resource client
 			return res, errors.Wrapf(err, "Error when get template %s/%s", namespacedName.Namespace, namespacedName.Name)
 		}
 
+		placeholders["templateName"] = templateO.Name
+
+		// Process resource name
+		targetResourceName, err := processName(templateO, placeholders)
+		if err != nil {
+			return res, err
+		}
+
 		// Process template
 		rawTemplate, err := processTemplate(templateO, placeholders)
 		if err != nil {
@@ -145,7 +153,7 @@ func (r *TemplateController) readTemplating(ctx context.Context, resource client
 
 			centreonService := &v1alpha1.CentreonService{
 				ObjectMeta: metav1.ObjectMeta{
-					Name:        namespacedName.Name,
+					Name:        targetResourceName,
 					Namespace:   namespace,
 					Labels:      helpers.CopyMapString(resource.GetLabels()),
 					Annotations: helpers.CopyMapString(resource.GetAnnotations()),
@@ -168,7 +176,7 @@ func (r *TemplateController) readTemplating(ctx context.Context, resource client
 
 			centreonServiceGroup := &v1alpha1.CentreonServiceGroup{
 				ObjectMeta: metav1.ObjectMeta{
-					Name:        namespacedName.Name,
+					Name:        targetResourceName,
 					Namespace:   namespace,
 					Labels:      helpers.CopyMapString(resource.GetLabels()),
 					Annotations: helpers.CopyMapString(resource.GetAnnotations()),
@@ -186,7 +194,7 @@ func (r *TemplateController) readTemplating(ctx context.Context, resource client
 		}
 
 		// Get current resource
-		err = r.Get(ctx, types.NamespacedName{Name: namespacedName.Name, Namespace: namespace}, currentResource)
+		err = r.Get(ctx, types.NamespacedName{Name: targetResourceName, Namespace: namespace}, currentResource)
 		if err != nil && k8serrors.IsNotFound(err) {
 			currentResource = reflect.New(reflect.TypeOf(currentResource)).Elem().Interface().(client.Object)
 		} else if err != nil {
@@ -367,4 +375,23 @@ func setLabelsOnExpectedResource(resource client.Object, namespacedName types.Na
 	}
 	resource.GetLabels()[fmt.Sprintf("%s/template-name", monitoringAnnotationKey)] = namespacedName.Name
 	resource.GetLabels()[fmt.Sprintf("%s/template-namespace", monitoringAnnotationKey)] = namespacedName.Namespace
+}
+
+// processName permit to get the resource name generated from template
+// It return the template name if name is not provided
+func processName(templateO *v1alpha1.Template, placeholders map[string]any) (name string, err error) {
+	if templateO.Spec.Name == "" {
+		return templateO.Name, nil
+	}
+
+	t, err := template.New("template").Funcs(sprig.FuncMap()).Parse(templateO.Spec.Name)
+	if err != nil {
+		return "", errors.Wrapf(err, "Error when parse template name %s/%s", templateO.Namespace, templateO.Name)
+	}
+	buf := bytes.NewBufferString("")
+	if err = t.Execute(buf, placeholders); err != nil {
+		return "", errors.Wrap(err, "Error when execute template")
+	}
+
+	return buf.String(), nil
 }
