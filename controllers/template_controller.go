@@ -362,6 +362,9 @@ func processTemplate(templateO *v1alpha1.Template, placeholders map[string]any) 
 
 // setLabelsOnExpectedResource set the rigth labels to reconcil it when template change
 func setLabelsOnExpectedResource(resource client.Object, namespacedName types.NamespacedName) {
+	if resource.GetLabels() == nil {
+		resource.SetLabels(map[string]string{})
+	}
 	resource.GetLabels()[fmt.Sprintf("%s/template-name", monitoringAnnotationKey)] = namespacedName.Name
 	resource.GetLabels()[fmt.Sprintf("%s/template-namespace", monitoringAnnotationKey)] = namespacedName.Namespace
 }
