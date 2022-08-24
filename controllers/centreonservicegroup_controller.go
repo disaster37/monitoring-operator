@@ -129,6 +129,10 @@ func (r *CentreonServiceGroupReconciler) Read(ctx context.Context, resource clie
 		serviceGroupName = csg.Spec.Name
 	}
 
+	// Update status in any case
+	csg.Status.ServiceGroupName = csg.Spec.Name
+
+
 	actualCSG, err := cHandler.GetServiceGroup(serviceGroupName)
 	if err != nil {
 		return res, errors.Wrap(err, "Unable to get ServiceGroup from Centreon")
@@ -158,8 +162,6 @@ func (r *CentreonServiceGroupReconciler) Create(ctx context.Context, resource cl
 		return res, errors.Wrap(err, "Error when create serviceGroup on Centreoon")
 	}
 
-	csg.Status.ServiceGroupName = csg.Spec.Name
-
 	// Update metrics
 	controllerMetrics.WithLabelValues(r.name).Inc()
 
@@ -187,8 +189,6 @@ func (r *CentreonServiceGroupReconciler) Update(ctx context.Context, resource cl
 	if err = cHandler.UpdateServiceGroup(expectedServiceGroup); err != nil {
 		return res, errors.Wrap(err, "Error when update serviceGroup on Centreoon")
 	}
-
-	csg.Status.ServiceGroupName = csg.Spec.Name
 
 	return res, nil
 }
@@ -289,24 +289,12 @@ func (r *CentreonServiceGroupReconciler) OnSuccess(ctx context.Context, resource
 	csg := resource.(*v1alpha1.CentreonServiceGroup)
 
 	if diff.NeedCreate {
-		condition.SetStatusCondition(&csg.Status.Conditions, v1.Condition{
-			Type:    CentreonServiceGroupCondition,
-			Status:  v1.ConditionTrue,
-			Reason:  "Success",
-			Message: fmt.Sprintf("ServiceGroup %s successfully created on Centreon", csg.Spec.Name),
-		})
 		r.recorder.Eventf(resource, core.EventTypeNormal, "Completed", "ServiceGroup %s successfully created on Centreon", csg.Spec.Name)
 
 		return nil
 	}
 
 	if diff.NeedUpdate {
-		condition.SetStatusCondition(&csg.Status.Conditions, v1.Condition{
-			Type:    CentreonServiceGroupCondition,
-			Status:  v1.ConditionTrue,
-			Reason:  "Success",
-			Message: fmt.Sprintf("ServiceGroup %s successfully updated on Centreon", csg.Spec.Name),
-		})
 
 		r.recorder.Eventf(resource, core.EventTypeNormal, "Completed", "ServiceGroup %s successfully updated on Centreon", csg.Spec.Name)
 
@@ -319,7 +307,7 @@ func (r *CentreonServiceGroupReconciler) OnSuccess(ctx context.Context, resource
 			Type:    CentreonServiceGroupCondition,
 			Reason:  "Success",
 			Status:  v1.ConditionTrue,
-			Message: fmt.Sprintf("ServiceGroup %s already exit on Centreon", csg.Spec.Name),
+			Message: fmt.Sprintf("ServiceGroup %s up to date on Centreon", csg.Spec.Name),
 		})
 
 		r.recorder.Event(resource, core.EventTypeNormal, "Completed", "ServiceGroup already exit on Centreon")
