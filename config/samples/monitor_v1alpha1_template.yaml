@@ -4,6 +4,7 @@ metadata:
   name: templatecentreonservice-sample
 spec:
   type: "CentreonService"
+  name: "{{ .templateName }}-{{ .name }}"
   template: |
     host: localhost
     name: "test-ping-{{ .namespace }}"

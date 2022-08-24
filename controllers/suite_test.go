@@ -197,6 +197,17 @@ func (t *ControllerTestSuite) SetupSuite() {
 		panic(err)
 	}
 
+	nodeReconsiler := NewNodeReconciler(k8sClient, scheme.Scheme, templateController)
+	nodeReconsiler.Reconciler.SetLogger(logrus.WithFields(logrus.Fields{
+		"type": "nodeController",
+	}))
+	nodeReconsiler.SetRecorder(k8sManager.GetEventRecorderFor("node-controller"))
+	nodeReconsiler.SetReconsiler(mock.NewMockReconciler(nodeReconsiler, t.mockCentreonHandler))
+	nodeReconsiler.SetPlatforms(platforms)
+	if err = nodeReconsiler.SetupWithManager(k8sManager); err != nil {
+		panic(err)
+	}
+
 	go func() {
 		err = k8sManager.Start(ctrl.SetupSignalHandler())
 		if err != nil {

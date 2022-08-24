@@ -383,7 +383,7 @@ func doDeleteRouteStep() test.TestStep {
 	}
 }
 
-func TestGeneratePlaceholdersRouteCentreonService(t *testing.T) {
+func TestGeneratePlaceholdersRoute(t *testing.T) {
 	var (
 		route      *routev1.Route
 		ph         map[string]any

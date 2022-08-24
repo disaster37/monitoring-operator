@@ -9,9 +9,14 @@ Kubernetes operator to manage monitoring resources
 It actually only support Centreon as monitoring plateform.
 
 ## Supported fonctionnalities:
-  - Manage monitoring service from custom resource `CentreonService`
-  - Auto create monitoring service from Ingress
-  - Auto create monitoring service from Route
+
+- Manage service on Centreon from custom resource `CentreonService`
+- Manage service group on Centreon from custom resource `CentreonServiceGroup`
+- Auto create resources from `Ingress` with template concept
+- Auto create resources from `Route` (Openshift) with template concept
+- Auto create resources from `Namespace` with template concept
+- Auto create resources from `Node` with template concept
+- Auto create resources from `Certificate` with template concept
 
 ## Deploy operator with OLM
 
@@ -28,16 +33,15 @@ operator-sdk run bundle docker.io/webcenter/monitoring-operator-bundle:v0.0.1
 ### Platform
 
 The first way consist to declare a platform. A platform is a monitoring API endpoint. actually, we only support Centreon platform.
-So, you need to provide a resource of type platfrom on same operator namespace
+So, you need to provide a resource of type platfrom on same operator namespace.
 
-platform.yaml
+***platform.yaml***
 ```yaml
 apiVersion: monitor.k8s.webcenter.fr/v1alpha1
 kind: Platform
 metadata:
   name: default
 spec:
-  name: default
   isDefault: true
   type: centreon
   centreonSettings:
@@ -47,7 +51,7 @@ spec:
 ```
 
 Like you can see, you need to set credential to access on external monitoring API. The right way to do that on K8s is to use secret.
-So, you need to create a new secret on same operator namespace with the name who are privided on platform.
+So, you need to create a new secret on same operator namespace with the name which are privided on platform.
 
 secret.yaml
 ```yaml
@@ -60,26 +64,6 @@ data:
   password: Y3MuY2xhcGk=
 kind: Secret
 ``` 
-
-> On Platform spec, there are a subsection call endpoint. It's a generic setting when you should to auto create monitoring service from Ingress or route spec. It avoid to provide each time, the wall setting by annotation.
-
-
-You can use this global setting when you should to auto discover / monitor your ingress / Route:
-
-```yaml
-apiVersion: monitor.k8s.webcenter.fr/v1alpha1
-kind: Platform
-metadata:
-  name: default
-spec:
-  name: default
-  isDefault: true
-  type: centreon
-  centreonSettings:
-    url: "http://localhost:9090/centreon/api/index.php"
-    selfSignedCertificat: true
-    secret: centreon
-```
 
 ### CentreonService
 
@@ -137,30 +121,87 @@ spec:
 
   # The service's check command
   # Optional
-  checkCommand:
+  checkCommand: ""
 
   # The service's normal check interval
   # Optional
-  normalCheckInterval:
+  normalCheckInterval: ""
 
   # The service's retry check interval
   # Optional
-  retryCheckInterval:
+  retryCheckInterval: ""
 
   # The service's check attempts
   # Optional
-  maxCheckAttempts:
+  maxCheckAttempts: ""
 
   # It enable active check
   # Optional
-  activeChecksEnabled:
+  activeChecksEnabled: null
 
   # It enable passive check
   # Optional
-  passiveChecksEnabled:
+  passiveChecksEnabled: null
+
+  # Optional
+  # The reconcil policy to use
+  # Read the policy concept on documentation
+  policy: null
 ```
 
 > If you not provide spec key `platformRef`, it use the default platform.
+
+When resource is created, you can get the following status:
+  - **host**: the host where service is attached on Centreon
+  - **serviceName**: the service name on Centreon
+  - **conditions**: You can look the condition called `UpdateCentreonService` to know if Centreon service is update to date
+
+### CentreonServiceGroup
+
+This custom resource permit to handle service group on Centreon.
+
+You can use this properties to set service group:
+```yaml
+apiVersion: monitor.k8s.webcenter.fr/v1alpha1
+kind: CentreonServiceGroup
+metadata:
+  name: web-servers
+spec:
+  # Optional
+  # Target platform to create monitoring resource
+  platformRef: default
+
+  # Optional
+  # It enable service
+  activate: true
+
+  # The service group name
+  name: SG_WEB_SERVER
+
+  # Optional
+  # The description
+  description: "my web server"
+
+  # Optional
+  # The reconcil policy to use
+  # Read the policy concept on documentation
+  policy: null
+```
+
+> If you not provide spec key `platformRef`, it use the default platform.
+
+When resource is created, you can get the following status:
+  - **serviceGroupName**: the service group name on Centreon
+  - **conditions**: You can look the condition called `UpdateCentreonServiceGroup` to know if Centreon service group is update to date
+
+
+### Policy concept
+
+@TODO
+
+### Template concept
+
+@TODO
 
 ### Namespace
 

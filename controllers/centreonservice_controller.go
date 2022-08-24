@@ -130,6 +130,10 @@ func (r *CentreonServiceReconciler) Read(ctx context.Context, resource client.Ob
 		serviceName = cs.Spec.Name
 	}
 
+	// Update status in any case here
+	cs.Status.Host = cs.Spec.Host
+	cs.Status.ServiceName = cs.Spec.Name
+
 	actualCS, err := cHandler.GetService(host, serviceName)
 	if err != nil {
 		return res, errors.Wrap(err, "Unable to get Service from Centreon")
@@ -159,9 +163,6 @@ func (r *CentreonServiceReconciler) Create(ctx context.Context, resource client.
 		return res, errors.Wrap(err, "Error when create service on Centreoon")
 	}
 
-	cs.Status.Host = cs.Spec.Host
-	cs.Status.ServiceName = cs.Spec.Name
-
 	// Update metrics
 	controllerMetrics.WithLabelValues(r.name).Inc()
 
@@ -189,9 +190,6 @@ func (r *CentreonServiceReconciler) Update(ctx context.Context, resource client.
 	if err = cHandler.UpdateService(expectedService); err != nil {
 		return res, errors.Wrap(err, "Error when update service on Centreoon")
 	}
-
-	cs.Status.Host = cs.Spec.Host
-	cs.Status.ServiceName = cs.Spec.Name
 
 	return res, nil
 }
@@ -293,40 +291,25 @@ func (r *CentreonServiceReconciler) OnSuccess(ctx context.Context, resource clie
 	cs := resource.(*v1alpha1.CentreonService)
 
 	if diff.NeedCreate {
-		condition.SetStatusCondition(&cs.Status.Conditions, v1.Condition{
-			Type:    CentreonServiceCondition,
-			Status:  v1.ConditionTrue,
-			Reason:  "Success",
-			Message: fmt.Sprintf("Service %s/%s successfully created on Centreon", cs.Spec.Host, cs.Spec.Name),
-		})
 		r.recorder.Eventf(resource, core.EventTypeNormal, "Completed", "Service %s/%s successfully created on Centreon", cs.Spec.Host, cs.Spec.Name)
-
-		return nil
 	}
 
 	if diff.NeedUpdate {
-		condition.SetStatusCondition(&cs.Status.Conditions, v1.Condition{
-			Type:    CentreonServiceCondition,
-			Status:  v1.ConditionTrue,
-			Reason:  "Success",
-			Message: fmt.Sprintf("Service %s/%s successfully updated on Centreon", cs.Spec.Host, cs.Spec.Name),
-		})
-
 		r.recorder.Eventf(resource, core.EventTypeNormal, "Completed", "Service %s/%s successfully updated on Centreon", cs.Spec.Host, cs.Spec.Name)
-
-		return nil
 	}
 
 	// Update condition status if needed
-	if condition.IsStatusConditionPresentAndEqual(cs.Status.Conditions, CentreonServiceCondition, v1.ConditionFalse) {
+	if !condition.IsStatusConditionPresentAndEqual(cs.Status.Conditions, CentreonServiceCondition, v1.ConditionTrue) {
 		condition.SetStatusCondition(&cs.Status.Conditions, v1.Condition{
 			Type:    CentreonServiceCondition,
 			Reason:  "Success",
 			Status:  v1.ConditionTrue,
-			Message: fmt.Sprintf("Service %s/%s already exit on Centreon", cs.Spec.Host, cs.Spec.Name),
+			Message: fmt.Sprintf("Service %s/%s up to date on Centreon", cs.Spec.Host, cs.Spec.Name),
 		})
 
-		r.recorder.Event(resource, core.EventTypeNormal, "Completed", "Service already exit on Centreon")
+		if !diff.NeedCreate && !diff.NeedUpdate {
+			r.recorder.Event(resource, core.EventTypeNormal, "Completed", "Service already exit on Centreon")
+		}
 	}
 
 	return nil

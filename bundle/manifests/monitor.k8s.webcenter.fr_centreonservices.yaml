@@ -81,6 +81,29 @@ spec:
               platformRef:
                 description: PlatformRef is the target platform where to create service
                 type: string
+              policy:
+                description: Policy define the policy that controller need to respect
+                  when it reconcile resource
+                properties:
+                  excludeFields:
+                    description: ExcludeFieldsOnDiff is the list of fields to exclude
+                      when diff step is processing
+                    items:
+                      type: string
+                    type: array
+                  noCreate:
+                    description: NoCreate is true if controller can't create resource
+                      on remote provider
+                    type: boolean
+                  noDelete:
+                    description: NoDelete is true if controller can't delete resource
+                      on remote provider
+                    type: boolean
+                  noUpdate:
+                    description: NoUpdate is true if controller can't update resource
+                      on remote provider
+                    type: boolean
+                type: object
               retryCheckInterval:
                 description: The retry check interval
                 type: string

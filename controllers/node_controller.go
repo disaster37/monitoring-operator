@@ -32,11 +32,11 @@ import (
 )
 
 const (
-	NamespaceFinalizer = "namespace.monitor.k8s.webcenter.fr/finalizer"
+	NodeFinalizer = "node.monitor.k8s.webcenter.fr/finalizer"
 )
 
-// NamespaceReconciler reconciles a Namespace object
-type NamespaceReconciler struct {
+// NodeReconciler reconciles a Node object
+type NodeReconciler struct {
 	Reconciler
 	client.Client
 	Scheme *runtime.Scheme
@@ -44,13 +44,13 @@ type NamespaceReconciler struct {
 	name string
 }
 
-func NewNamespaceReconciler(client client.Client, scheme *runtime.Scheme, templateController TemplateController) *NamespaceReconciler {
+func NewNodeReconciler(client client.Client, scheme *runtime.Scheme, templateController TemplateController) *NodeReconciler {
 
-	r := &NamespaceReconciler{
+	r := &NodeReconciler{
 		Client:             client,
 		Scheme:             scheme,
 		TemplateController: templateController,
-		name:               "namespace",
+		name:               "node",
 	}
 
 	controllerMetrics.WithLabelValues(r.name).Add(0)
@@ -58,8 +58,8 @@ func NewNamespaceReconciler(client client.Client, scheme *runtime.Scheme, templa
 	return r
 }
 
-//+kubebuilder:rbac:groups="",resources=namespaces,verbs=get;list;watch;update
-//+kubebuilder:rbac:groups="",resources=namespaces/finalizers,verbs=update
+//+kubebuilder:rbac:groups="",resources=nodes,verbs=get;list;watch;update
+//+kubebuilder:rbac:groups="",resources=nodes/finalizers,verbs=update
 //+kubebuilder:rbac:groups=monitor.k8s.webcenter.fr,resources=centreonServices,verbs=get;list;watch;create;update;patch;delete
 //+kubebuilder:rbac:groups="monitor.k8s.webcenter.fr",resources=templates,verbs=get;list;watch;update;patch
 //+kubebuilder:rbac:groups="",resources=events,verbs=patch;get;create
@@ -67,32 +67,32 @@ func NewNamespaceReconciler(client client.Client, scheme *runtime.Scheme, templa
 // Reconcile is part of the main kubernetes reconciliation loop which aims to
 // move the current state of the cluster closer to the desired state.
 // TODO(user): Modify the Reconcile function to compare the state specified by
-// the Namespace object against the actual cluster state, and then
+// the Node object against the actual cluster state, and then
 // perform operations to make the cluster state reflect the state specified by
 // the user.
 //
 // For more details, check Reconcile and its Result here:
 // - https://pkg.go.dev/sigs.k8s.io/controller-runtime@v0.10.0/pkg/reconcile
-func (r *NamespaceReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
+func (r *NodeReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 
-	reconciler, err := controller.NewStdReconciler(r.Client, NamespaceFinalizer, r.reconciler, r.Reconciler.log, r.recorder, waitDurationWhenError)
+	reconciler, err := controller.NewStdReconciler(r.Client, NodeFinalizer, r.reconciler, r.Reconciler.log, r.recorder, waitDurationWhenError)
 	if err != nil {
 		return ctrl.Result{}, err
 	}
 
-	ns := &core.Namespace{}
+	node := &core.Node{}
 	data := map[string]any{}
 
-	return reconciler.Reconcile(ctx, req, ns, data)
+	return reconciler.Reconcile(ctx, req, node, data)
 
 }
 
 // SetupWithManager sets up the controller with the Manager.
-func (r *NamespaceReconciler) SetupWithManager(mgr ctrl.Manager) error {
+func (r *NodeReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
 		// Uncomment the following line adding a pointer to an instance of the controlled resource as an argument
 		Named(r.name).
-		For(&core.Namespace{}).
+		For(&core.Node{}).
 		Owns(&monitorv1alpha1.CentreonService{}).
 		WithEventFilter(viewResourceWithMonitoringTemplate()).
 		Watches(&source.Kind{Type: &v1alpha1.Template{}}, handler.EnqueueRequestsFromMapFunc(watchTemplate(r.Client))).
@@ -100,30 +100,30 @@ func (r *NamespaceReconciler) SetupWithManager(mgr ctrl.Manager) error {
 }
 
 // Configure do nothink here
-func (r *NamespaceReconciler) Configure(ctx context.Context, req ctrl.Request, resource client.Object) (meta any, err error) {
+func (r *NodeReconciler) Configure(ctx context.Context, req ctrl.Request, resource client.Object) (meta any, err error) {
 
 	return nil, nil
 }
 
-// Read permit to compute expected monitoring service that reflect namespace
-func (r *NamespaceReconciler) Read(ctx context.Context, resource client.Object, data map[string]any, meta any) (res ctrl.Result, err error) {
-	ns := resource.(*core.Namespace)
-	return r.TemplateController.readTemplating(ctx, ns, data, meta, generatePlaceholdersNamespace(ns))
+// Read permit to compute expected monitoring service that reflect node
+func (r *NodeReconciler) Read(ctx context.Context, resource client.Object, data map[string]any, meta any) (res ctrl.Result, err error) {
+	node := resource.(*core.Node)
+	return r.TemplateController.readTemplating(ctx, node, data, meta, generatePlaceholdersNode(node))
 }
 
 // Create add new service object
-func (r *NamespaceReconciler) Create(ctx context.Context, resource client.Object, data map[string]interface{}, meta interface{}) (res ctrl.Result, err error) {
+func (r *NodeReconciler) Create(ctx context.Context, resource client.Object, data map[string]interface{}, meta interface{}) (res ctrl.Result, err error) {
 	return r.TemplateController.createOrUpdateRessourcesFromTemplate(ctx, resource, data, meta)
 }
 
 // Update permit to update service object
-func (r *NamespaceReconciler) Update(ctx context.Context, resource client.Object, data map[string]interface{}, meta interface{}) (res ctrl.Result, err error) {
+func (r *NodeReconciler) Update(ctx context.Context, resource client.Object, data map[string]interface{}, meta interface{}) (res ctrl.Result, err error) {
 	return r.Create(ctx, resource, data, meta)
 }
 
 // Delete do nothink here
 // We add parent link, so k8s auto delete children
-func (r *NamespaceReconciler) Delete(ctx context.Context, resource client.Object, data map[string]interface{}, meta interface{}) (err error) {
+func (r *NodeReconciler) Delete(ctx context.Context, resource client.Object, data map[string]interface{}, meta interface{}) (err error) {
 
 	// Update metrics
 	controllerMetrics.WithLabelValues(r.name).Dec()
@@ -132,12 +132,12 @@ func (r *NamespaceReconciler) Delete(ctx context.Context, resource client.Object
 }
 
 // Diff permit to check if diff between actual and expected CentreonService exist
-func (r *NamespaceReconciler) Diff(resource client.Object, data map[string]interface{}, meta interface{}) (diff controller.Diff, err error) {
+func (r *NodeReconciler) Diff(resource client.Object, data map[string]interface{}, meta interface{}) (diff controller.Diff, err error) {
 	return r.TemplateController.diffRessourcesFromTemplate(resource, data, meta)
 }
 
 // OnError permit to set status condition on the right state and record error
-func (r *NamespaceReconciler) OnError(ctx context.Context, resource client.Object, data map[string]any, meta any, err error) {
+func (r *NodeReconciler) OnError(ctx context.Context, resource client.Object, data map[string]any, meta any, err error) {
 
 	r.Reconciler.log.Error(err)
 	r.recorder.Event(resource, core.EventTypeWarning, "Failed", fmt.Sprintf("Error when generate CentreonService: %s", err.Error()))
@@ -148,7 +148,7 @@ func (r *NamespaceReconciler) OnError(ctx context.Context, resource client.Objec
 }
 
 // OnSuccess permit to set status condition on the right state is everithink is good
-func (r *NamespaceReconciler) OnSuccess(ctx context.Context, resource client.Object, data map[string]any, meta any, diff controller.Diff) (err error) {
+func (r *NodeReconciler) OnSuccess(ctx context.Context, resource client.Object, data map[string]any, meta any, diff controller.Diff) (err error) {
 
 	if diff.NeedCreate {
 		r.recorder.Event(resource, core.EventTypeNormal, "Completed", "Create CentreonService successfully")
@@ -163,18 +163,20 @@ func (r *NamespaceReconciler) OnSuccess(ctx context.Context, resource client.Obj
 	return nil
 }
 
-// It generate map of placeholders from namespace
-func generatePlaceholdersNamespace(i *core.Namespace) (placeholders map[string]any) {
+// It generate map of placeholders from node
+func generatePlaceholdersNode(n *core.Node) (placeholders map[string]any) {
 	placeholders = map[string]any{}
-	if i == nil {
+	if n == nil {
 		return placeholders
 	}
 
 	//Main properties
-	placeholders["name"] = i.Name
-	placeholders["namespace"] = i.Name
-	placeholders["labels"] = i.GetLabels()
-	placeholders["annotations"] = i.GetAnnotations()
+	placeholders["name"] = n.Name
+	placeholders["labels"] = n.GetLabels()
+	placeholders["annotations"] = n.GetAnnotations()
+	placeholders["nodeInfo"] = n.Status.NodeInfo
+	placeholders["addresses"] = n.Status.Addresses
+	placeholders["unschedulable"] = n.Spec.Unschedulable
 
 	return placeholders
 

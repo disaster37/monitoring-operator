@@ -33,6 +33,11 @@ type TemplateSpec struct {
 	// +operator-sdk:csv:customresourcedefinitions:type=spec
 	Type string `json:"type"`
 
+	// Name is the resource name generated from template
+	// +operator-sdk:csv:customresourcedefinitions:type=spec
+	// +optional
+	Name string `json:"name,omitempty"`
+
 	// Template is the CentreonService template base on golang templating
 	// You need only provide the spec contend
 	// +operator-sdk:csv:customresourcedefinitions:type=spec
@@ -53,7 +58,7 @@ type TemplateStatus struct {
 //+kubebuilder:subresource:status
 
 // Template is the Schema for the templates API
-// +operator-sdk:csv:customresourcedefinitions:resources={{CentreonService,v1alpha1,centreonService}}
+// +operator-sdk:csv:customresourcedefinitions:resources={{CentreonService,v1alpha1,centreonService},{CentreonServiceGroup,v1alpha1,centreonServiceGroup}}
 type Template struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
