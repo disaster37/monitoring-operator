@@ -34,6 +34,9 @@ spec:
           spec:
             description: TemplateSpec defines the desired state of Template
             properties:
+              name:
+                description: Name is the resource name generated from template
+                type: string
               template:
                 description: Template is the CentreonService template base on golang
                   templating You need only provide the spec contend

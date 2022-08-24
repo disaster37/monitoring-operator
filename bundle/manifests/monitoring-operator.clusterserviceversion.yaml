@@ -52,6 +52,7 @@ metadata:
             "name": "templatecentreonservice-sample"
           },
           "spec": {
+            "name": "{{ .templateName }}-{{ .name }}",
             "template": "host: localhost\nname: \"test-ping-{{ .namespace }}\"\ntemplate: template-test\nactivate: true\nmacros:\n  CHECKTYPE: quota\n  EXTRAOPTIONS: -sS\n  NAMESPACE: {{ .namespace }}\n",
             "type": "CentreonService"
           }
@@ -95,6 +96,26 @@ spec:
       - description: PlatformRef is the target platform where to create serviceGroup
         displayName: Platform Ref
         path: platformRef
+      - description: Policy define the policy that controller need to respect when
+          it reconcile resource
+        displayName: Policy
+        path: policy
+      - description: ExcludeFieldsOnDiff is the list of fields to exclude when diff
+          step is processing
+        displayName: Exclude Fields On Diff
+        path: policy.excludeFields
+      - description: NoCreate is true if controller can't create resource on remote
+          provider
+        displayName: No Create
+        path: policy.noCreate
+      - description: NoDelete is true if controller can't delete resource on remote
+          provider
+        displayName: No Delete
+        path: policy.noDelete
+      - description: NoUpdate is true if controller can't update resource on remote
+          provider
+        displayName: No Update
+        path: policy.noUpdate
       statusDescriptors:
       - description: List of conditions
         displayName: Conditions
@@ -151,6 +172,26 @@ spec:
       - description: PlatformRef is the target platform where to create service
         displayName: Platform Ref
         path: platformRef
+      - description: Policy define the policy that controller need to respect when
+          it reconcile resource
+        displayName: Policy
+        path: policy
+      - description: ExcludeFieldsOnDiff is the list of fields to exclude when diff
+          step is processing
+        displayName: Exclude Fields On Diff
+        path: policy.excludeFields
+      - description: NoCreate is true if controller can't create resource on remote
+          provider
+        displayName: No Create
+        path: policy.noCreate
+      - description: NoDelete is true if controller can't delete resource on remote
+          provider
+        displayName: No Delete
+        path: policy.noDelete
+      - description: NoUpdate is true if controller can't update resource on remote
+          provider
+        displayName: No Update
+        path: policy.noUpdate
       - description: The retry check interval
         displayName: Retry Check Interval
         path: retryCheckInterval
@@ -212,7 +253,13 @@ spec:
       - kind: CentreonService
         name: centreonService
         version: v1alpha1
+      - kind: CentreonServiceGroup
+        name: centreonServiceGroup
+        version: v1alpha1
       specDescriptors:
+      - description: Name is the resource name generated from template
+        displayName: Name
+        path: name
       - description: Template is the CentreonService template base on golang templating
           You need only provide the spec contend
         displayName: Template
@@ -265,6 +312,21 @@ spec:
           - ""
           resources:
           - namespaces/finalizers
+          verbs:
+          - update
+        - apiGroups:
+          - ""
+          resources:
+          - nodes
+          verbs:
+          - get
+          - list
+          - update
+          - watch
+        - apiGroups:
+          - ""
+          resources:
+          - nodes/finalizers
           verbs:
           - update
         - apiGroups:
@@ -370,7 +432,7 @@ spec:
         - apiGroups:
           - monitor.k8s.webcenter.fr
           resources:
-          - templatecentreonservices
+          - templates
           verbs:
           - get
           - list
