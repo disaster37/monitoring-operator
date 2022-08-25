@@ -208,6 +208,17 @@ func (t *ControllerTestSuite) SetupSuite() {
 		panic(err)
 	}
 
+	certificateReconsiler := NewCertificateReconciler(k8sClient, scheme.Scheme, templateController)
+	certificateReconsiler.Reconciler.SetLogger(logrus.WithFields(logrus.Fields{
+		"type": "certificateController",
+	}))
+	certificateReconsiler.SetRecorder(k8sManager.GetEventRecorderFor("certificate-controller"))
+	certificateReconsiler.SetReconsiler(mock.NewMockReconciler(certificateReconsiler, t.mockCentreonHandler))
+	certificateReconsiler.SetPlatforms(platforms)
+	if err = certificateReconsiler.SetupWithManager(k8sManager); err != nil {
+		panic(err)
+	}
+
 	go func() {
 		err = k8sManager.Start(ctrl.SetupSignalHandler())
 		if err != nil {

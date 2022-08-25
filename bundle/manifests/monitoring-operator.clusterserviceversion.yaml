@@ -340,6 +340,12 @@ spec:
           - update
           - watch
         - apiGroups:
+          - ""
+          resources:
+          - secrets/finalizers
+          verbs:
+          - update
+        - apiGroups:
           - monitor.k8s.webcenter.fr
           resources:
           - centreonServices
