@@ -247,6 +247,19 @@ func main() {
 		os.Exit(1)
 	}
 
+	// Set certificate
+	certificateController := controllers.NewCertificateReconciler(mgr.GetClient(), mgr.GetScheme(), templateController)
+	certificateController.Reconciler.SetLogger(log.WithFields(logrus.Fields{
+		"type": "CertificateController",
+	}))
+	certificateController.SetRecorder(mgr.GetEventRecorderFor("certificate-controller"))
+	certificateController.SetReconsiler(certificateController)
+	certificateController.SetPlatforms(platforms)
+	if err = certificateController.SetupWithManager(mgr); err != nil {
+		setupLog.Error(err, "unable to create controller", "controller", "Certificate")
+		os.Exit(1)
+	}
+
 	//+kubebuilder:scaffold:builder
 
 	if err := mgr.AddHealthzCheck("healthz", healthz.Ping); err != nil {

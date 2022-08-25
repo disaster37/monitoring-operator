@@ -6,7 +6,7 @@ require (
 	github.com/Masterminds/sprig/v3 v3.2.2
 	github.com/davecgh/go-spew v1.1.1
 	github.com/disaster37/go-centreon-rest/v21 v21.0.7
-	github.com/disaster37/operator-sdk-extra v0.0.18-0.20220518141103-4bedebcbe1b8
+	github.com/disaster37/operator-sdk-extra v0.0.18-0.20220824141540-f557c5a6bc90
 	github.com/go-logr/logr v1.2.3
 	github.com/golang/mock v1.6.0
 	github.com/google/go-cmp v0.5.8

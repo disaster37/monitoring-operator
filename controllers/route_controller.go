@@ -93,6 +93,7 @@ func (r *RouteReconciler) SetupWithManager(mgr ctrl.Manager) error {
 		Named(r.name).
 		For(&routev1.Route{}).
 		Owns(&monitorv1alpha1.CentreonService{}).
+		Owns(&monitorv1alpha1.CentreonServiceGroup{}).
 		WithEventFilter(viewResourceWithMonitoringTemplate()).
 		Watches(&source.Kind{Type: &v1alpha1.Template{}}, handler.EnqueueRequestsFromMapFunc(watchTemplate(r.Client))).
 		Complete(r)

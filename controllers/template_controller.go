@@ -10,7 +10,6 @@ import (
 	"strings"
 
 	"github.com/Masterminds/sprig/v3"
-	"github.com/davecgh/go-spew/spew"
 	"github.com/disaster37/monitoring-operator/api/v1alpha1"
 	"github.com/disaster37/monitoring-operator/pkg/helpers"
 	"github.com/disaster37/operator-sdk-extra/pkg/controller"
@@ -221,8 +220,6 @@ func (r *TemplateController) readTemplating(ctx context.Context, resource client
 
 		listcomparedResource = append(listcomparedResource, compareResource)
 	}
-
-	r.log.Tracef("List of compare resources: %s", spew.Sdump(listcomparedResource))
 
 	data["compareResources"] = listcomparedResource
 
