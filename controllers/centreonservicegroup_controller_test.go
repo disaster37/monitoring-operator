@@ -6,7 +6,7 @@ import (
 	"time"
 
 	"github.com/disaster37/monitoring-operator/api/shared"
-	"github.com/disaster37/monitoring-operator/api/v1alpha1"
+	monitorapi "github.com/disaster37/monitoring-operator/api/v1"
 	"github.com/disaster37/monitoring-operator/pkg/centreonhandler"
 	"github.com/disaster37/monitoring-operator/pkg/helpers"
 	"github.com/disaster37/monitoring-operator/pkg/mocks"
@@ -28,7 +28,7 @@ func (t *ControllerTestSuite) TestCentreonServiceGroupController() {
 		Name:      "t-csg-" + helpers.RandomString(10),
 		Namespace: "default",
 	}
-	csg := &v1alpha1.CentreonServiceGroup{}
+	csg := &monitorapi.CentreonServiceGroup{}
 	data := map[string]any{}
 
 	testCase := test.NewTestCase(t.T(), t.k8sClient, key, csg, 5*time.Second, data)
@@ -261,12 +261,12 @@ func doCreateCentreonServiceGroupStep() test.TestStep {
 		Do: func(c client.Client, key types.NamespacedName, o client.Object, data map[string]any) (err error) {
 			logrus.Infof("=== Add new Centreon ServiceGroup %s/%s ===", key.Namespace, key.Name)
 
-			csg := &v1alpha1.CentreonServiceGroup{
+			csg := &monitorapi.CentreonServiceGroup{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      key.Name,
 					Namespace: key.Namespace,
 				},
-				Spec: v1alpha1.CentreonServiceGroupSpec{
+				Spec: monitorapi.CentreonServiceGroupSpec{
 					Name:        "sg1",
 					Description: "my sg",
 					Activated:   true,
@@ -280,7 +280,7 @@ func doCreateCentreonServiceGroupStep() test.TestStep {
 			return nil
 		},
 		Check: func(t *testing.T, c client.Client, key types.NamespacedName, o client.Object, data map[string]any) (err error) {
-			csg := &v1alpha1.CentreonServiceGroup{}
+			csg := &monitorapi.CentreonServiceGroup{}
 			isCreated := false
 
 			isTimeout, err := RunWithTimeout(func() error {
@@ -314,7 +314,7 @@ func doUpdateCentreonServiceGroupStep() test.TestStep {
 			if o == nil {
 				return errors.New("Centreon serviceGroup is null")
 			}
-			csg := o.(*v1alpha1.CentreonServiceGroup)
+			csg := o.(*monitorapi.CentreonServiceGroup)
 			csg.Spec.Description = "my sg2"
 
 			if err = c.Update(context.Background(), csg); err != nil {
@@ -324,7 +324,7 @@ func doUpdateCentreonServiceGroupStep() test.TestStep {
 			return nil
 		},
 		Check: func(t *testing.T, c client.Client, key types.NamespacedName, o client.Object, data map[string]any) (err error) {
-			csg := &v1alpha1.CentreonServiceGroup{}
+			csg := &monitorapi.CentreonServiceGroup{}
 			isUpdated := false
 
 			isTimeout, err := RunWithTimeout(func() error {
@@ -359,7 +359,7 @@ func doDeleteCentreonServiceGroupStep() test.TestStep {
 			if o == nil {
 				return errors.New("Centreon serviceGroup is null")
 			}
-			csg := o.(*v1alpha1.CentreonServiceGroup)
+			csg := o.(*monitorapi.CentreonServiceGroup)
 
 			wait := int64(0)
 			if err = c.Delete(context.Background(), csg, &client.DeleteOptions{GracePeriodSeconds: &wait}); err != nil {
@@ -369,7 +369,7 @@ func doDeleteCentreonServiceGroupStep() test.TestStep {
 			return nil
 		},
 		Check: func(t *testing.T, c client.Client, key types.NamespacedName, o client.Object, data map[string]any) (err error) {
-			csg := &v1alpha1.CentreonServiceGroup{}
+			csg := &monitorapi.CentreonServiceGroup{}
 			isDeleted := false
 
 			isTimeout, err := RunWithTimeout(func() error {
@@ -405,12 +405,12 @@ func doPolicyNoCreateCentreonServiceGroupStep() test.TestStep {
 		Do: func(c client.Client, key types.NamespacedName, o client.Object, data map[string]any) (err error) {
 			logrus.Infof("=== Add new Centreon ServiceGroup %s/%s (policyNoCreate) ===", key.Namespace, key.Name)
 
-			csg := &v1alpha1.CentreonServiceGroup{
+			csg := &monitorapi.CentreonServiceGroup{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      key.Name,
 					Namespace: key.Namespace,
 				},
-				Spec: v1alpha1.CentreonServiceGroupSpec{
+				Spec: monitorapi.CentreonServiceGroupSpec{
 					Name:        "sg1",
 					Description: "my sg",
 					Activated:   true,
@@ -430,7 +430,7 @@ func doPolicyNoCreateCentreonServiceGroupStep() test.TestStep {
 			return nil
 		},
 		Check: func(t *testing.T, c client.Client, key types.NamespacedName, o client.Object, data map[string]any) (err error) {
-			csg := &v1alpha1.CentreonServiceGroup{}
+			csg := &monitorapi.CentreonServiceGroup{}
 			isCreated := false
 
 			isTimeout, _ := RunWithTimeout(func() error {
@@ -460,7 +460,7 @@ func doPolicyNoUpdateCentreonServiceGroupStep() test.TestStep {
 			if o == nil {
 				return errors.New("Centreon serviceGroup is null")
 			}
-			csg := o.(*v1alpha1.CentreonServiceGroup)
+			csg := o.(*monitorapi.CentreonServiceGroup)
 
 			if err := c.Get(context.Background(), key, csg); err != nil {
 				return err
@@ -475,7 +475,7 @@ func doPolicyNoUpdateCentreonServiceGroupStep() test.TestStep {
 			return nil
 		},
 		Check: func(t *testing.T, c client.Client, key types.NamespacedName, o client.Object, data map[string]any) (err error) {
-			csg := &v1alpha1.CentreonServiceGroup{}
+			csg := &monitorapi.CentreonServiceGroup{}
 			isUpdated := false
 
 			isTimeout, _ := RunWithTimeout(func() error {
@@ -506,7 +506,7 @@ func doPolicyExcludeFieldsCentreonServiceGroupStep() test.TestStep {
 			if o == nil {
 				return errors.New("Centreon serviceGroup is null")
 			}
-			csg := o.(*v1alpha1.CentreonServiceGroup)
+			csg := o.(*monitorapi.CentreonServiceGroup)
 
 			if err := c.Get(context.Background(), key, csg); err != nil {
 				return err
@@ -522,7 +522,7 @@ func doPolicyExcludeFieldsCentreonServiceGroupStep() test.TestStep {
 			return nil
 		},
 		Check: func(t *testing.T, c client.Client, key types.NamespacedName, o client.Object, data map[string]any) (err error) {
-			csg := &v1alpha1.CentreonServiceGroup{}
+			csg := &monitorapi.CentreonServiceGroup{}
 			isUpdated := false
 
 			isTimeout, _ := RunWithTimeout(func() error {
@@ -553,7 +553,7 @@ func doPolicyNoDeleteCentreonServiceGroupStep() test.TestStep {
 			if o == nil {
 				return errors.New("Centreon serviceGroup is null")
 			}
-			csg := o.(*v1alpha1.CentreonServiceGroup)
+			csg := o.(*monitorapi.CentreonServiceGroup)
 
 			wait := int64(0)
 			if err = c.Delete(context.Background(), csg, &client.DeleteOptions{GracePeriodSeconds: &wait}); err != nil {
@@ -563,7 +563,7 @@ func doPolicyNoDeleteCentreonServiceGroupStep() test.TestStep {
 			return nil
 		},
 		Check: func(t *testing.T, c client.Client, key types.NamespacedName, o client.Object, data map[string]any) (err error) {
-			csg := &v1alpha1.CentreonServiceGroup{}
+			csg := &monitorapi.CentreonServiceGroup{}
 			isDeleted := false
 
 			isTimeout, err := RunWithTimeout(func() error {

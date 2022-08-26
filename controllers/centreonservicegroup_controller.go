@@ -20,7 +20,7 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/disaster37/monitoring-operator/api/v1alpha1"
+	monitorapi "github.com/disaster37/monitoring-operator/api/v1"
 	"github.com/disaster37/monitoring-operator/pkg/centreonhandler"
 	"github.com/disaster37/operator-sdk-extra/pkg/controller"
 	"github.com/disaster37/operator-sdk-extra/pkg/helper"
@@ -80,7 +80,7 @@ func (r *CentreonServiceGroupReconciler) Reconcile(ctx context.Context, req ctrl
 		return ctrl.Result{}, err
 	}
 
-	csg := &v1alpha1.CentreonServiceGroup{}
+	csg := &monitorapi.CentreonServiceGroup{}
 	data := map[string]any{}
 
 	return reconciler.Reconcile(ctx, req, csg, data)
@@ -90,13 +90,13 @@ func (r *CentreonServiceGroupReconciler) Reconcile(ctx context.Context, req ctrl
 func (r *CentreonServiceGroupReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
 		Named(r.name).
-		For(&v1alpha1.CentreonServiceGroup{}).
+		For(&monitorapi.CentreonServiceGroup{}).
 		Complete(r)
 }
 
 // Configure permit to init condition and choose the right client
 func (r *CentreonServiceGroupReconciler) Configure(ctx context.Context, req ctrl.Request, resource client.Object) (meta any, err error) {
-	csg := resource.(*v1alpha1.CentreonServiceGroup)
+	csg := resource.(*monitorapi.CentreonServiceGroup)
 
 	// Init condition status if not exist
 	if condition.FindStatusCondition(csg.Status.Conditions, CentreonServiceGroupCondition) == nil {
@@ -115,7 +115,7 @@ func (r *CentreonServiceGroupReconciler) Configure(ctx context.Context, req ctrl
 
 // Read permit to get current serviceGroup from Centreon
 func (r *CentreonServiceGroupReconciler) Read(ctx context.Context, resource client.Object, data map[string]any, meta any) (res ctrl.Result, err error) {
-	csg := resource.(*v1alpha1.CentreonServiceGroup)
+	csg := resource.(*monitorapi.CentreonServiceGroup)
 	cHandler := meta.(centreonhandler.CentreonHandler)
 
 	// Check if the current serviceGroup name is right before to search on Centreon
@@ -144,7 +144,7 @@ func (r *CentreonServiceGroupReconciler) Read(ctx context.Context, resource clie
 // Create add new ServiceGroup on Centreon
 func (r *CentreonServiceGroupReconciler) Create(ctx context.Context, resource client.Object, data map[string]interface{}, meta interface{}) (res ctrl.Result, err error) {
 	cHandler := meta.(centreonhandler.CentreonHandler)
-	csg := resource.(*v1alpha1.CentreonServiceGroup)
+	csg := resource.(*monitorapi.CentreonServiceGroup)
 
 	// Check policy
 	if csg.Spec.Policy.NoCreate {
@@ -170,7 +170,7 @@ func (r *CentreonServiceGroupReconciler) Create(ctx context.Context, resource cl
 // Update permit to update serviceGroup on Centreon
 func (r *CentreonServiceGroupReconciler) Update(ctx context.Context, resource client.Object, data map[string]interface{}, meta interface{}) (res ctrl.Result, err error) {
 	cHandler := meta.(centreonhandler.CentreonHandler)
-	csg := resource.(*v1alpha1.CentreonServiceGroup)
+	csg := resource.(*monitorapi.CentreonServiceGroup)
 	var d any
 
 	// Check policy
@@ -195,7 +195,7 @@ func (r *CentreonServiceGroupReconciler) Update(ctx context.Context, resource cl
 // Delete permit to delete serviceGroup from Centreon
 func (r *CentreonServiceGroupReconciler) Delete(ctx context.Context, resource client.Object, data map[string]interface{}, meta interface{}) (err error) {
 	cHandler := meta.(centreonhandler.CentreonHandler)
-	csg := resource.(*v1alpha1.CentreonServiceGroup)
+	csg := resource.(*monitorapi.CentreonServiceGroup)
 
 	// Check policy
 	if csg.Spec.Policy.NoDelete {
@@ -227,7 +227,7 @@ func (r *CentreonServiceGroupReconciler) Delete(ctx context.Context, resource cl
 // Diff permit to check if diff between actual and expected Centreon serviceGroup exist
 func (r *CentreonServiceGroupReconciler) Diff(resource client.Object, data map[string]interface{}, meta interface{}) (diff controller.Diff, err error) {
 	cHandler := meta.(centreonhandler.CentreonHandler)
-	csg := resource.(*v1alpha1.CentreonServiceGroup)
+	csg := resource.(*monitorapi.CentreonServiceGroup)
 	var d any
 
 	expectedCSG, err := csg.ToCentreonServiceGroup()
@@ -267,7 +267,7 @@ func (r *CentreonServiceGroupReconciler) Diff(resource client.Object, data map[s
 
 // OnError permit to set status condition on the right state and record error
 func (r *CentreonServiceGroupReconciler) OnError(ctx context.Context, resource client.Object, data map[string]any, meta any, err error) {
-	csg := resource.(*v1alpha1.CentreonServiceGroup)
+	csg := resource.(*monitorapi.CentreonServiceGroup)
 
 	r.log.Error(err)
 	r.recorder.Event(resource, core.EventTypeWarning, "Failed", err.Error())
@@ -285,7 +285,7 @@ func (r *CentreonServiceGroupReconciler) OnError(ctx context.Context, resource c
 
 // OnSuccess permit to set status condition on the right state is everythink is good
 func (r *CentreonServiceGroupReconciler) OnSuccess(ctx context.Context, resource client.Object, data map[string]any, meta any, diff controller.Diff) (err error) {
-	csg := resource.(*v1alpha1.CentreonServiceGroup)
+	csg := resource.(*monitorapi.CentreonServiceGroup)
 
 	if diff.NeedCreate {
 		r.recorder.Eventf(resource, core.EventTypeNormal, "Completed", "ServiceGroup %s successfully created on Centreon", csg.Spec.Name)

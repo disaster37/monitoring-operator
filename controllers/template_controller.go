@@ -10,7 +10,7 @@ import (
 	"strings"
 
 	"github.com/Masterminds/sprig/v3"
-	"github.com/disaster37/monitoring-operator/api/v1alpha1"
+	monitorapi "github.com/disaster37/monitoring-operator/api/v1"
 	"github.com/disaster37/monitoring-operator/pkg/helpers"
 	"github.com/disaster37/operator-sdk-extra/pkg/controller"
 	"github.com/disaster37/operator-sdk-extra/pkg/helper"
@@ -47,7 +47,7 @@ func watchTemplate(c client.Client) handler.MapFunc {
 		var listRessources client.ObjectList
 
 		reconcileRequests := make([]reconcile.Request, 0)
-		template := a.(*v1alpha1.Template)
+		template := a.(*monitorapi.Template)
 		selectors, err := labels.Parse(fmt.Sprintf("%s/template-name=%s,%s/template-namespace=%s", monitoringAnnotationKey, a.GetName(), monitoringAnnotationKey, a.GetNamespace()))
 		if err != nil {
 			panic(err)
@@ -56,9 +56,9 @@ func watchTemplate(c client.Client) handler.MapFunc {
 		// Get object type
 		switch template.Spec.Type {
 		case "CentreonService":
-			listRessources = &v1alpha1.CentreonServiceList{}
+			listRessources = &monitorapi.CentreonServiceList{}
 		case "CentreonServiceGroup":
-			listRessources = &v1alpha1.CentreonServiceGroupList{}
+			listRessources = &monitorapi.CentreonServiceGroupList{}
 		default:
 			return reconcileRequests
 		}
@@ -121,7 +121,7 @@ func (r *TemplateController) readTemplating(ctx context.Context, resource client
 		r.log.Debugf("Process template %s/%s", namespacedName.Namespace, namespacedName.Name)
 
 		// Get template
-		templateO := &v1alpha1.Template{}
+		templateO := &monitorapi.Template{}
 		if err = r.Get(ctx, namespacedName, templateO); err != nil {
 			return res, errors.Wrapf(err, "Error when get template %s/%s", namespacedName.Namespace, namespacedName.Name)
 		}
@@ -143,14 +143,14 @@ func (r *TemplateController) readTemplating(ctx context.Context, resource client
 		// Generate the right object depend of template type
 		switch templateO.Spec.Type {
 		case "CentreonService":
-			currentResource = &v1alpha1.CentreonService{}
-			centreonServiceSpec := &v1alpha1.CentreonServiceSpec{}
+			currentResource = &monitorapi.CentreonService{}
+			centreonServiceSpec := &monitorapi.CentreonServiceSpec{}
 			// Compute expected resource spec
 			if err = yaml.Unmarshal(rawTemplate, centreonServiceSpec); err != nil {
 				return res, errors.Wrap(err, "Error when unmarshall expected spec")
 			}
 
-			centreonService := &v1alpha1.CentreonService{
+			centreonService := &monitorapi.CentreonService{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:        targetResourceName,
 					Namespace:   namespace,
@@ -166,14 +166,14 @@ func (r *TemplateController) readTemplating(ctx context.Context, resource client
 			}
 			expectedResource = centreonService
 		case "CentreonServiceGroup":
-			currentResource = &v1alpha1.CentreonServiceGroup{}
-			centreonServiceGroupSpec := &v1alpha1.CentreonServiceGroupSpec{}
+			currentResource = &monitorapi.CentreonServiceGroup{}
+			centreonServiceGroupSpec := &monitorapi.CentreonServiceGroupSpec{}
 			// Compute expected resource spec
 			if err = yaml.Unmarshal(rawTemplate, centreonServiceGroupSpec); err != nil {
 				return res, errors.Wrap(err, "Error when unmarshall expected spec")
 			}
 
-			centreonServiceGroup := &v1alpha1.CentreonServiceGroup{
+			centreonServiceGroup := &monitorapi.CentreonServiceGroup{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:        targetResourceName,
 					Namespace:   namespace,
@@ -351,7 +351,7 @@ func getComputedNamespaceName(resource client.Object) (namespace string, err err
 }
 
 // processTemplate generate the template
-func processTemplate(templateO *v1alpha1.Template, placeholders map[string]any) (res []byte, err error) {
+func processTemplate(templateO *monitorapi.Template, placeholders map[string]any) (res []byte, err error) {
 
 	t, err := template.New("template").Funcs(sprig.FuncMap()).Parse(templateO.Spec.Template)
 	if err != nil {
@@ -376,7 +376,7 @@ func setLabelsOnExpectedResource(resource client.Object, namespacedName types.Na
 
 // processName permit to get the resource name generated from template
 // It return the template name if name is not provided
-func processName(templateO *v1alpha1.Template, placeholders map[string]any) (name string, err error) {
+func processName(templateO *monitorapi.Template, placeholders map[string]any) (name string, err error) {
 	if templateO.Spec.Name == "" {
 		return templateO.Name, nil
 	}

@@ -9,13 +9,12 @@ import (
 
 	"github.com/disaster37/go-centreon-rest/v21"
 	"github.com/disaster37/go-centreon-rest/v21/models"
-	"github.com/disaster37/monitoring-operator/api/v1alpha1"
+	monitorapi "github.com/disaster37/monitoring-operator/api/v1"
 	"github.com/disaster37/monitoring-operator/pkg/centreonhandler"
 	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/suite"
 	core "k8s.io/api/core/v1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
@@ -80,23 +79,19 @@ func (t *AccTestSuite) SetupSuite() {
 		panic(err)
 	}
 
-	platformGVR := schema.GroupVersionResource{
-		Group:    "monitor.k8s.webcenter.fr",
-		Version:  "v1alpha1",
-		Resource: "platforms",
-	}
-	p := &v1alpha1.Platform{
+	platformGVR := monitorapi.GroupVersion.WithResource("platforms")
+	p := &monitorapi.Platform{
 		TypeMeta: v1.TypeMeta{
 			Kind:       "Platform",
-			APIVersion: "monitor.k8s.webcenter.fr/v1alpha1",
+			APIVersion: "monitor.k8s.webcenter.fr/v1",
 		},
 		ObjectMeta: v1.ObjectMeta{
 			Name: "default",
 		},
-		Spec: v1alpha1.PlatformSpec{
+		Spec: monitorapi.PlatformSpec{
 			IsDefault:    true,
 			PlatformType: "centreon",
-			CentreonSettings: &v1alpha1.PlatformSpecCentreonSettings{
+			CentreonSettings: &monitorapi.PlatformSpecCentreonSettings{
 				URL:                   centreonURL,
 				SelfSignedCertificate: true,
 				Secret:                "centreon",

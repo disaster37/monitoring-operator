@@ -20,8 +20,7 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/disaster37/monitoring-operator/api/v1alpha1"
-	monitorv1alpha1 "github.com/disaster37/monitoring-operator/api/v1alpha1"
+	monitorapi "github.com/disaster37/monitoring-operator/api/v1"
 	"github.com/disaster37/operator-sdk-extra/pkg/controller"
 	core "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -93,10 +92,10 @@ func (r *NodeReconciler) SetupWithManager(mgr ctrl.Manager) error {
 		// Uncomment the following line adding a pointer to an instance of the controlled resource as an argument
 		Named(r.name).
 		For(&core.Node{}).
-		Owns(&monitorv1alpha1.CentreonService{}).
-		Owns(&monitorv1alpha1.CentreonServiceGroup{}).
+		Owns(&monitorapi.CentreonService{}).
+		Owns(&monitorapi.CentreonServiceGroup{}).
 		WithEventFilter(viewResourceWithMonitoringTemplate()).
-		Watches(&source.Kind{Type: &v1alpha1.Template{}}, handler.EnqueueRequestsFromMapFunc(watchTemplate(r.Client))).
+		Watches(&source.Kind{Type: &monitorapi.Template{}}, handler.EnqueueRequestsFromMapFunc(watchTemplate(r.Client))).
 		Complete(r)
 }
 

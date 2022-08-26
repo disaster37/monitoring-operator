@@ -69,3 +69,12 @@ https://redhat-scholars.github.io/operators-sdk-tutorial/template-tutorial/index
 Quand on crée des sous item dans kube, il faut ajouter dans les metas data le OwnerReference
 
 SI on veut surveiller des sous items, il faut créer un watcher sur les sous ressources (les types)
+
+## Create new API version
+
+```bash
+operator-sdk create api --group monitor --version v1 --kind CentreonService --resource
+operator-sdk create api --group monitor --version v1 --kind CentreonServiceGroup --resource
+operator-sdk create api --group monitor --version v1 --kind Template --resource
+operator-sdk create api --group monitor --version v1 --kind Platform --resource
+```
