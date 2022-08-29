@@ -7,6 +7,7 @@ import (
 	"github.com/disaster37/go-centreon-rest/v21/mocks"
 	"github.com/golang/mock/gomock"
 	"github.com/sirupsen/logrus"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
 )
 
@@ -53,4 +54,14 @@ func (t *CentreonHandlerTestSuite) AfterTest(suiteName, testName string) {
 func (t *CentreonHandlerTestSuite) TestSetLogger() {
 	log := logrus.NewEntry(logrus.New())
 	t.client.SetLogger(log)
+}
+
+func (t *CentreonHandlerTestSuite) TestNewCentreonHandler() {
+	log := logrus.NewEntry(logrus.New())
+	client := &centreon.Client{}
+	ch := NewCentreonHandler(client, log)
+
+	assert.Equal(t.T(), client, ch.(*CentreonHandlerImpl).client)
+	assert.Equal(t.T(), log, ch.(*CentreonHandlerImpl).log)
+
 }

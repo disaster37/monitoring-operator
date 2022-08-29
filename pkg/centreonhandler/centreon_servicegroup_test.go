@@ -1,6 +1,8 @@
 package centreonhandler
 
 import (
+	"testing"
+
 	"github.com/disaster37/go-centreon-rest/v21/models"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
@@ -30,6 +32,30 @@ func (t *CentreonHandlerTestSuite) TestCreateServiceGroup() {
 
 	err := t.client.CreateServiceGroup(toCreate)
 	assert.NoError(t.T(), err)
+
+
+	// When use bad parameterr
+	err = t.client.CreateServiceGroup(nil)
+	assert.Error(t.T(), err)
+
+	// When no name
+	toCreate = &CentreonServiceGroup{
+		Description: "my sg",
+		Activated:   "1",
+		Comment:     "some comments",
+	}
+	err = t.client.CreateServiceGroup(toCreate)
+	assert.Error(t.T(), err)
+
+	// When no description
+	toCreate = &CentreonServiceGroup{
+		Name: "sg1",
+		Activated:   "1",
+		Comment:     "some comments",
+	}
+	err = t.client.CreateServiceGroup(toCreate)
+	assert.Error(t.T(), err)
+
 }
 
 func (t *CentreonHandlerTestSuite) TestUpdateServiceGroup() {
@@ -56,6 +82,34 @@ func (t *CentreonHandlerTestSuite) TestUpdateServiceGroup() {
 
 	err := t.client.UpdateServiceGroup(toUpdate)
 	assert.NoError(t.T(), err)
+
+	// When no diff
+	toUpdate = &CentreonServiceGroupDiff{
+		IsDiff: false,
+		Name:   "sg1",
+		ParamsToSet: map[string]string{
+			"param1": "value1",
+			"param2": "value2",
+			"name":   "sg2",
+		},
+	}
+	err = t.client.UpdateServiceGroup(toUpdate)
+	assert.NoError(t.T(), err)
+
+	// When bad parameters
+	err = t.client.UpdateServiceGroup(nil)
+	assert.Error(t.T(), err)
+
+	toUpdate = &CentreonServiceGroupDiff{
+		IsDiff: true,
+		ParamsToSet: map[string]string{
+			"param1": "value1",
+			"param2": "value2",
+			"name":   "sg2",
+		},
+	}
+	err = t.client.UpdateServiceGroup(nil)
+	assert.Error(t.T(), err)
 
 }
 
@@ -97,6 +151,19 @@ func (t *CentreonHandlerTestSuite) TestGetServiceGroup() {
 	serviceGroup, err := t.client.GetServiceGroup("sg1")
 	assert.NoError(t.T(), err)
 	assert.Equal(t.T(), expected, serviceGroup)
+
+	// When not found
+	t.mockServiceGroup.EXPECT().
+		Get(gomock.Eq("sg1")).
+		Return(nil, nil)
+	serviceGroup, err = t.client.GetServiceGroup("sg1")
+	assert.NoError(t.T(), err)
+	assert.Nil(t.T(), serviceGroup)
+
+	// When bad parameters
+	_, err = t.client.GetServiceGroup("")
+	assert.Error(t.T(), err)
+
 
 }
 
@@ -168,6 +235,28 @@ func (t *CentreonHandlerTestSuite) TestDiffServiceGroup() {
 			},
 		},
 		{
+			Name: "Need update name",
+			ActualService: &CentreonServiceGroup{
+				Name:        "sg1",
+				Activated:   "0",
+				Comment:     "comment",
+				Description: "my sg",
+			},
+			ExpectedService: &CentreonServiceGroup{
+				Name:        "sg2",
+				Activated:   "0",
+				Comment:     "comment",
+				Description: "my sg",
+			},
+			ExpectedDiff: &CentreonServiceGroupDiff{
+				IsDiff: true,
+				Name:   "sg1",
+				ParamsToSet: map[string]string{
+					"name":    "sg2",
+				},
+			},
+		},
+		{
 			Name: "Need update all properties but all fields ignored",
 			ActualService: &CentreonServiceGroup{
 				Name:        "sg1",
@@ -200,4 +289,28 @@ func (t *CentreonHandlerTestSuite) TestDiffServiceGroup() {
 		assert.NoErrorf(t.T(), err, test.Name)
 		assert.Equalf(t.T(), test.ExpectedDiff, diff, test.Name)
 	}
+}
+
+
+func TestCentreonServiceGroupToString(t *testing.T) {
+	sg := &CentreonServiceGroup{
+		Name: "sg1",
+		Description: "desc",
+		Activated: "1",
+		Comment: "foo",
+	}
+
+	assert.NotEmpty(t, sg.String())
+}
+
+func TestCentreonServiceGroupDiffToString(t *testing.T) {
+	sg := &CentreonServiceGroupDiff{
+		Name: "sg1",
+		IsDiff: true,
+		ParamsToSet: map[string]string{
+			"param1": "val1",
+		},
+	}
+
+	assert.NotEmpty(t, sg.String())
 }

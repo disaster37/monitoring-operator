@@ -1,6 +1,8 @@
 package centreonhandler
 
 import (
+	"testing"
+
 	"github.com/disaster37/go-centreon-rest/v21/models"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
@@ -82,6 +84,50 @@ func (t *CentreonHandlerTestSuite) TestCreateService() {
 
 	err := t.client.CreateService(toCreate)
 	assert.NoError(t.T(), err)
+
+	// When bad parameters
+	err = t.client.CreateService(nil)
+	assert.Error(t.T(), err)
+
+	toCreate = &CentreonService{
+		Host:                "central",
+		Template:            "my-template",
+		CheckCommand:        "ping",
+		CheckCommandArgs:    "!arg1",
+		Groups:              []string{"sg1"},
+		Categories:          []string{"cat1"},
+		Macros:              []*models.Macro{macro1},
+		Activated:           "1",
+		PassiveCheckEnabled: "2",
+		ActiveCheckEnabled:  "2",
+		Comment:             "some comments",
+		NormalCheckInterval: "30s",
+		RetryCheckInterval:  "1s",
+		MaxCheckAttempts:    "3",
+	}
+	err = t.client.CreateService(nil)
+	assert.Error(t.T(), err)
+
+	toCreate = &CentreonService{
+		Name: "ping",
+		Template:            "my-template",
+		CheckCommand:        "ping",
+		CheckCommandArgs:    "!arg1",
+		Groups:              []string{"sg1"},
+		Categories:          []string{"cat1"},
+		Macros:              []*models.Macro{macro1},
+		Activated:           "1",
+		PassiveCheckEnabled: "2",
+		ActiveCheckEnabled:  "2",
+		Comment:             "some comments",
+		NormalCheckInterval: "30s",
+		RetryCheckInterval:  "1s",
+		MaxCheckAttempts:    "3",
+	}
+	err = t.client.CreateService(nil)
+	assert.Error(t.T(), err)
+
+
 }
 
 func (t *CentreonHandlerTestSuite) TestUpdateService() {
@@ -156,6 +202,68 @@ func (t *CentreonHandlerTestSuite) TestUpdateService() {
 	err := t.client.UpdateService(toUpdate)
 	assert.NoError(t.T(), err)
 
+	// When no diff
+	toUpdate = &CentreonServiceDiff{
+		IsDiff:             false,
+		Name:               "ping",
+		Host:               "central",
+		GroupsToSet:        []string{"sg2"},
+		GroupsToDelete:     []string{"sg1"},
+		CategoriesToSet:    []string{"cat2"},
+		CategoriesToDelete: []string{"cat1"},
+		MacrosToSet:        []*models.Macro{macro2},
+		MacrosToDelete:     []*models.Macro{macro1},
+		ParamsToSet: map[string]string{
+			"param1":      "value1",
+			"param2":      "value2",
+			"description": "ping2",
+		},
+		HostToSet: "central2",
+	}
+	err = t.client.UpdateService(toUpdate)
+	assert.NoError(t.T(), err)
+
+	// When diff is bad
+	err = t.client.UpdateService(nil)
+	assert.Error(t.T(), err)
+
+	toUpdate = &CentreonServiceDiff{
+		IsDiff:             false,
+		Host:               "central",
+		GroupsToSet:        []string{"sg2"},
+		GroupsToDelete:     []string{"sg1"},
+		CategoriesToSet:    []string{"cat2"},
+		CategoriesToDelete: []string{"cat1"},
+		MacrosToSet:        []*models.Macro{macro2},
+		MacrosToDelete:     []*models.Macro{macro1},
+		ParamsToSet: map[string]string{
+			"param1":      "value1",
+			"param2":      "value2",
+			"description": "ping2",
+		},
+		HostToSet: "central2",
+	}
+	err = t.client.UpdateService(toUpdate)
+	assert.Error(t.T(), err)
+
+	toUpdate = &CentreonServiceDiff{
+		IsDiff:             false,
+		Name: "ping",
+		GroupsToSet:        []string{"sg2"},
+		GroupsToDelete:     []string{"sg1"},
+		CategoriesToSet:    []string{"cat2"},
+		CategoriesToDelete: []string{"cat1"},
+		MacrosToSet:        []*models.Macro{macro2},
+		MacrosToDelete:     []*models.Macro{macro1},
+		ParamsToSet: map[string]string{
+			"param1":      "value1",
+			"param2":      "value2",
+			"description": "ping2",
+		},
+		HostToSet: "central2",
+	}
+	err = t.client.UpdateService(toUpdate)
+	assert.Error(t.T(), err)
 }
 
 func (t *CentreonHandlerTestSuite) TestDeleteService() {
@@ -237,6 +345,21 @@ func (t *CentreonHandlerTestSuite) TestGetService() {
 	service, err := t.client.GetService("central", "ping")
 	assert.NoError(t.T(), err)
 	assert.Equal(t.T(), expected, service)
+
+	// When not found
+	t.mockService.EXPECT().
+		Get(gomock.Eq("central"), gomock.Eq("ping")).
+		Return(nil, nil)
+	service, err = t.client.GetService("central", "ping")
+	assert.NoError(t.T(), err)
+	assert.Nil(t.T(), service)
+
+	// When bad parameters
+	_, err = t.client.GetService("", "ping")
+	assert.Error(t.T(), err)
+
+	_, err = t.client.GetService("central", "")
+	assert.Error(t.T(), err)
 
 }
 
@@ -565,6 +688,72 @@ func (t *CentreonHandlerTestSuite) TestDiffService() {
 				MacrosToDelete:     make([]*models.Macro, 0),
 			},
 		},
+		{
+			Name: "Rename service and host",
+			ActualService: &CentreonService{
+				Host:                "central",
+				Name:                "ping",
+				Activated:           "1",
+				Template:            "template2",
+				CheckCommand:        "ping2",
+				NormalCheckInterval: "31s",
+				RetryCheckInterval:  "2s",
+				MaxCheckAttempts:    "6",
+				ActiveCheckEnabled:  "1",
+				PassiveCheckEnabled: "1",
+				CheckCommandArgs:    "!arg2",
+				Comment:             "comment2",
+				Groups:              []string{"sg2"},
+				Categories:          []string{"cat2"},
+				Macros: []*models.Macro{
+					{
+						Name:       "macro2",
+						Value:      "value2",
+						Source:     "direct",
+						IsPassword: "0",
+					},
+				},
+			},
+			ExpectedService: &CentreonService{
+				Host:                "central2",
+				Name:                "ping2",
+				Activated:           "1",
+				Template:            "template2",
+				CheckCommand:        "ping2",
+				NormalCheckInterval: "31s",
+				RetryCheckInterval:  "2s",
+				MaxCheckAttempts:    "6",
+				ActiveCheckEnabled:  "1",
+				PassiveCheckEnabled: "1",
+				CheckCommandArgs:    "!arg2",
+				Comment:             "comment2",
+				Groups:              []string{"sg2"},
+				Categories:          []string{"cat2"},
+				Macros: []*models.Macro{
+					{
+						Name:       "macro2",
+						Value:      "value2",
+						Source:     "direct",
+						IsPassword: "0",
+					},
+				},
+			},
+			ExpectedDiff: &CentreonServiceDiff{
+				IsDiff:             true,
+				Host:               "central",
+				Name:               "ping",
+				HostToSet: "central2",
+				ParamsToSet:        map[string]string{
+					"description": "ping2", 
+				},
+				GroupsToSet:        make([]string, 0),
+				GroupsToDelete:     make([]string, 0),
+				CategoriesToSet:    make([]string, 0),
+				CategoriesToDelete: make([]string, 0),
+				MacrosToSet:        make([]*models.Macro, 0),
+				MacrosToDelete:     make([]*models.Macro, 0),
+			},
+		},
 	}
 
 	for _, test := range tests {
@@ -572,4 +761,63 @@ func (t *CentreonHandlerTestSuite) TestDiffService() {
 		assert.NoErrorf(t.T(), err, test.Name)
 		assert.Equalf(t.T(), test.ExpectedDiff, diff, test.Name)
 	}
+}
+
+
+func TestCentreonServiceToString(t *testing.T) {
+	s:= &CentreonService{
+		Host:                "host1",
+		Name:                "s1",
+		CheckCommand:        "check",
+		CheckCommandArgs:    "!arg1",
+		NormalCheckInterval: "1s",
+		RetryCheckInterval:  "2s",
+		MaxCheckAttempts:    "3s",
+		ActiveCheckEnabled:  "2",
+		PassiveCheckEnabled: "2",
+		Template:            "template1",
+		Groups:              []string{"group1"},
+		Categories:          []string{"cat1"},
+		Macros: []*models.Macro{
+			{
+				Name:       "MAC1",
+				Value:      "value1",
+				IsPassword: "0",
+			},
+		},
+		Activated: "1",
+		Comment:   "Managed by monitoring-operator",
+	}
+
+	assert.NotEmpty(t, s.String())
+}
+
+func TestCentreonServiceDiffToString(t *testing.T) {
+	s:= &CentreonServiceDiff{
+		Host:                "host1",
+		Name:                "s1",
+		IsDiff: true,
+		GroupsToSet: []string{"group1"},
+		GroupsToDelete: []string{"group2"},
+		CategoriesToSet: []string{"cat1"},
+		CategoriesToDelete: []string{"cat2"},
+		MacrosToSet: []*models.Macro{
+			{
+				Name: "MAC1",
+				Value: "val1",
+			},
+		},
+		MacrosToDelete: []*models.Macro{
+			{
+				Name: "MAC2",
+				Value: "val2",
+			},
+		},
+		ParamsToSet: map[string]string{
+			"param1": "val1",
+		},
+		HostToSet: "foo",
+	}
+
+	assert.NotEmpty(t, s.String())
 }
