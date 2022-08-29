@@ -286,7 +286,7 @@ func TestGeneratePlaceholdersNode(t *testing.T) {
 	)
 
 	// When node is nil
-	ph = generatePlaceholdersNamespace(nil)
+	ph = generatePlaceholdersNode(nil)
 	assert.Empty(t, ph)
 
 	// When all properties

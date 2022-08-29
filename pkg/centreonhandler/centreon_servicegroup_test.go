@@ -33,7 +33,6 @@ func (t *CentreonHandlerTestSuite) TestCreateServiceGroup() {
 	err := t.client.CreateServiceGroup(toCreate)
 	assert.NoError(t.T(), err)
 
-
 	// When use bad parameterr
 	err = t.client.CreateServiceGroup(nil)
 	assert.Error(t.T(), err)
@@ -49,9 +48,9 @@ func (t *CentreonHandlerTestSuite) TestCreateServiceGroup() {
 
 	// When no description
 	toCreate = &CentreonServiceGroup{
-		Name: "sg1",
-		Activated:   "1",
-		Comment:     "some comments",
+		Name:      "sg1",
+		Activated: "1",
+		Comment:   "some comments",
 	}
 	err = t.client.CreateServiceGroup(toCreate)
 	assert.Error(t.T(), err)
@@ -108,7 +107,7 @@ func (t *CentreonHandlerTestSuite) TestUpdateServiceGroup() {
 			"name":   "sg2",
 		},
 	}
-	err = t.client.UpdateServiceGroup(nil)
+	err = t.client.UpdateServiceGroup(toUpdate)
 	assert.Error(t.T(), err)
 
 }
@@ -163,7 +162,6 @@ func (t *CentreonHandlerTestSuite) TestGetServiceGroup() {
 	// When bad parameters
 	_, err = t.client.GetServiceGroup("")
 	assert.Error(t.T(), err)
-
 
 }
 
@@ -252,7 +250,7 @@ func (t *CentreonHandlerTestSuite) TestDiffServiceGroup() {
 				IsDiff: true,
 				Name:   "sg1",
 				ParamsToSet: map[string]string{
-					"name":    "sg2",
+					"name": "sg2",
 				},
 			},
 		},
@@ -291,13 +289,12 @@ func (t *CentreonHandlerTestSuite) TestDiffServiceGroup() {
 	}
 }
 
-
 func TestCentreonServiceGroupToString(t *testing.T) {
 	sg := &CentreonServiceGroup{
-		Name: "sg1",
+		Name:        "sg1",
 		Description: "desc",
-		Activated: "1",
-		Comment: "foo",
+		Activated:   "1",
+		Comment:     "foo",
 	}
 
 	assert.NotEmpty(t, sg.String())
@@ -305,7 +302,7 @@ func TestCentreonServiceGroupToString(t *testing.T) {
 
 func TestCentreonServiceGroupDiffToString(t *testing.T) {
 	sg := &CentreonServiceGroupDiff{
-		Name: "sg1",
+		Name:   "sg1",
 		IsDiff: true,
 		ParamsToSet: map[string]string{
 			"param1": "val1",

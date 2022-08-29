@@ -105,11 +105,11 @@ func (t *CentreonHandlerTestSuite) TestCreateService() {
 		RetryCheckInterval:  "1s",
 		MaxCheckAttempts:    "3",
 	}
-	err = t.client.CreateService(nil)
+	err = t.client.CreateService(toCreate)
 	assert.Error(t.T(), err)
 
 	toCreate = &CentreonService{
-		Name: "ping",
+		Name:                "ping",
 		Template:            "my-template",
 		CheckCommand:        "ping",
 		CheckCommandArgs:    "!arg1",
@@ -124,9 +124,8 @@ func (t *CentreonHandlerTestSuite) TestCreateService() {
 		RetryCheckInterval:  "1s",
 		MaxCheckAttempts:    "3",
 	}
-	err = t.client.CreateService(nil)
+	err = t.client.CreateService(toCreate)
 	assert.Error(t.T(), err)
-
 
 }
 
@@ -248,7 +247,7 @@ func (t *CentreonHandlerTestSuite) TestUpdateService() {
 
 	toUpdate = &CentreonServiceDiff{
 		IsDiff:             false,
-		Name: "ping",
+		Name:               "ping",
 		GroupsToSet:        []string{"sg2"},
 		GroupsToDelete:     []string{"sg1"},
 		CategoriesToSet:    []string{"cat2"},
@@ -739,12 +738,12 @@ func (t *CentreonHandlerTestSuite) TestDiffService() {
 				},
 			},
 			ExpectedDiff: &CentreonServiceDiff{
-				IsDiff:             true,
-				Host:               "central",
-				Name:               "ping",
+				IsDiff:    true,
+				Host:      "central",
+				Name:      "ping",
 				HostToSet: "central2",
-				ParamsToSet:        map[string]string{
-					"description": "ping2", 
+				ParamsToSet: map[string]string{
+					"description": "ping2",
 				},
 				GroupsToSet:        make([]string, 0),
 				GroupsToDelete:     make([]string, 0),
@@ -763,9 +762,8 @@ func (t *CentreonHandlerTestSuite) TestDiffService() {
 	}
 }
 
-
 func TestCentreonServiceToString(t *testing.T) {
-	s:= &CentreonService{
+	s := &CentreonService{
 		Host:                "host1",
 		Name:                "s1",
 		CheckCommand:        "check",
@@ -793,23 +791,23 @@ func TestCentreonServiceToString(t *testing.T) {
 }
 
 func TestCentreonServiceDiffToString(t *testing.T) {
-	s:= &CentreonServiceDiff{
-		Host:                "host1",
-		Name:                "s1",
-		IsDiff: true,
-		GroupsToSet: []string{"group1"},
-		GroupsToDelete: []string{"group2"},
-		CategoriesToSet: []string{"cat1"},
+	s := &CentreonServiceDiff{
+		Host:               "host1",
+		Name:               "s1",
+		IsDiff:             true,
+		GroupsToSet:        []string{"group1"},
+		GroupsToDelete:     []string{"group2"},
+		CategoriesToSet:    []string{"cat1"},
 		CategoriesToDelete: []string{"cat2"},
 		MacrosToSet: []*models.Macro{
 			{
-				Name: "MAC1",
+				Name:  "MAC1",
 				Value: "val1",
 			},
 		},
 		MacrosToDelete: []*models.Macro{
 			{
-				Name: "MAC2",
+				Name:  "MAC2",
 				Value: "val2",
 			},
 		},
