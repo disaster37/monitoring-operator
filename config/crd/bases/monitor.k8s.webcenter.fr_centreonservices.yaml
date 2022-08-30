@@ -14,11 +14,28 @@ spec:
     listKind: CentreonServiceList
     plural: centreonservices
     shortNames:
-    - cs
+    - mcs
     singular: centreonservice
   scope: Namespaced
   versions:
-  - name: v1
+  - additionalPrinterColumns:
+    - description: Resource state on Centreon
+      jsonPath: .status.conditions[0].status
+      name: Healthy
+      type: string
+    - jsonPath: .spec.host
+      name: Host
+      type: string
+    - jsonPath: .spec.name
+      name: Service
+      type: string
+    - jsonPath: .spec.platformRef
+      name: Platform
+      type: string
+    - jsonPath: .metadata.creationTimestamp
+      name: Age
+      type: date
+    name: v1
     schema:
       openAPIV3Schema:
         description: CentreonService is the Schema for the centreonservices API

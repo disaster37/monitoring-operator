@@ -74,6 +74,10 @@ type PlatformStatus struct {
 
 // Platform is the Schema for the platforms API
 // +operator-sdk:csv:customresourcedefinitions:resources={{Secret,v1,monitoring-credentials}}
+// +kubebuilder:printcolumn:name="Healthy",type="string",JSONPath=".status.conditions[0].status",description="Resource state on Centreon"
+// +kubebuilder:printcolumn:name="Default",type="boolean",JSONPath=".spec.isDefault"
+// +kubebuilder:printcolumn:name="Type",type="string",JSONPath=".spec.type"
+// +kubebuilder:printcolumn:name="Age",type="date",JSONPath=".metadata.creationTimestamp"
 type Platform struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`

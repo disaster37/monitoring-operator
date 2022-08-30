@@ -14,11 +14,25 @@ spec:
     listKind: CentreonServiceGroupList
     plural: centreonservicegroups
     shortNames:
-    - csg
+    - mcsg
     singular: centreonservicegroup
   scope: Namespaced
   versions:
-  - name: v1
+  - additionalPrinterColumns:
+    - description: Resource state on Centreon
+      jsonPath: .status.conditions[0].status
+      name: Healthy
+      type: string
+    - jsonPath: .spec.name
+      name: ServiceGroup
+      type: string
+    - jsonPath: .spec.platformRef
+      name: Platform
+      type: string
+    - jsonPath: .metadata.creationTimestamp
+      name: Age
+      type: date
+    name: v1
     schema:
       openAPIV3Schema:
         description: CentreonServiceGroup is the Schema for the centreonservicegroups

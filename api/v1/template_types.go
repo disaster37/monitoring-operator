@@ -60,7 +60,9 @@ type TemplateStatus struct {
 
 // Template is the Schema for the templates API
 // +operator-sdk:csv:customresourcedefinitions:resources={{CentreonService,v1,centreonService},{CentreonServiceGroup,v1,centreonServiceGroup}}
-// +kubebuilder:resource:shortName=tmpl
+// +kubebuilder:resource:shortName=mtmpl
+// +kubebuilder:printcolumn:name="Type",type="string",JSONPath=".spec.type"
+// +kubebuilder:printcolumn:name="Age",type="date",JSONPath=".metadata.creationTimestamp"
 type Template struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`

@@ -16,7 +16,21 @@ spec:
     singular: platform
   scope: Namespaced
   versions:
-  - name: v1
+  - additionalPrinterColumns:
+    - description: Resource state on Centreon
+      jsonPath: .status.conditions[0].status
+      name: Healthy
+      type: string
+    - jsonPath: .spec.isDefault
+      name: Default
+      type: boolean
+    - jsonPath: .spec.type
+      name: Type
+      type: string
+    - jsonPath: .metadata.creationTimestamp
+      name: Age
+      type: date
+    name: v1
     schema:
       openAPIV3Schema:
         description: Platform is the Schema for the platforms API

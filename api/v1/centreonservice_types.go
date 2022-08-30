@@ -138,7 +138,12 @@ type CentreonServiceStatus struct {
 
 // CentreonService is the Schema for the centreonservices API
 // +operator-sdk:csv:customresourcedefinitions:resources={{None,None,None}}
-// +kubebuilder:resource:shortName=cs
+// +kubebuilder:resource:shortName=mcs
+// +kubebuilder:printcolumn:name="Healthy",type="string",JSONPath=".status.conditions[0].status",description="Resource state on Centreon"
+// +kubebuilder:printcolumn:name="Host",type="string",JSONPath=".spec.host"
+// +kubebuilder:printcolumn:name="Service",type="string",JSONPath=".spec.name"
+// +kubebuilder:printcolumn:name="Platform",type="string",JSONPath=".spec.platformRef"
+// +kubebuilder:printcolumn:name="Age",type="date",JSONPath=".metadata.creationTimestamp"
 type CentreonService struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
