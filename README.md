@@ -21,16 +21,16 @@ It actually only support Centreon as monitoring plateform.
 ## Deploy operator with OLM
 
 The right way to deploy operator base on operatot-sdk is to use OLM.
-You can use the catalog image `webcenter/monitoring-operator-catalog:v1.0.0`
+You can use the catalog image `webcenter/monitoring-operator-catalog:v1.0.1`
 
 For test purpose, you can use operator-sdk to run bundle
 ```bash
-operator-sdk run bundle docker.io/webcenter/monitoring-operator-bundle:v1.0.0
+operator-sdk run bundle docker.io/webcenter/monitoring-operator-bundle:v1.0.1
 ```
 
 Or upgrade already deployed catalogue
 ```bash
-operator-sdk run bundle-upgrade docker.io/webcenter/monitoring-operator-bundle:v1.0.0
+operator-sdk run bundle-upgrade docker.io/webcenter/monitoring-operator-bundle:v1.0.1
 ```
 
 ## Use it
@@ -68,7 +68,8 @@ data:
   username: bzQwcFdINy4zNnhs
   password: Y3MuY2xhcGk=
 kind: Secret
-``` 
+```
+
 
 ### CentreonService
 
@@ -161,6 +162,9 @@ When resource is created, you can get the following status:
   - **serviceName**: the service name on Centreon
   - **conditions**: You can look the condition called `UpdateCentreonService` to know if Centreon service is update to date
 
+
+> You can use short name `kubectl get mcs` when you should to get CentreonService resources.
+
 ### CentreonServiceGroup
 
 This custom resource permit to handle service group on Centreon.
@@ -198,6 +202,8 @@ spec:
 When resource is created, you can get the following status:
   - **serviceGroupName**: the service group name on Centreon
   - **conditions**: You can look the condition called `UpdateCentreonServiceGroup` to know if Centreon service group is update to date
+
+  > You can use short name `kubectl get mcsg` when you should to get CentreonServiceGroup resources.
 
 
 ### Policy concept
@@ -277,6 +283,8 @@ spec:
 ```
 
 The operator will create new resource `check-ingress-ingress-sample` of type `CentreonService`
+
+> You can use short name `kubectl get mtmpl` when you should to get Template resources.
 
 #### Placeholders for resource name
 

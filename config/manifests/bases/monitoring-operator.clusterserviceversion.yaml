@@ -5,13 +5,13 @@ metadata:
     alm-examples: '[]'
     capabilities: Basic Install
     categories: Monitoring
-    containerImage: webcenter/monitoring-operator:v1.0.0
+    containerImage: webcenter/monitoring-operator:v1.0.1
     createdAt: "2022-05-19T00:00:00Z"
     description: A Kubernetes operator based on the Operator SDK for creating and
       managing monitoring resources on Centreon
     repository: https://github.com/disaster37/monitoring-operator
     support: None
-  name: monitoring-operator.v1.0.0
+  name: monitoring-operator.v1.0.1
   namespace: placeholder
 spec:
   apiservicedefinitions: {}
@@ -455,4 +455,4 @@ spec:
   provider:
     name: webcenter.fr
     url: https://github.com/disaster37/monitoring-operator
-  version: 1.0.0
+  version: 1.0.1

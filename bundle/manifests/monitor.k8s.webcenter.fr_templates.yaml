@@ -11,10 +11,19 @@ spec:
     kind: Template
     listKind: TemplateList
     plural: templates
+    shortNames:
+    - mtmpl
     singular: template
   scope: Namespaced
   versions:
-  - name: v1
+  - additionalPrinterColumns:
+    - jsonPath: .spec.type
+      name: Type
+      type: string
+    - jsonPath: .metadata.creationTimestamp
+      name: Age
+      type: date
+    name: v1
     schema:
       openAPIV3Schema:
         description: Template is the Schema for the templates API
