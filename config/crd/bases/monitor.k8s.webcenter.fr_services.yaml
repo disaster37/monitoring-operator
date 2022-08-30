@@ -6,22 +6,23 @@ metadata:
   annotations:
     controller-gen.kubebuilder.io/version: v0.7.0
   creationTimestamp: null
-  name: centreonservices.monitor.k8s.webcenter.fr
+  name: services.monitor.k8s.webcenter.fr
 spec:
   group: monitor.k8s.webcenter.fr
   names:
-    kind: CentreonService
-    listKind: CentreonServiceList
-    plural: centreonservices
+    kind: CentreonServiceGroup
+    listKind: CentreonServiceGroupList
+    plural: services
     shortNames:
-    - cs
-    singular: centreonservice
+    - csg
+    singular: centreonservicegroup
   scope: Namespaced
   versions:
   - name: v1
     schema:
       openAPIV3Schema:
-        description: CentreonService is the Schema for the centreonservices API
+        description: CentreonServiceGroup is the Schema for the centreonservicegroups
+          API
         properties:
           apiVersion:
             description: 'APIVersion defines the versioned schema of this representation
@@ -36,54 +37,19 @@ spec:
           metadata:
             type: object
           spec:
-            description: CentreonServiceSpec defines the desired state of CentreonService
+            description: CentreonServiceGroupSpec defines the desired state of CentreonServiceGroup
             properties:
               activate:
                 description: Activate or disable service
                 type: boolean
-              activeChecksEnabled:
-                description: The active check enable
-                type: boolean
-              arguments:
-                description: The list of arguments
-                items:
-                  type: string
-                type: array
-              categories:
-                description: The list of categories
-                items:
-                  type: string
-                type: array
-              checkCommand:
-                description: The check command
-                type: string
-              groups:
-                description: The list of service groups
-                items:
-                  type: string
-                type: array
-              host:
-                description: The host to attach the service
-                type: string
-              macros:
-                additionalProperties:
-                  type: string
-                description: The map of macros
-                type: object
-              maxCheckAttempts:
-                description: The max check attemps
+              description:
+                description: The serviceGroup description
                 type: string
               name:
-                description: The service name
+                description: The serviceGroup name
                 type: string
-              normalCheckInterval:
-                description: The normal check interval
-                type: string
-              passiveChecksEnabled:
-                description: The passive check enable
-                type: boolean
               platformRef:
-                description: PlatformRef is the target platform where to create service
+                description: PlatformRef is the target platform where to create serviceGroup
                 type: string
               policy:
                 description: Policy define the policy that controller need to respect
@@ -108,18 +74,12 @@ spec:
                       on remote provider
                     type: boolean
                 type: object
-              retryCheckInterval:
-                description: The retry check interval
-                type: string
-              template:
-                description: The service templates
-                type: string
             required:
-            - host
             - name
             type: object
           status:
-            description: CentreonServiceStatus defines the observed state of CentreonService
+            description: CentreonServiceGroupStatus defines the observed state of
+              CentreonServiceGroup
             properties:
               conditions:
                 description: List of conditions
@@ -191,11 +151,8 @@ spec:
                   - type
                   type: object
                 type: array
-              host:
-                description: The host affected to service on Centreon
-                type: string
-              serviceName:
-                description: The service name
+              serviceGroupName:
+                description: The service group name
                 type: string
             required:
             - conditions
@@ -208,7 +165,8 @@ spec:
   - name: v1alpha1
     schema:
       openAPIV3Schema:
-        description: CentreonService is the Schema for the centreonservices API
+        description: CentreonServiceGroup is the Schema for the centreonservicegroups
+          API
         properties:
           apiVersion:
             description: 'APIVersion defines the versioned schema of this representation
@@ -223,54 +181,19 @@ spec:
           metadata:
             type: object
           spec:
-            description: CentreonServiceSpec defines the desired state of CentreonService
+            description: CentreonServiceGroupSpec defines the desired state of CentreonServiceGroup
             properties:
               activate:
                 description: Activate or disable service
                 type: boolean
-              activeChecksEnabled:
-                description: The active check enable
-                type: boolean
-              arguments:
-                description: The list of arguments
-                items:
-                  type: string
-                type: array
-              categories:
-                description: The list of categories
-                items:
-                  type: string
-                type: array
-              checkCommand:
-                description: The check command
-                type: string
-              groups:
-                description: The list of service groups
-                items:
-                  type: string
-                type: array
-              host:
-                description: The host to attach the service
-                type: string
-              macros:
-                additionalProperties:
-                  type: string
-                description: The map of macros
-                type: object
-              maxCheckAttempts:
-                description: The max check attemps
+              description:
+                description: The serviceGroup description
                 type: string
               name:
-                description: The service name
+                description: The serviceGroup name
                 type: string
-              normalCheckInterval:
-                description: The normal check interval
-                type: string
-              passiveChecksEnabled:
-                description: The passive check enable
-                type: boolean
               platformRef:
-                description: PlatformRef is the target platform where to create service
+                description: PlatformRef is the target platform where to create serviceGroup
                 type: string
               policy:
                 description: Policy define the policy that controller need to respect
@@ -295,18 +218,12 @@ spec:
                       on remote provider
                     type: boolean
                 type: object
-              retryCheckInterval:
-                description: The retry check interval
-                type: string
-              template:
-                description: The service templates
-                type: string
             required:
-            - host
             - name
             type: object
           status:
-            description: CentreonServiceStatus defines the observed state of CentreonService
+            description: CentreonServiceGroupStatus defines the observed state of
+              CentreonServiceGroup
             properties:
               conditions:
                 description: List of conditions
@@ -378,11 +295,8 @@ spec:
                   - type
                   type: object
                 type: array
-              host:
-                description: The host affected to service on Centreon
-                type: string
-              serviceName:
-                description: The service name
+              serviceGroupName:
+                description: The service group name
                 type: string
             required:
             - conditions

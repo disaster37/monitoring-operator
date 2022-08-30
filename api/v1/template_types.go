@@ -60,6 +60,7 @@ type TemplateStatus struct {
 
 // Template is the Schema for the templates API
 // +operator-sdk:csv:customresourcedefinitions:resources={{CentreonService,v1,centreonService},{CentreonServiceGroup,v1,centreonServiceGroup}}
+// +kubebuilder:resource:shortName=tmpl
 type Template struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`

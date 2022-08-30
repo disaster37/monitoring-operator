@@ -138,6 +138,7 @@ type CentreonServiceStatus struct {
 
 // CentreonService is the Schema for the centreonservices API
 // +operator-sdk:csv:customresourcedefinitions:resources={{None,None,None}}
+// +kubebuilder:resource:shortName=cs
 type CentreonService struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
