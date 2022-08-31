@@ -16,16 +16,21 @@ It actually only support Centreon as monitoring plateform.
 - Auto create resources from `Route` (Openshift) with template concept
 - Auto create resources from `Namespace` with template concept
 - Auto create resources from `Node` with template concept
-- Auto create resources from `Certificate` with template concept
+- Auto create resources from `Secret (TLS certificate only)` with template concept
 
 ## Deploy operator with OLM
 
 The right way to deploy operator base on operatot-sdk is to use OLM.
-You can use the catalog image `webcenter/monitoring-operator-catalog:v0.0.1`
+You can use the catalog image `webcenter/monitoring-operator-catalog:v1.0.1`
 
 For test purpose, you can use operator-sdk to run bundle
 ```bash
-operator-sdk run bundle docker.io/webcenter/monitoring-operator-bundle:v0.0.1
+operator-sdk run bundle docker.io/webcenter/monitoring-operator-bundle:v1.0.1
+```
+
+Or upgrade already deployed catalogue
+```bash
+operator-sdk run bundle-upgrade docker.io/webcenter/monitoring-operator-bundle:v1.0.1
 ```
 
 ## Use it
@@ -33,11 +38,11 @@ operator-sdk run bundle docker.io/webcenter/monitoring-operator-bundle:v0.0.1
 ### Platform
 
 The first way consist to declare a platform. A platform is a monitoring API endpoint. actually, we only support Centreon platform.
-So, you need to provide a resource of type platfrom on same operator namespace.
+So, you need to provide a resource of type platform on same operator namespace.
 
 ***platform.yaml***
 ```yaml
-apiVersion: monitor.k8s.webcenter.fr/v1alpha1
+apiVersion: monitor.k8s.webcenter.fr/v1
 kind: Platform
 metadata:
   name: default
@@ -63,7 +68,8 @@ data:
   username: bzQwcFdINy4zNnhs
   password: Y3MuY2xhcGk=
 kind: Secret
-``` 
+```
+
 
 ### CentreonService
 
@@ -71,7 +77,7 @@ This custom resource permit to handle service on Centreon.
 
 You can use this properties to set service:
 ```yaml
-apiVersion: monitor.k8s.webcenter.fr/v1alpha1
+apiVersion: monitor.k8s.webcenter.fr/v1
 kind: CentreonService
 metadata:
   name: monitor-workloads
@@ -156,13 +162,16 @@ When resource is created, you can get the following status:
   - **serviceName**: the service name on Centreon
   - **conditions**: You can look the condition called `UpdateCentreonService` to know if Centreon service is update to date
 
+
+> You can use short name `kubectl get mcs` when you should to get CentreonService resources.
+
 ### CentreonServiceGroup
 
 This custom resource permit to handle service group on Centreon.
 
 You can use this properties to set service group:
 ```yaml
-apiVersion: monitor.k8s.webcenter.fr/v1alpha1
+apiVersion: monitor.k8s.webcenter.fr/v1
 kind: CentreonServiceGroup
 metadata:
   name: web-servers
@@ -194,120 +203,255 @@ When resource is created, you can get the following status:
   - **serviceGroupName**: the service group name on Centreon
   - **conditions**: You can look the condition called `UpdateCentreonServiceGroup` to know if Centreon service group is update to date
 
+  > You can use short name `kubectl get mcsg` when you should to get CentreonServiceGroup resources.
+
 
 ### Policy concept
 
-@TODO
+The policy permit to handle how controller will reconcile resource.
+You can choose to disable the create, update or delete operation on target platform. Or ignore fields when compute diff to know if resource can be updated
+
+```yaml
+  policy:
+    noCreate: false # Set true to disable create operation on target platform
+    noUpdate: false # Set true to disable update operation on target platform
+    noDelete: false # Set true to disable delete operation on target platform
+    excludeFields:  # Set some fields to ignore them on diff operation
+      - activate
+```
 
 ### Template concept
 
-@TODO
+Template is a conceptual resource that permit to create real resource like CentreonService or CentreonServiceGroup from standard kubernetes resources. You need to create the template and them reference it with annotation on standard kubernetes resource.
 
-### Namespace
+> For `Namespace` and `Node` resource, the target resource is created on same operator namespace
 
-If you need create Centreon service when you create namespace (like monitoring check base on prometheus to check namespace quota, resource usage, etc.), you can add annotation `monitor.k8s.webcenter.fr/templates` with content of json array
-```json
-[
-  {
-    "namespace": "monitoring-operator",
-    "name": "check-namespace-quota"
-  },
-  {
-    "namespace": "monitoring-operator",
-    "name": "check-workloads-state"
-  }
-]
-```
+You can, for exemple, should create CentreonService when you create new Ingress ressource.
+
+To do that, first you create Template called `check-ingress`
 
 ```yaml
-apiVersion: v1
-kind: Namespace
+apiVersion: monitor.k8s.webcenter.fr/v1
+kind: Template
 metadata:
-  name: test
+  name: check-ingress
+  namespace: default
+spec:
+  type: "CentreonService"
+  name: "{{ .templateName }}-{{ .name }}"
+  template: |
+    {{ $rule := index .rules 0}}
+    {{ $path := index $rule.paths 0}
+    host: KUBERNETES
+    name: "check-url-{{ $path }}"
+    template: check-url
+    activate: true
+    macros:
+      SCHEME: "{{ $rule.scheme }}"
+      HOST: "{{ $rule.host }}"
+      PATH: "{{ $path }}"
+```
+
+> of course, you can use go templating to generate real resource from template with some placeholders
+
+Then, when you create your ingress, you need juste to add annotation `monitor.k8s.webcenter.fr/templates`
+
+```yaml
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
   annotations:
-    monitor.k8s.webcenter.fr/templates: '[{"namespace":"monitoring-operator","name":"check-namespace-quota"},{"namespace":"monitoring-operator","name":"check-workloads-state"}]'
-    monitoring-host: k8s-virtual-host
-
-
-```
-
-Then you need create associated template. The template is just the CentreonService spec with golang templating syntaxe (look placeholders available on templating).
-
-```yaml
-apiVersion: monitor.k8s.webcenter.fr/v1alpha1
-kind: CentreonService
-metadata:
-  name: check-namespace-quota
-  namespace: monitoring-operator
+    "monitor.k8s.webcenter.fr/templates": `[{"namespace":"default", "name": "check-ingress"}]`,
+  name: ingress-sample
+  namespace: default
 spec:
-  template: |
-    activate: true
-    host: {{ .annotations.monitoring-host }}
-    name: "check-namespace-quota_{{ .namespace }}"
-    template: TS_prometheus_quota
-    macros:
-      CHECKTYPE: quota
-      EXTRAOPTIONS: -sS
-      NAMESPACE: {{ .namespace }}
+  rules:
+  - host: sample.domain.com
+    http:
+      paths:
+      - backend:
+          service:
+            name: sample
+            port:
+              number: 8000
+        path: /
+        pathType: Prefix
+  tls:
+  - hosts:
+    - sample.domain.com
+    secretName: sample-tls
 ```
 
-```yaml
-apiVersion: monitor.k8s.webcenter.fr/v1alpha1
-kind: CentreonService
-metadata:
-  name: check-workloads-state
-  namespace: monitoring-operator
-spec:
-  template: |
-    activate: true
-    host: {{ .annotations.monitoring-host }}
-    name: "check-workloads-state_{{ .namespace }}"
-    template: TS_prometheus_workloads
-    macros:
-      CHECKTYPE: workloads
-      EXTRAOPTIONS: -sS
-      NAMESPACE: {{ .namespace }}
+The operator will create new resource `check-ingress-ingress-sample` of type `CentreonService`
+
+> You can use short name `kubectl get mtmpl` when you should to get Template resources.
+
+#### Placeholders for resource name
+
+Per default, if you not set `spec.name` on template, it will use the template name as resource name.
+
+You can use the following placeholders:
+- `{{ .templateName }}`: it's the template name used to generate the resource
+- all other placeholders available for each standard kubernetes resource
+
+#### Placeholders for Ingress
+
+You can use the followings placeholders:
+- **name**: the resource name (string)
+- **namespace**: the resource namespace (string)
+- **labels**: the resource labels (map of string)
+- **annotations**: the resource annotations (map of string)
+- **rules**: the ingress rules (array of rule)
+  - **rule**: the ingress rule (map)
+    - **host**: the host
+    - **sheme**: the scheme (http or https)
+    - **paths**: the list of path (array of string)
+
+You get a map like this:
+
+```go
+placholders := map[string]any{
+  "name":      "test",
+  "namespace": "default",
+  "labels": map[string]string{
+    "app": "appTest",
+    "env": "dev",
+  },
+  "annotations": map[string]string{
+    "anno1": "value1",
+    "anno2": "value2",
+  },
+  "rules": []map[string]any{
+    {
+      "host":   "front.local.local",
+      "scheme": "http",
+      "paths": []string{
+        "/",
+        "/api",
+      },
+    },
+    {
+      "host":   "back.local.local",
+      "scheme": "https",
+      "paths": []string{
+        "/",
+      },
+    },
+  },
+}
 ```
 
-Have fun, the two services was created on Centreon when namespace is created.
+#### Placeholders for Route
 
-### List of annotations for Ingress / Route
-**Global annotations:**
-  - monitor.k8s.webcenter.fr/discover : true to watch resource
+You can use the followings placeholders:
+- **name**: the resource name (string)
+- **namespace**: the resource namespace (string)
+- **labels**: the resource labels (map of string)
+- **annotations**: the resource annotations (map of string)
+- **rules**: the ingress rules (array of rule)
+  - **rule**: the ingress rule (map)
+    - **host**: the host
+    - **sheme**: the scheme (http or https)
+    - **paths**: the list of path (array of string)
 
-**Centreon annotations:**
-  - centreon.monitor.k8s.webcenter.fr/name: the service name on centreon
-  - centreon.monitor.k8s.webcenter.fr/template: the template name to affect on service on Centreon
-  - centreon.monitor.k8s.webcenter.fr/host: the host to link with the service on Centreon
-  - centreon.monitor.k8s.webcenter.fr/macros: the map of macros (as json form). It can placeolder value from tags
-  -  - centreon.monitor.k8s.webcenter.fr/check-command: the check command on Centreon
-  - centreon.monitor.k8s.webcenter.fr/arguments: the command arguments to set on service. Comma separated
-  - centreon.monitor.k8s.webcenter.fr/activated: activate or disable the service on Centreon (0 or 1)
-  - centreon.monitor.k8s.webcenter.fr/groups: The list of service groups linked with service on Centreon. Comma separated
-  - centreon.monitor.k8s.webcenter.fr/categories: The list of categories linked with service on Centreon. Comma separated
-  - centreon.monitor.k8s.webcenter.fr/normal-check-interval: 
-  - centreon.monitor.k8s.webcenter.fr/retry-check-interval:
-  - centreon.monitor.k8s.webcenter.fr/max-check-attempts:
-  - centreon.monitor.k8s.webcenter.fr/active-check-enabled: (0, 1 or 2)
-  - centreon.monitor.k8s.webcenter.fr/passive-check-enabled (0, 1 or 2)
-  
- placeholders available for macros, arguments and nameTemplate from Ingress:
-   - <rule.0.host> (the url)
-   - <rule.0.scheme> (http or https)
-   - <rule.0.path.0> (the path)
-   - <name> ingress name
-   - <namespace>: ingress namespace
-   - <label.key>: labels
-   - <annotation.key>: annotations
+You get a map like this:
 
-placeholders available for macros, arguments and nameTemplate from Route:
-   - <rule.0.host> : the url
-   - <rule.0.scheme>: the scheme - http or https
-   - <rule.0.path>: the path
-   - <name>: route name
-   - <namespace>: route namespace
-   - <label.key>: labels
-   - <annotation.key>: annotations
+```go
+placeholders := map[string]any{
+  "name":      "test",
+  "namespace": "default",
+  "labels": map[string]string{
+    "app": "appTest",
+    "env": "dev",
+  },
+  "annotations": map[string]string{
+    "anno1": "value1",
+    "anno2": "value2",
+  },
+  "rules": []map[string]any{
+    {
+      "host":   "front.local.local",
+      "scheme": "https",
+      "paths": []string{
+        "/",
+      },
+    },
+  },
+}
+```
+
+#### Placeholders for Namespace
+
+You can use the followings placeholders:
+- **name**: the resource name (string)
+- **namespace**: the resource name (string)
+- **labels**: the resource labels (map of string)
+- **annotations**: the resource annotations (map of string)
+
+You get a map like this:
+
+```go
+placeholders := map[string]any{
+  "name":      "test",
+  "namespace": "test",
+  "labels": map[string]string{
+    "app": "appTest",
+    "env": "dev",
+  },
+  "annotations": map[string]string{
+    "anno1": "value1",
+    "anno2": "value2",
+  },
+}
+```
+
+#### Placeholders for Node
+
+You can use the followings placeholders:
+- **name**: the resource name (string)
+- **labels**: the resource labels (map of string)
+- **annotations**: the resource annotations (map of string)
+- **unschedulable**: it's true if node is currently unschedulable (boolean)
+- **nodeInfo**: the node infos (Struct of type [NodeInfo](https://pkg.go.dev/k8s.io/api@v0.24.2/core/v1#NodeSystemInfo))
+- **addresses**: The node address (Array of [NodeAddress](https://pkg.go.dev/k8s.io/api@v0.24.2/core/v1#NodeAddress))
+
+You get a map like this:
+
+```go
+placeholders = map[string]any{
+  "name": "test",
+  "labels": map[string]string{
+    "app": "appTest",
+    "env": "dev",
+  },
+  "annotations": map[string]string{
+    "anno1": "value1",
+    "anno2": "value2",
+  },
+  "nodeInfo": core.NodeSystemInfo{
+    MachineID:    "id",
+    SystemUUID:   "uuid",
+    Architecture: "x86",
+  },
+  "addresses": []core.NodeAddress{
+    {
+      Type:    core.NodeExternalIP,
+      Address: "10.0.0.1",
+    },
+  },
+  "unschedulable": true,
+}
+```
+
+#### Placeholders for Certificate (Secret of type TLS)
+
+You can use the followings placeholders:
+- **name**: the resource name (string)
+- **namespace**: the resource namespace (string)
+- **labels**: the resource labels (map of string)
+- **annotations**: the resource annotations (map of string)
+- **certificates**: the list of certificate info (array of [Certificate](https://pkg.go.dev/crypto/x509#Certificate))
+
 
 ## Deploy Centreon for test purpose
 

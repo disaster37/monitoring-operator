@@ -7,7 +7,7 @@ import (
 	"time"
 
 	"github.com/disaster37/go-centreon-rest/v21/models"
-	api "github.com/disaster37/monitoring-operator/api/v1alpha1"
+	monitorapi "github.com/disaster37/monitoring-operator/api/v1"
 	"github.com/disaster37/monitoring-operator/controllers"
 	"github.com/disaster37/monitoring-operator/pkg/centreonhandler"
 	routev1 "github.com/openshift/api/route/v1"
@@ -17,14 +17,13 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
-	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/util/intstr"
 )
 
 func (t *AccTestSuite) TestRoute() {
 
 	var (
-		cs        *api.CentreonService
+		cs        *monitorapi.CentreonService
 		ucs       *unstructured.Unstructured
 		s         *centreonhandler.CentreonService
 		expectedS *centreonhandler.CentreonService
@@ -41,27 +40,23 @@ func (t *AccTestSuite) TestRoute() {
 		t.T().Skip("Not Openshift cluster, skit it")
 	}
 
-	centreonServiceGVR := api.GroupVersion.WithResource("centreonservices")
-	templateCentreonServiceGVR := api.GroupVersion.WithResource("templates")
+	centreonServiceGVR := monitorapi.GroupVersion.WithResource("centreonservices")
+	templateCentreonServiceGVR := monitorapi.GroupVersion.WithResource("templates")
 
-	routeGVR := schema.GroupVersionResource{
-		Group:    "route.openshift.io",
-		Version:  "v1",
-		Resource: "routes",
-	}
+	routeGVR := routev1.SchemeGroupVersion.WithResource("routes")
 
 	/***
 	 * Create new template dedicated for route test
 	 */
-	tcs := &api.Template{
+	tcs := &monitorapi.Template{
 		TypeMeta: v1.TypeMeta{
 			Kind:       "Template",
-			APIVersion: fmt.Sprintf("%s/%s", api.GroupVersion.Group, api.GroupVersion.Version),
+			APIVersion: fmt.Sprintf("%s/%s", monitorapi.GroupVersion.Group, monitorapi.GroupVersion.Version),
 		},
 		ObjectMeta: metav1.ObjectMeta{
 			Name: "check-route",
 		},
-		Spec: api.TemplateSpec{
+		Spec: monitorapi.TemplateSpec{
 			Type: "CentreonService",
 			Template: `
 {{ $rule := index .rules 0}}
@@ -156,7 +151,7 @@ activate: true`,
 	time.Sleep(20 * time.Second)
 
 	// Check that CentreonService created and in right status
-	cs = &api.CentreonService{}
+	cs = &monitorapi.CentreonService{}
 	ucs, err = t.k8sclient.Resource(centreonServiceGVR).Namespace("default").Get(context.Background(), "check-route", v1.GetOptions{})
 	if err != nil {
 		assert.Fail(t.T(), err.Error())

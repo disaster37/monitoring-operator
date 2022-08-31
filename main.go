@@ -38,7 +38,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/healthz"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 
-	"github.com/disaster37/monitoring-operator/api/v1alpha1"
+	monitorapi "github.com/disaster37/monitoring-operator/api/v1"
 	"github.com/disaster37/monitoring-operator/controllers"
 	"github.com/disaster37/monitoring-operator/pkg/helpers"
 	//+kubebuilder:scaffold:imports
@@ -54,7 +54,7 @@ var (
 func init() {
 	utilruntime.Must(clientgoscheme.AddToScheme(scheme))
 
-	utilruntime.Must(v1alpha1.AddToScheme(scheme))
+	utilruntime.Must(monitorapi.AddToScheme(scheme))
 
 	utilruntime.Must(routev1.AddToScheme(scheme))
 	//+kubebuilder:scaffold:scheme
@@ -123,8 +123,8 @@ func main() {
 	}
 
 	// Set indexers
-	if err := mgr.GetFieldIndexer().IndexField(context.Background(), &v1alpha1.Platform{}, "spec.centreonSettings.secret", func(o client.Object) []string {
-		p := o.(*v1alpha1.Platform)
+	if err := mgr.GetFieldIndexer().IndexField(context.Background(), &monitorapi.Platform{}, "spec.centreonSettings.secret", func(o client.Object) []string {
+		p := o.(*monitorapi.Platform)
 		return []string{p.Spec.CentreonSettings.Secret}
 	}); err != nil {
 		setupLog.Error(err, "unable to create indexers", "indexers", "Platform")

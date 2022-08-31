@@ -7,7 +7,7 @@ import (
 
 	"github.com/disaster37/go-centreon-rest/v21/models"
 	"github.com/disaster37/monitoring-operator/api/shared"
-	"github.com/disaster37/monitoring-operator/api/v1alpha1"
+	monitorapi "github.com/disaster37/monitoring-operator/api/v1"
 	"github.com/disaster37/monitoring-operator/pkg/centreonhandler"
 	"github.com/disaster37/monitoring-operator/pkg/helpers"
 	"github.com/disaster37/monitoring-operator/pkg/mocks"
@@ -29,7 +29,7 @@ func (t *ControllerTestSuite) TestCentreonServiceController() {
 		Name:      "t-cs-" + helpers.RandomString(10),
 		Namespace: "default",
 	}
-	cs := &v1alpha1.CentreonService{}
+	cs := &monitorapi.CentreonService{}
 	data := map[string]any{}
 
 	testCase := test.NewTestCase(t.T(), t.k8sClient, key, cs, 5*time.Second, data)
@@ -427,12 +427,12 @@ func doCreateCentreonServiceStep() test.TestStep {
 			logrus.Infof("=== Add new Centreon Service %s/%s ===", key.Namespace, key.Name)
 
 			enabled := true
-			cs := &v1alpha1.CentreonService{
+			cs := &monitorapi.CentreonService{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      key.Name,
 					Namespace: key.Namespace,
 				},
-				Spec: v1alpha1.CentreonServiceSpec{
+				Spec: monitorapi.CentreonServiceSpec{
 					Host:                "central",
 					Name:                "ping",
 					Template:            "template1",
@@ -459,7 +459,7 @@ func doCreateCentreonServiceStep() test.TestStep {
 			return nil
 		},
 		Check: func(t *testing.T, c client.Client, key types.NamespacedName, o client.Object, data map[string]any) (err error) {
-			cs := &v1alpha1.CentreonService{}
+			cs := &monitorapi.CentreonService{}
 			isCreated := false
 
 			isTimeout, err := RunWithTimeout(func() error {
@@ -494,7 +494,7 @@ func doUpdateCentreonServiceStep() test.TestStep {
 			if o == nil {
 				return errors.New("Centreon service is null")
 			}
-			cs := o.(*v1alpha1.CentreonService)
+			cs := o.(*monitorapi.CentreonService)
 			cs.Spec.Template = "template2"
 
 			if err = c.Update(context.Background(), cs); err != nil {
@@ -504,7 +504,7 @@ func doUpdateCentreonServiceStep() test.TestStep {
 			return nil
 		},
 		Check: func(t *testing.T, c client.Client, key types.NamespacedName, o client.Object, data map[string]any) (err error) {
-			cs := &v1alpha1.CentreonService{}
+			cs := &monitorapi.CentreonService{}
 			isUpdated := false
 
 			isTimeout, err := RunWithTimeout(func() error {
@@ -540,7 +540,7 @@ func doDeleteCentreonServiceStep() test.TestStep {
 			if o == nil {
 				return errors.New("Centreon service is null")
 			}
-			cs := o.(*v1alpha1.CentreonService)
+			cs := o.(*monitorapi.CentreonService)
 
 			wait := int64(0)
 			if err = c.Delete(context.Background(), cs, &client.DeleteOptions{GracePeriodSeconds: &wait}); err != nil {
@@ -550,7 +550,7 @@ func doDeleteCentreonServiceStep() test.TestStep {
 			return nil
 		},
 		Check: func(t *testing.T, c client.Client, key types.NamespacedName, o client.Object, data map[string]any) (err error) {
-			cs := &v1alpha1.CentreonService{}
+			cs := &monitorapi.CentreonService{}
 			isDeleted := false
 
 			isTimeout, err := RunWithTimeout(func() error {
@@ -587,12 +587,12 @@ func doPolicyNoCreateCentreonServiceStep() test.TestStep {
 			logrus.Infof("=== Add new Centreon Service %s/%s (policyNoCreate) ===", key.Namespace, key.Name)
 
 			enabled := true
-			cs := &v1alpha1.CentreonService{
+			cs := &monitorapi.CentreonService{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      key.Name,
 					Namespace: key.Namespace,
 				},
-				Spec: v1alpha1.CentreonServiceSpec{
+				Spec: monitorapi.CentreonServiceSpec{
 					Host:                "central",
 					Name:                "ping",
 					Template:            "template1",
@@ -625,7 +625,7 @@ func doPolicyNoCreateCentreonServiceStep() test.TestStep {
 			return nil
 		},
 		Check: func(t *testing.T, c client.Client, key types.NamespacedName, o client.Object, data map[string]any) (err error) {
-			cs := &v1alpha1.CentreonService{}
+			cs := &monitorapi.CentreonService{}
 			isCreated := false
 
 			isTimeout, _ := RunWithTimeout(func() error {
@@ -655,7 +655,7 @@ func doPolicyNoUpdateCentreonServiceStep() test.TestStep {
 			if o == nil {
 				return errors.New("Centreon service is null")
 			}
-			cs := o.(*v1alpha1.CentreonService)
+			cs := o.(*monitorapi.CentreonService)
 			cs.Spec.Template = "template2"
 
 			if err = c.Update(context.Background(), cs); err != nil {
@@ -665,7 +665,7 @@ func doPolicyNoUpdateCentreonServiceStep() test.TestStep {
 			return nil
 		},
 		Check: func(t *testing.T, c client.Client, key types.NamespacedName, o client.Object, data map[string]any) (err error) {
-			cs := &v1alpha1.CentreonService{}
+			cs := &monitorapi.CentreonService{}
 			isUpdated := false
 
 			isTimeout, _ := RunWithTimeout(func() error {
@@ -696,7 +696,7 @@ func doPolicyExcludeFieldsCentreonServiceStep() test.TestStep {
 			if o == nil {
 				return errors.New("Centreon service is null")
 			}
-			cs := o.(*v1alpha1.CentreonService)
+			cs := o.(*monitorapi.CentreonService)
 			cs.Spec.Policy.NoUpdate = false
 			cs.Spec.Template = "template2"
 
@@ -707,7 +707,7 @@ func doPolicyExcludeFieldsCentreonServiceStep() test.TestStep {
 			return nil
 		},
 		Check: func(t *testing.T, c client.Client, key types.NamespacedName, o client.Object, data map[string]any) (err error) {
-			cs := &v1alpha1.CentreonService{}
+			cs := &monitorapi.CentreonService{}
 			isUpdated := false
 
 			isTimeout, _ := RunWithTimeout(func() error {
@@ -738,7 +738,7 @@ func doPolicyNoDeleteCentreonServiceStep() test.TestStep {
 			if o == nil {
 				return errors.New("Centreon service is null")
 			}
-			cs := o.(*v1alpha1.CentreonService)
+			cs := o.(*monitorapi.CentreonService)
 
 			wait := int64(0)
 			if err = c.Delete(context.Background(), cs, &client.DeleteOptions{GracePeriodSeconds: &wait}); err != nil {
@@ -748,7 +748,7 @@ func doPolicyNoDeleteCentreonServiceStep() test.TestStep {
 			return nil
 		},
 		Check: func(t *testing.T, c client.Client, key types.NamespacedName, o client.Object, data map[string]any) (err error) {
-			cs := &v1alpha1.CentreonService{}
+			cs := &monitorapi.CentreonService{}
 			isDeleted := false
 
 			isTimeout, err := RunWithTimeout(func() error {

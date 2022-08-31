@@ -2,46 +2,42 @@ package acctests
 
 import (
 	"context"
+	"fmt"
 	"time"
 
-	"github.com/disaster37/monitoring-operator/api/v1alpha1"
+	monitorapi "github.com/disaster37/monitoring-operator/api/v1"
 	"github.com/disaster37/monitoring-operator/controllers"
 	"github.com/disaster37/monitoring-operator/pkg/centreonhandler"
 	"github.com/stretchr/testify/assert"
 	condition "k8s.io/apimachinery/pkg/api/meta"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
-	"k8s.io/apimachinery/pkg/runtime/schema"
 )
 
 func (t *AccTestSuite) TestCentreonServiceGroup() {
 
 	var (
-		csg        *v1alpha1.CentreonServiceGroup
+		csg        *monitorapi.CentreonServiceGroup
 		ucsg       *unstructured.Unstructured
 		sg         *centreonhandler.CentreonServiceGroup
 		expectedSG *centreonhandler.CentreonServiceGroup
 		err        error
 	)
 
-	centreonServiceGroupGVR := schema.GroupVersionResource{
-		Group:    "monitor.k8s.webcenter.fr",
-		Version:  "v1alpha1",
-		Resource: "centreonservicegroups",
-	}
+	centreonServiceGroupGVR := monitorapi.GroupVersion.WithResource("centreonservicegroups")
 
 	/***
 	 * Create new centreon serviceGroup resource
 	 */
-	csg = &v1alpha1.CentreonServiceGroup{
+	csg = &monitorapi.CentreonServiceGroup{
 		TypeMeta: v1.TypeMeta{
 			Kind:       "CentreonServiceGroup",
-			APIVersion: "monitor.k8s.webcenter.fr/v1alpha1",
+			APIVersion: fmt.Sprintf("%s/%s", monitorapi.GroupVersion.Group, monitorapi.GroupVersion.Version),
 		},
 		ObjectMeta: v1.ObjectMeta{
 			Name: "test",
 		},
-		Spec: v1alpha1.CentreonServiceGroupSpec{
+		Spec: monitorapi.CentreonServiceGroupSpec{
 			Name:        "sg1",
 			Description: "my sg",
 			Activated:   true,

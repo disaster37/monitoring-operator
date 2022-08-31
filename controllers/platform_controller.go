@@ -25,7 +25,7 @@ import (
 
 	"github.com/disaster37/go-centreon-rest/v21"
 	"github.com/disaster37/go-centreon-rest/v21/models"
-	"github.com/disaster37/monitoring-operator/api/v1alpha1"
+	monitorapi "github.com/disaster37/monitoring-operator/api/v1"
 	"github.com/disaster37/monitoring-operator/pkg/centreonhandler"
 	"github.com/disaster37/monitoring-operator/pkg/helpers"
 	"github.com/disaster37/operator-sdk-extra/pkg/controller"
@@ -66,7 +66,7 @@ type PlatformReconciler struct {
 
 type ComputedPlatform struct {
 	client   any
-	platform *v1alpha1.Platform
+	platform *monitorapi.Platform
 	hash     string
 }
 
@@ -105,7 +105,7 @@ func (r *PlatformReconciler) Reconcile(ctx context.Context, req ctrl.Request) (c
 		return ctrl.Result{}, err
 	}
 
-	platform := &v1alpha1.Platform{}
+	platform := &monitorapi.Platform{}
 	data := map[string]any{}
 
 	return reconciler.Reconcile(ctx, req, platform, data)
@@ -115,7 +115,7 @@ func (r *PlatformReconciler) Reconcile(ctx context.Context, req ctrl.Request) (c
 func (r *PlatformReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
 		Named(r.name).
-		For(&v1alpha1.Platform{}).
+		For(&monitorapi.Platform{}).
 		Watches(&source.Kind{Type: &core.Secret{}}, handler.EnqueueRequestsFromMapFunc(watchCentreonPlatformSecret(r.Client))).
 		WithEventFilter(viewOperatorNamespacePredicate()).
 		Complete(r)
@@ -148,7 +148,7 @@ func watchCentreonPlatformSecret(c client.Client) handler.MapFunc {
 	return func(a client.Object) []reconcile.Request {
 
 		reconcileRequests := make([]reconcile.Request, 0)
-		listPlatforms := &v1alpha1.PlatformList{}
+		listPlatforms := &monitorapi.PlatformList{}
 
 		fs := fields.ParseSelectorOrDie(fmt.Sprintf("spec.centreonSettings.secret=%s", a.GetName()))
 
@@ -167,7 +167,7 @@ func watchCentreonPlatformSecret(c client.Client) handler.MapFunc {
 
 // Configure permit to init condition
 func (r *PlatformReconciler) Configure(ctx context.Context, req ctrl.Request, resource client.Object) (meta any, err error) {
-	platform := resource.(*v1alpha1.Platform)
+	platform := resource.(*monitorapi.Platform)
 
 	// Init condition status if not exist
 	if condition.FindStatusCondition(platform.Status.Conditions, PlatformCondition) == nil {
@@ -183,7 +183,7 @@ func (r *PlatformReconciler) Configure(ctx context.Context, req ctrl.Request, re
 
 // Read
 func (r *PlatformReconciler) Read(ctx context.Context, resource client.Object, data map[string]any, meta any) (res ctrl.Result, err error) {
-	p := resource.(*v1alpha1.Platform)
+	p := resource.(*monitorapi.Platform)
 
 	// Skip compute platform if on delete step because off secret can be already deleted
 	// It avoid dead lock
@@ -221,7 +221,7 @@ func (r *PlatformReconciler) Read(ctx context.Context, resource client.Object, d
 
 // Create add new Service on Centreon
 func (r *PlatformReconciler) Create(ctx context.Context, resource client.Object, data map[string]interface{}, meta interface{}) (res ctrl.Result, err error) {
-	p := resource.(*v1alpha1.Platform)
+	p := resource.(*monitorapi.Platform)
 	var (
 		d any
 	)
@@ -248,7 +248,7 @@ func (r *PlatformReconciler) Update(ctx context.Context, resource client.Object,
 
 // Delete permit to delete service from Centreon
 func (r *PlatformReconciler) Delete(ctx context.Context, resource client.Object, data map[string]interface{}, meta interface{}) (err error) {
-	p := resource.(*v1alpha1.Platform)
+	p := resource.(*monitorapi.Platform)
 
 	if p.Spec.IsDefault {
 		delete(r.platforms, "default")
@@ -263,7 +263,7 @@ func (r *PlatformReconciler) Delete(ctx context.Context, resource client.Object,
 
 // Diff permit to check if diff between actual and expected Centreon service exist
 func (r *PlatformReconciler) Diff(resource client.Object, data map[string]interface{}, meta interface{}) (diff controller.Diff, err error) {
-	p := resource.(*v1alpha1.Platform)
+	p := resource.(*monitorapi.Platform)
 	var d any
 
 	d, err = helper.Get(data, "platform")
@@ -305,7 +305,7 @@ func (r *PlatformReconciler) Diff(resource client.Object, data map[string]interf
 
 // OnError permit to set status condition on the right state and record error
 func (r *PlatformReconciler) OnError(ctx context.Context, resource client.Object, data map[string]any, meta any, err error) {
-	platform := resource.(*v1alpha1.Platform)
+	platform := resource.(*monitorapi.Platform)
 
 	r.log.Error(err)
 	r.recorder.Event(resource, core.EventTypeWarning, "Failed", err.Error())
@@ -323,7 +323,7 @@ func (r *PlatformReconciler) OnError(ctx context.Context, resource client.Object
 
 // OnSuccess permit to set status condition on the right state is everithink is good
 func (r *PlatformReconciler) OnSuccess(ctx context.Context, resource client.Object, data map[string]any, meta any, diff controller.Diff) (err error) {
-	platform := resource.(*v1alpha1.Platform)
+	platform := resource.(*monitorapi.Platform)
 
 	if diff.NeedCreate || diff.NeedUpdate {
 		condition.SetStatusCondition(&platform.Status.Conditions, v1.Condition{
@@ -357,8 +357,8 @@ func (r *PlatformReconciler) OnSuccess(ctx context.Context, resource client.Obje
 // It usefull to init controller with client to access on external monitoring resources
 func ComputedPlatformList(ctx context.Context, cd dynamic.Interface, c kubernetes.Interface, log *logrus.Entry) (platforms map[string]*ComputedPlatform, err error) {
 	platforms = map[string]*ComputedPlatform{}
-	platformList := &v1alpha1.PlatformList{}
-	platformGVR := v1alpha1.GroupVersion.WithResource("platforms")
+	platformList := &monitorapi.PlatformList{}
+	platformGVR := monitorapi.GroupVersion.WithResource("platforms")
 	ns, err := helpers.GetOperatorNamespace()
 	if err != nil {
 		return nil, err
@@ -407,7 +407,7 @@ func ComputedPlatformList(ctx context.Context, cd dynamic.Interface, c kubernete
 	return platforms, nil
 }
 
-func getComputedCentreonPlatform(p *v1alpha1.Platform, s *core.Secret, log *logrus.Entry) (cp *ComputedPlatform, err error) {
+func getComputedCentreonPlatform(p *monitorapi.Platform, s *core.Secret, log *logrus.Entry) (cp *ComputedPlatform, err error) {
 
 	if p == nil {
 		return nil, errors.New("Platform can't be null")

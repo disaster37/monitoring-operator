@@ -24,8 +24,7 @@ import (
 
 	"github.com/disaster37/monitoring-operator/pkg/mocks"
 
-	"github.com/disaster37/monitoring-operator/api/v1alpha1"
-	monitorv1alpha1 "github.com/disaster37/monitoring-operator/api/v1alpha1"
+	monitorapi "github.com/disaster37/monitoring-operator/api/v1"
 	//+kubebuilder:scaffold:imports
 )
 
@@ -76,7 +75,7 @@ func (t *ControllerTestSuite) SetupSuite() {
 	if err != nil {
 		panic(err)
 	}
-	err = monitorv1alpha1.AddToScheme(scheme.Scheme)
+	err = monitorapi.AddToScheme(scheme.Scheme)
 	if err != nil {
 		panic(err)
 	}
@@ -96,8 +95,8 @@ func (t *ControllerTestSuite) SetupSuite() {
 	t.k8sClient = k8sClient
 
 	// Add indexers on Platform to track secret change
-	if err := k8sManager.GetFieldIndexer().IndexField(context.Background(), &v1alpha1.Platform{}, "spec.centreonSettings.secret", func(o client.Object) []string {
-		p := o.(*v1alpha1.Platform)
+	if err := k8sManager.GetFieldIndexer().IndexField(context.Background(), &monitorapi.Platform{}, "spec.centreonSettings.secret", func(o client.Object) []string {
+		p := o.(*monitorapi.Platform)
 		return []string{p.Spec.CentreonSettings.Secret}
 	}); err != nil {
 		panic(err)
@@ -108,15 +107,15 @@ func (t *ControllerTestSuite) SetupSuite() {
 
 	platforms := map[string]*ComputedPlatform{
 		"default": {
-			platform: &v1alpha1.Platform{
+			platform: &monitorapi.Platform{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "default",
 					Namespace: "default",
 				},
-				Spec: v1alpha1.PlatformSpec{
+				Spec: monitorapi.PlatformSpec{
 					IsDefault:        true,
 					PlatformType:     "centreon",
-					CentreonSettings: &v1alpha1.PlatformSpecCentreonSettings{},
+					CentreonSettings: &monitorapi.PlatformSpecCentreonSettings{},
 				},
 			},
 			client: t.mockCentreonHandler,

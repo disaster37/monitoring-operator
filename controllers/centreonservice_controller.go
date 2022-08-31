@@ -20,7 +20,7 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/disaster37/monitoring-operator/api/v1alpha1"
+	monitorapi "github.com/disaster37/monitoring-operator/api/v1"
 	"github.com/disaster37/monitoring-operator/pkg/centreonhandler"
 	"github.com/disaster37/operator-sdk-extra/pkg/controller"
 	"github.com/disaster37/operator-sdk-extra/pkg/helper"
@@ -79,7 +79,7 @@ func (r *CentreonServiceReconciler) Reconcile(ctx context.Context, req ctrl.Requ
 		return ctrl.Result{}, err
 	}
 
-	cs := &v1alpha1.CentreonService{}
+	cs := &monitorapi.CentreonService{}
 	data := map[string]any{}
 
 	return reconciler.Reconcile(ctx, req, cs, data)
@@ -89,13 +89,13 @@ func (r *CentreonServiceReconciler) Reconcile(ctx context.Context, req ctrl.Requ
 func (r *CentreonServiceReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
 		Named(r.name).
-		For(&v1alpha1.CentreonService{}).
+		For(&monitorapi.CentreonService{}).
 		Complete(r)
 }
 
 // Configure permit to init condition and choose the right client
 func (r *CentreonServiceReconciler) Configure(ctx context.Context, req ctrl.Request, resource client.Object) (meta any, err error) {
-	cs := resource.(*v1alpha1.CentreonService)
+	cs := resource.(*monitorapi.CentreonService)
 
 	// Init condition status if not exist
 	if condition.FindStatusCondition(cs.Status.Conditions, CentreonServiceCondition) == nil {
@@ -114,7 +114,7 @@ func (r *CentreonServiceReconciler) Configure(ctx context.Context, req ctrl.Requ
 
 // Read permit to get current service from Centreon
 func (r *CentreonServiceReconciler) Read(ctx context.Context, resource client.Object, data map[string]any, meta any) (res ctrl.Result, err error) {
-	cs := resource.(*v1alpha1.CentreonService)
+	cs := resource.(*monitorapi.CentreonService)
 	cHandler := meta.(centreonhandler.CentreonHandler)
 
 	// Check if the current service name and host is right before to search on Centreon
@@ -146,7 +146,7 @@ func (r *CentreonServiceReconciler) Read(ctx context.Context, resource client.Ob
 // Create add new Service on Centreon
 func (r *CentreonServiceReconciler) Create(ctx context.Context, resource client.Object, data map[string]interface{}, meta interface{}) (res ctrl.Result, err error) {
 	cHandler := meta.(centreonhandler.CentreonHandler)
-	cs := resource.(*v1alpha1.CentreonService)
+	cs := resource.(*monitorapi.CentreonService)
 
 	// Check policy
 	if cs.Spec.Policy.NoCreate {
@@ -172,7 +172,7 @@ func (r *CentreonServiceReconciler) Create(ctx context.Context, resource client.
 // Update permit to update service on Centreon
 func (r *CentreonServiceReconciler) Update(ctx context.Context, resource client.Object, data map[string]interface{}, meta interface{}) (res ctrl.Result, err error) {
 	cHandler := meta.(centreonhandler.CentreonHandler)
-	cs := resource.(*v1alpha1.CentreonService)
+	cs := resource.(*monitorapi.CentreonService)
 	var d any
 
 	// Check policy
@@ -197,7 +197,7 @@ func (r *CentreonServiceReconciler) Update(ctx context.Context, resource client.
 // Delete permit to delete service from Centreon
 func (r *CentreonServiceReconciler) Delete(ctx context.Context, resource client.Object, data map[string]interface{}, meta interface{}) (err error) {
 	cHandler := meta.(centreonhandler.CentreonHandler)
-	cs := resource.(*v1alpha1.CentreonService)
+	cs := resource.(*monitorapi.CentreonService)
 
 	// Check policy
 	if cs.Spec.Policy.NoDelete {
@@ -229,7 +229,7 @@ func (r *CentreonServiceReconciler) Delete(ctx context.Context, resource client.
 // Diff permit to check if diff between actual and expected Centreon service exist
 func (r *CentreonServiceReconciler) Diff(resource client.Object, data map[string]interface{}, meta interface{}) (diff controller.Diff, err error) {
 	cHandler := meta.(centreonhandler.CentreonHandler)
-	cs := resource.(*v1alpha1.CentreonService)
+	cs := resource.(*monitorapi.CentreonService)
 	var d any
 
 	expectedCS, err := cs.ToCentreonService()
@@ -270,7 +270,7 @@ func (r *CentreonServiceReconciler) Diff(resource client.Object, data map[string
 
 // OnError permit to set status condition on the right state and record error
 func (r *CentreonServiceReconciler) OnError(ctx context.Context, resource client.Object, data map[string]any, meta any, err error) {
-	cs := resource.(*v1alpha1.CentreonService)
+	cs := resource.(*monitorapi.CentreonService)
 
 	r.log.Error(err)
 	r.recorder.Event(resource, core.EventTypeWarning, "Failed", err.Error())
@@ -288,7 +288,7 @@ func (r *CentreonServiceReconciler) OnError(ctx context.Context, resource client
 
 // OnSuccess permit to set status condition on the right state is everithink is good
 func (r *CentreonServiceReconciler) OnSuccess(ctx context.Context, resource client.Object, data map[string]any, meta any, diff controller.Diff) (err error) {
-	cs := resource.(*v1alpha1.CentreonService)
+	cs := resource.(*monitorapi.CentreonService)
 
 	if diff.NeedCreate {
 		r.recorder.Eventf(resource, core.EventTypeNormal, "Completed", "Service %s/%s successfully created on Centreon", cs.Spec.Host, cs.Spec.Name)

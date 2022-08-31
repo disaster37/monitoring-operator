@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/disaster37/monitoring-operator/api/v1alpha1"
+	monitorapi "github.com/disaster37/monitoring-operator/api/v1"
 	"github.com/disaster37/operator-sdk-extra/pkg/controller"
 	"github.com/pkg/errors"
 	"github.com/prometheus/client_golang/prometheus"
@@ -128,7 +128,7 @@ func IsRouteCRD(cfg *rest.Config) (bool, error) {
 	return false, nil
 }
 
-func getClient(platformRef string, platforms map[string]*ComputedPlatform) (meta any, platform *v1alpha1.Platform, err error) {
+func getClient(platformRef string, platforms map[string]*ComputedPlatform) (meta any, platform *monitorapi.Platform, err error) {
 	if platformRef == "" {
 		if p, ok := platforms["default"]; ok {
 			return p.client, p.platform, nil

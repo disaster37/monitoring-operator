@@ -6,7 +6,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/disaster37/monitoring-operator/api/v1alpha1"
+	monitorapi "github.com/disaster37/monitoring-operator/api/v1"
 	"github.com/disaster37/monitoring-operator/pkg/helpers"
 	"github.com/disaster37/operator-sdk-extra/pkg/helper"
 	"github.com/disaster37/operator-sdk-extra/pkg/test"
@@ -27,7 +27,7 @@ func (t *ControllerTestSuite) TestPlatformController() {
 		Name:      "t-platform-" + helpers.RandomString(10),
 		Namespace: "default",
 	}
-	platform := &v1alpha1.Platform{}
+	platform := &monitorapi.Platform{}
 	data := map[string]any{
 		"platforms":     t.platforms,
 		"dinamicClient": dynamic.NewForConfigOrDie(t.cfg),
@@ -69,15 +69,15 @@ func doCreatePlatformStep() test.TestStep {
 			}
 
 			// Create platform
-			platform := &v1alpha1.Platform{
+			platform := &monitorapi.Platform{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      key.Name,
 					Namespace: key.Namespace,
 				},
-				Spec: v1alpha1.PlatformSpec{
+				Spec: monitorapi.PlatformSpec{
 					IsDefault:    false,
 					PlatformType: "centreon",
-					CentreonSettings: &v1alpha1.PlatformSpecCentreonSettings{
+					CentreonSettings: &monitorapi.PlatformSpecCentreonSettings{
 						URL:                   "http://localhost",
 						SelfSignedCertificate: true,
 						Secret:                key.Name,
@@ -92,7 +92,7 @@ func doCreatePlatformStep() test.TestStep {
 			return nil
 		},
 		Check: func(t *testing.T, c client.Client, key types.NamespacedName, o client.Object, data map[string]any) (err error) {
-			p := &v1alpha1.Platform{}
+			p := &monitorapi.Platform{}
 			var d any
 
 			d, err = helper.Get(data, "platforms")
@@ -134,7 +134,7 @@ func doUpdatePlatformStep() test.TestStep {
 			if o == nil {
 				return errors.New("Plaform is null")
 			}
-			p := o.(*v1alpha1.Platform)
+			p := o.(*monitorapi.Platform)
 
 			data["version"] = p.ResourceVersion
 
@@ -147,7 +147,7 @@ func doUpdatePlatformStep() test.TestStep {
 			return nil
 		},
 		Check: func(t *testing.T, c client.Client, key types.NamespacedName, o client.Object, data map[string]any) (err error) {
-			p := &v1alpha1.Platform{}
+			p := &monitorapi.Platform{}
 			var d any
 
 			d, err = helper.Get(data, "platforms")
@@ -215,7 +215,7 @@ func doUpdatePlatformSecretStep() test.TestStep {
 			return nil
 		},
 		Check: func(t *testing.T, c client.Client, key types.NamespacedName, o client.Object, data map[string]any) (err error) {
-			p := &v1alpha1.Platform{}
+			p := &monitorapi.Platform{}
 			var d any
 
 			d, err = helper.Get(data, "platforms")
@@ -299,7 +299,7 @@ func doDeletePlatformStep() test.TestStep {
 			if o == nil {
 				return errors.New("Plaform is null")
 			}
-			p := o.(*v1alpha1.Platform)
+			p := o.(*monitorapi.Platform)
 
 			wait := int64(0)
 			if err = c.Delete(context.Background(), p, &client.DeleteOptions{GracePeriodSeconds: &wait}); err != nil {
@@ -309,7 +309,7 @@ func doDeletePlatformStep() test.TestStep {
 			return nil
 		},
 		Check: func(t *testing.T, c client.Client, key types.NamespacedName, o client.Object, data map[string]any) (err error) {
-			p := &v1alpha1.Platform{}
+			p := &monitorapi.Platform{}
 			isDeleted := false
 
 			var d any

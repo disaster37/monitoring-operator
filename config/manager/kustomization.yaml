@@ -13,4 +13,4 @@ kind: Kustomization
 images:
 - name: controller
   newName: webcenter/monitoring-operator
-  newTag: 0.0.1
+  newTag: 1.0.1

@@ -7,7 +7,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/disaster37/monitoring-operator/api/v1alpha1"
+	monitorapi "github.com/disaster37/monitoring-operator/api/v1"
 	"github.com/disaster37/monitoring-operator/pkg/centreonhandler"
 	"github.com/disaster37/monitoring-operator/pkg/helpers"
 	"github.com/disaster37/monitoring-operator/pkg/mocks"
@@ -67,12 +67,12 @@ func doCreateRouteStep() test.TestStep {
 	return test.TestStep{
 		Name: "create",
 		Pre: func(c client.Client, data map[string]any) error {
-			template := &v1alpha1.Template{
+			template := &monitorapi.Template{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "template-route1",
 					Namespace: "default",
 				},
-				Spec: v1alpha1.TemplateSpec{
+				Spec: monitorapi.TemplateSpec{
 					Type: "CentreonService",
 					Template: `
 host: "localhost"
@@ -96,12 +96,12 @@ categories:
 			}
 			logrus.Infof("Create template template-route1")
 
-			template = &v1alpha1.Template{
+			template = &monitorapi.Template{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "template-route2",
 					Namespace: "default",
 				},
-				Spec: v1alpha1.TemplateSpec{
+				Spec: monitorapi.TemplateSpec{
 					Type: "CentreonService",
 					Template: `
 host: "localhost"
@@ -163,7 +163,7 @@ categories:
 			return nil
 		},
 		Check: func(t *testing.T, c client.Client, key types.NamespacedName, o client.Object, data map[string]any) (err error) {
-			cs := &v1alpha1.CentreonService{}
+			cs := &monitorapi.CentreonService{}
 
 			isTimeout, err := RunWithTimeout(func() error {
 				if err := c.Get(context.Background(), types.NamespacedName{Namespace: key.Namespace, Name: "template-route1"}, cs); err != nil {
@@ -178,7 +178,7 @@ categories:
 				t.Fatalf("Failed to get Centreon service template-route1: %s", err.Error())
 			}
 
-			expectedCSSpec := v1alpha1.CentreonServiceSpec{
+			expectedCSSpec := monitorapi.CentreonServiceSpec{
 				Host:     "localhost",
 				Name:     "ping1",
 				Template: "template1",
@@ -212,7 +212,7 @@ categories:
 			if err != nil || isTimeout {
 				t.Fatalf("Failed to get Centreon service template-route2: %s", err.Error())
 			}
-			expectedCSSpec = v1alpha1.CentreonServiceSpec{
+			expectedCSSpec = monitorapi.CentreonServiceSpec{
 				Host:     "localhost",
 				Name:     "ping2",
 				Template: "template2",
@@ -242,7 +242,7 @@ func doUpdateRouteStep() test.TestStep {
 		Pre: func(c client.Client, data map[string]any) error {
 
 			logrus.Info("Update CentreonServiceTemplate template-route1")
-			template := &v1alpha1.Template{}
+			template := &monitorapi.Template{}
 			if err := c.Get(context.Background(), types.NamespacedName{Namespace: "default", Name: "template-route1"}, template); err != nil {
 				return err
 			}
@@ -279,7 +279,7 @@ categories:
 			route.Annotations["test"] = "update"
 
 			// Get version of current CentreonService object
-			cs := &v1alpha1.CentreonService{}
+			cs := &monitorapi.CentreonService{}
 			if err := c.Get(context.Background(), types.NamespacedName{Namespace: key.Namespace, Name: "template-route1"}, cs); err != nil {
 				return err
 			}
@@ -293,7 +293,7 @@ categories:
 			return nil
 		},
 		Check: func(t *testing.T, c client.Client, key types.NamespacedName, o client.Object, data map[string]any) (err error) {
-			cs := &v1alpha1.CentreonService{}
+			cs := &monitorapi.CentreonService{}
 
 			version := data["version"].(string)
 
@@ -312,7 +312,7 @@ categories:
 			if err != nil || isTimeout {
 				t.Fatalf("Failed to get Centreon service template-route1: %s", err.Error())
 			}
-			expectedCSSpec := v1alpha1.CentreonServiceSpec{
+			expectedCSSpec := monitorapi.CentreonServiceSpec{
 				Host:     "localhost",
 				Name:     "ping1",
 				Template: "template1",

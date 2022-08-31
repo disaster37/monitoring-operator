@@ -3,7 +3,7 @@ package controllers
 import (
 	"testing"
 
-	"github.com/disaster37/monitoring-operator/api/v1alpha1"
+	monitorapi "github.com/disaster37/monitoring-operator/api/v1"
 	"github.com/stretchr/testify/assert"
 	networkv1 "k8s.io/api/networking/v1"
 )
@@ -52,9 +52,9 @@ func TestSetSpec(t *testing.T) {
 
 func TestGetItems(t *testing.T) {
 	// When OK
-	i := &v1alpha1.CentreonServiceGroup{}
-	iList := &v1alpha1.CentreonServiceGroupList{
-		Items: []v1alpha1.CentreonServiceGroup{
+	i := &monitorapi.CentreonServiceGroup{}
+	iList := &monitorapi.CentreonServiceGroupList{
+		Items: []monitorapi.CentreonServiceGroup{
 			*i,
 		},
 	}
@@ -64,7 +64,7 @@ func TestGetItems(t *testing.T) {
 	assert.Equal(t, i, currentItems[0])
 
 	// When KO
-	var iList2 *v1alpha1.CentreonServiceGroupList
+	var iList2 *monitorapi.CentreonServiceGroupList
 	_, err = GetItems(iList2)
 	assert.Error(t, err)
 

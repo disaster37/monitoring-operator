@@ -11,14 +11,11 @@ func BoolToString(value *bool) (result string) {
 		return "2"
 	}
 
-	switch *value {
-	case true:
+	if *value {
 		return "1"
-	case false:
-		return "0"
-	default:
-		return "2"
 	}
+	return "0"
+
 }
 
 func StringToBool(value string) (result *bool) {
