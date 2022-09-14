@@ -19,7 +19,7 @@ replicaCount: 1
 
 image:
   # repository is the container image prefixed by the registry name.
-  repository: webcenter/monitoring-operator
+  repository: quay.io/webcenter/monitoring-operator
   # pullPolicy is the container image pull policy.
   pullPolicy: IfNotPresent
   # tag is the container image tag. If not defined, defaults to chart appVersion.
