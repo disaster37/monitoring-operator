@@ -60,7 +60,7 @@ metadata:
       ]
     capabilities: Basic Install
     categories: Monitoring
-    containerImage: webcenter/monitoring-operator:v1.0.1
+    containerImage: quay.io/webcenter/monitoring-operator:v1.0.1
     createdAt: "2022-05-19T00:00:00Z"
     description: A Kubernetes operator based on the Operator SDK for creating and
       managing monitoring resources on Centreon
@@ -737,7 +737,7 @@ spec:
                       fieldPath: metadata.namespace
                 - name: LOG_LEVEL
                   value: DEBUG
-                image: webcenter/monitoring-operator:1.0.1
+                image: quay.io/webcenter/monitoring-operator:1.0.1
                 imagePullPolicy: Always
                 livenessProbe:
                   httpGet:

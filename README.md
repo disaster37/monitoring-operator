@@ -21,16 +21,16 @@ It actually only support Centreon as monitoring plateform.
 ## Deploy operator with OLM
 
 The right way to deploy operator base on operatot-sdk is to use OLM.
-You can use the catalog image `webcenter/monitoring-operator-catalog:v1.0.1`
+You can use the catalog image `quay.io/webcenter/monitoring-operator-catalog:v1.0.1`
 
 For test purpose, you can use operator-sdk to run bundle
 ```bash
-operator-sdk run bundle docker.io/webcenter/monitoring-operator-bundle:v1.0.1
+operator-sdk run bundle quay.io/webcenter/monitoring-operator-bundle:v1.0.1
 ```
 
 Or upgrade already deployed catalogue
 ```bash
-operator-sdk run bundle-upgrade docker.io/webcenter/monitoring-operator-bundle:v1.0.1
+operator-sdk run bundle-upgrade quay.io/webcenter/monitoring-operator-bundle:v1.0.1
 ```
 
 ## Use it
