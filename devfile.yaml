@@ -1,0 +1,97 @@
+schemaVersion: 2.1.0
+metadata:
+  description: "Go is an open source programming language that makes it easy to build simple, reliable, and efficient software."
+  displayName: Go Runtime
+  icon: https://raw.githubusercontent.com/devfile-samples/devfile-stack-icons/main/golang.svg
+  name: go
+  projectType: Go
+  language: Go
+  tags:
+    - Go
+  version: 1.0.2
+starterProjects:
+  - name: go-starter
+    description: A Go project with a simple HTTP server
+    git:
+      checkoutFrom:
+        revision: main
+      remotes:
+        origin: https://github.com/disaster37/monitoring-operator.git
+components:
+  - container:
+      endpoints:
+        - name: http-go
+          targetPort: 8080
+      image: registry.access.redhat.com/ubi9/go-toolset:latest
+      args: ["tail", "-f", "/dev/null"]
+      cpuLimit: '4'
+      cpuRequest: '2'
+	    memoryLimit: 4Gi
+      memoryRequest: 2Gi
+      mountSources: true
+      env:
+	    - name: DOCKER_HOST
+		    value: tcp://127.0.0.1:2376
+		  - value: '0'
+        name: NODE_TLS_REJECT_UNAUTHORIZED
+    name: runtime
+  - name: docker
+	  kubernetes:
+	    inlined: |
+        apiVersion: v1
+        kind: List
+        items:
+          - apiVersion: v1
+            kind: Deployment
+            metadata:
+              name: docker
+              label:
+                app: docker
+            spec:
+              selector:
+                matchLabels:
+                  app: docker
+              template:
+                metadata:
+                  labels:
+                    app: docker
+                spec:
+                  containers:
+                    - image: docker:dind
+                      name: docker
+                      securityContext:
+                        runAsUser: 0
+                        privileged: true
+                      env:
+                        name: DOCKER_TLS_CERTDIR
+                        value: /certs
+                      resources:
+                        limits:
+                          memory: 6Gi
+                          cpu: 4
+                        request:
+                          memory: 3Gi
+                          cpu: 1
+                      imagePullPolicy: IfNotPresent
+commands:
+  - exec:
+      env:
+        - name: GOPATH
+          value: ${PROJECT_SOURCE}/.go
+        - name: GOCACHE
+          value: ${PROJECT_SOURCE}/.cache
+      commandLine: go build main.go
+      component: runtime
+      group:
+        isDefault: true
+        kind: build
+      workingDir: ${PROJECT_SOURCE}
+    id: build
+  - exec:
+      commandLine: ./main
+      component: runtime
+      group:
+        isDefault: true
+        kind: run
+      workingDir: ${PROJECT_SOURCE}
+    id: run
