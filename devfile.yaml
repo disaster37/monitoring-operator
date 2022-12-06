@@ -24,11 +24,8 @@ components:
       endpoints:
         - name: http-go
           targetPort: 8080
-      image: quay.io/webcenter/che/go-latest
-      args:
-        - tail
-        - -f
-        - /dev/null
+      image: quay.io/webcenter/che:go-latest
+      command: ['sleep', 'infinity']
       cpuLimit: "4000m"
       cpuRequest: "2000m"
       memoryLimit: 4Gi
