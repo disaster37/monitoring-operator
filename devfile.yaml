@@ -29,8 +29,8 @@ components:
         - tail
         - -f
         - /dev/null
-      cpuLimit: "4"
-      cpuRequest: "2"
+      cpuLimit: "4000m"
+      cpuRequest: "2000m"
       memoryLimit: 4Gi
       memoryRequest: 2Gi
       mountSources: true
@@ -73,10 +73,10 @@ components:
                       resources:
                         limits:
                           memory: 6Gi
-                          cpu: 4
+                          cpu: 4000m
                         request:
                           memory: 3Gi
-                          cpu: 1
+                          cpu: 1000m
                       imagePullPolicy: IfNotPresent
 commands:
   - exec:
