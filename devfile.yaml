@@ -1,6 +1,8 @@
+---
 schemaVersion: 2.1.0
 metadata:
-  description: "Go is an open source programming language that makes it easy to build simple, reliable, and efficient software."
+  description: Go is an open source programming language that makes it easy to
+    build simple, reliable, and efficient software.
   displayName: Go Runtime
   icon: https://raw.githubusercontent.com/devfile-samples/devfile-stack-icons/main/golang.svg
   name: go
@@ -22,22 +24,25 @@ components:
       endpoints:
         - name: http-go
           targetPort: 8080
-      image: registry.access.redhat.com/ubi9/go-toolset:latest
-      args: ["tail", "-f", "/dev/null"]
-      cpuLimit: '4'
-      cpuRequest: '2'
-	    memoryLimit: 4Gi
+      image: quay.io/webcenter/che/go-latest
+      args:
+        - tail
+        - -f
+        - /dev/null
+      cpuLimit: "4"
+      cpuRequest: "2"
+      memoryLimit: 4Gi
       memoryRequest: 2Gi
       mountSources: true
       env:
-	    - name: DOCKER_HOST
-		    value: tcp://127.0.0.1:2376
-		  - value: '0'
-        name: NODE_TLS_REJECT_UNAUTHORIZED
+        - name: DOCKER_HOST
+          value: tcp://127.0.0.1:2376
+        - value: "0"
+          name: NODE_TLS_REJECT_UNAUTHORIZED
     name: runtime
   - name: docker
-	  kubernetes:
-	    inlined: |
+    kubernetes:
+      inlined: |
         apiVersion: v1
         kind: List
         items:
