@@ -17,12 +17,8 @@ limitations under the License.
 package v1
 
 import (
-	"strings"
-
-	"github.com/disaster37/go-centreon-rest/v21/models"
 	"github.com/disaster37/monitoring-operator/api/shared"
-	"github.com/disaster37/monitoring-operator/pkg/centreonhandler"
-	"github.com/disaster37/monitoring-operator/pkg/helpers"
+	"github.com/disaster37/operator-sdk-extra/pkg/apis"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -119,6 +115,8 @@ type CentreonServiceStatus struct {
 	// INSERT ADDITIONAL STATUS FIELD - define observed state of cluster
 	// Important: Run "make" to regenerate code after modifying this file
 
+	apis.BasicRemoteObjectStatus `json:",inline"`
+
 	// The host affected to service on Centreon
 	// +operator-sdk:csv:customresourcedefinitions:type=status
 	Host string `json:"host,omitempty"`
@@ -126,10 +124,6 @@ type CentreonServiceStatus struct {
 	// The service name
 	// +operator-sdk:csv:customresourcedefinitions:type=status
 	ServiceName string `json:"serviceName,omitempty"`
-
-	// List of conditions
-	// +operator-sdk:csv:customresourcedefinitions:type=status
-	Conditions []metav1.Condition `json:"conditions"`
 }
 
 //+kubebuilder:object:root=true
@@ -139,9 +133,11 @@ type CentreonServiceStatus struct {
 // CentreonService is the Schema for the centreonservices API
 // +operator-sdk:csv:customresourcedefinitions:resources={{None,None,None}}
 // +kubebuilder:resource:shortName=mcs
-// +kubebuilder:printcolumn:name="Healthy",type="string",JSONPath=".status.conditions[0].status",description="Resource state on Centreon"
-// +kubebuilder:printcolumn:name="Host",type="string",JSONPath=".spec.host"
-// +kubebuilder:printcolumn:name="Service",type="string",JSONPath=".spec.name"
+// +kubebuilder:printcolumn:name="Sync",type="boolean",JSONPath=".status.isSync"
+// +kubebuilder:printcolumn:name="Error",type="boolean",JSONPath=".status.isOnError",description="Is on error"
+// +kubebuilder:printcolumn:name="Ready",type="string",JSONPath=".status.conditions[?(@.type=='Ready')].status",description="health"
+// +kubebuilder:printcolumn:name="Host",type="string",JSONPath=".status.host"
+// +kubebuilder:printcolumn:name="Service",type="string",JSONPath=".status.serviceName"
 // +kubebuilder:printcolumn:name="Platform",type="string",JSONPath=".spec.platformRef"
 // +kubebuilder:printcolumn:name="Age",type="date",JSONPath=".metadata.creationTimestamp"
 type CentreonService struct {
@@ -165,42 +161,4 @@ func init() {
 	SchemeBuilder.Register(&CentreonService{}, &CentreonServiceList{})
 }
 
-// IsValid check Centreon service is valid for Centreon
-func (c *CentreonService) IsValid() bool {
-	if c.Spec.Host == "" || c.Spec.Name == "" || c.Spec.Template == "" {
-		return false
-	}
 
-	return true
-}
-
-func (h *CentreonService) ToCentreonService() (*centreonhandler.CentreonService, error) {
-	cs := &centreonhandler.CentreonService{
-		Host:                h.Spec.Host,
-		Name:                h.Spec.Name,
-		CheckCommand:        h.Spec.CheckCommand,
-		CheckCommandArgs:    helpers.CheckArgumentsToString(h.Spec.Arguments),
-		NormalCheckInterval: h.Spec.NormalCheckInterval,
-		RetryCheckInterval:  h.Spec.RetryCheckInterval,
-		MaxCheckAttempts:    h.Spec.MaxCheckAttempts,
-		ActiveCheckEnabled:  helpers.BoolToString(h.Spec.ActiveCheckEnabled),
-		PassiveCheckEnabled: helpers.BoolToString(h.Spec.PassiveCheckEnabled),
-		Activated:           helpers.BoolToString(&h.Spec.Activated),
-		Template:            h.Spec.Template,
-		Comment:             "Managed by monitoring-operator",
-		Groups:              h.Spec.Groups,
-		Categories:          h.Spec.Categories,
-		Macros:              make([]*models.Macro, 0, len(h.Spec.Macros)),
-	}
-	for name, value := range h.Spec.Macros {
-		macro := &models.Macro{
-			Name:       strings.ToUpper(name),
-			Value:      value,
-			IsPassword: "0",
-		}
-		cs.Macros = append(cs.Macros, macro)
-	}
-
-	return cs, nil
-
-}

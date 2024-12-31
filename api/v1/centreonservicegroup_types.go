@@ -18,8 +18,7 @@ package v1
 
 import (
 	"github.com/disaster37/monitoring-operator/api/shared"
-	"github.com/disaster37/monitoring-operator/pkg/centreonhandler"
-	"github.com/disaster37/monitoring-operator/pkg/helpers"
+	"github.com/disaster37/operator-sdk-extra/pkg/apis"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -62,13 +61,11 @@ type CentreonServiceGroupStatus struct {
 	// INSERT ADDITIONAL STATUS FIELD - define observed state of cluster
 	// Important: Run "make" to regenerate code after modifying this file
 
+	apis.BasicRemoteObjectStatus `json:",inline"`
+
 	// The service group name
 	// +operator-sdk:csv:customresourcedefinitions:type=status
 	ServiceGroupName string `json:"serviceGroupName,omitempty"`
-
-	// List of conditions
-	// +operator-sdk:csv:customresourcedefinitions:type=status
-	Conditions []metav1.Condition `json:"conditions"`
 }
 
 //+kubebuilder:object:root=true
@@ -78,8 +75,10 @@ type CentreonServiceGroupStatus struct {
 // CentreonServiceGroup is the Schema for the centreonservicegroups API
 // +operator-sdk:csv:customresourcedefinitions:resources={{None,None,None}}
 // +kubebuilder:resource:shortName=mcsg
-// +kubebuilder:printcolumn:name="Healthy",type="string",JSONPath=".status.conditions[0].status",description="Resource state on Centreon"
-// +kubebuilder:printcolumn:name="ServiceGroup",type="string",JSONPath=".spec.name"
+// +kubebuilder:printcolumn:name="Sync",type="boolean",JSONPath=".status.isSync"
+// +kubebuilder:printcolumn:name="Error",type="boolean",JSONPath=".status.isOnError",description="Is on error"
+// +kubebuilder:printcolumn:name="Ready",type="string",JSONPath=".status.conditions[?(@.type=='Ready')].status",description="health"
+// +kubebuilder:printcolumn:name="ServiceGroup",type="string",JSONPath=".status.serviceGroupName"
 // +kubebuilder:printcolumn:name="Platform",type="string",JSONPath=".spec.platformRef"
 // +kubebuilder:printcolumn:name="Age",type="date",JSONPath=".metadata.creationTimestamp"
 type CentreonServiceGroup struct {
@@ -103,24 +102,4 @@ func init() {
 	SchemeBuilder.Register(&CentreonServiceGroup{}, &CentreonServiceGroupList{})
 }
 
-// IsValid check Centreon service is valid for Centreon
-func (h *CentreonServiceGroup) IsValid() bool {
-	if h.Spec.Name == "" || h.Spec.Description == "" {
-		return false
-	}
 
-	return true
-}
-
-// ToCentreonServiceGroup permit to convert current spec to centreonServiceGroup object
-func (h *CentreonServiceGroup) ToCentreonServiceGroup() (*centreonhandler.CentreonServiceGroup, error) {
-	csg := &centreonhandler.CentreonServiceGroup{
-		Name:        h.Spec.Name,
-		Activated:   helpers.BoolToString(&h.Spec.Activated),
-		Comment:     "Managed by monitoring-operator",
-		Description: h.Spec.Description,
-	}
-
-	return csg, nil
-
-}

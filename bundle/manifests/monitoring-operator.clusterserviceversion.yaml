@@ -731,7 +731,7 @@ spec:
                 command:
                 - /manager
                 env:
-                - name: OPERATOR_NAMESPACE
+                - name: POD_NAMESPACE
                   valueFrom:
                     fieldRef:
                       fieldPath: metadata.namespace

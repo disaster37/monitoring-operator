@@ -7,7 +7,7 @@ import (
 )
 
 const (
-	operatorNamespaceEnvVar = "OPERATOR_NAMESPACE"
+	operatorNamespaceEnvVar = "POD_NAMESPACE"
 )
 
 func GetOperatorNamespace() (ns string, err error) {
