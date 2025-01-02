@@ -151,6 +151,14 @@ spec:
               isOnError:
                 description: IsOnError is true if controller is stuck on Error
                 type: boolean
+              isSync:
+                description: IsSync is true if controller successfully apply on remote
+                  API
+                type: boolean
+              lastAppliedConfiguration:
+                description: LastAppliedConfiguration is the last applied configuration
+                  to use 3-way diff
+                type: string
               lastErrorMessage:
                 description: LastErrorMessage is the current error message
                 type: string
@@ -158,9 +166,6 @@ spec:
                 description: observedGeneration is the current generation applied
                 format: int64
                 type: integer
-              phase:
-                description: Phase is the current phase
-                type: string
             type: object
         type: object
     served: true

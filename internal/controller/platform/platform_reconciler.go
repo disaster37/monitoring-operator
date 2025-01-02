@@ -2,16 +2,10 @@ package platform
 
 import (
 	"context"
-	"crypto/sha256"
-	"encoding/hex"
-	"encoding/json"
 
 	"emperror.dev/errors"
 	"github.com/disaster37/generic-objectmatcher/patch"
-	"github.com/disaster37/go-centreon-rest/v21"
-	"github.com/disaster37/go-centreon-rest/v21/models"
 	centreoncrd "github.com/disaster37/monitoring-operator/api/v1"
-	monitorapi "github.com/disaster37/monitoring-operator/api/v1"
 	"github.com/disaster37/monitoring-operator/internal/controller/common"
 	"github.com/disaster37/monitoring-operator/pkg/centreonhandler"
 	"github.com/disaster37/operator-sdk-extra/pkg/controller"
@@ -144,50 +138,4 @@ func (h *platformReconciler) Diff(ctx context.Context, o object.RemoteObject, re
 	}
 
 	return diff, res, nil
-}
-
-func getComputedCentreonPlatform(p *monitorapi.Platform, s *corev1.Secret, log *logrus.Entry) (cp *ComputedPlatform, err error) {
-
-	if p == nil {
-		return nil, errors.New("Platform can't be null")
-	}
-	if s == nil {
-		return nil, errors.New("Secret can't be null")
-	}
-
-	username := string(s.Data["username"])
-	password := string(s.Data["password"])
-	if username == "" || password == "" {
-		return nil, errors.Errorf("You need to set username and password on secret %s", s.Name)
-	}
-
-	// Create client
-	cfg := &models.Config{
-		Address:          p.Spec.CentreonSettings.URL,
-		Username:         username,
-		Password:         password,
-		DisableVerifySSL: p.Spec.CentreonSettings.SelfSignedCertificate,
-	}
-	if log.Level == logrus.DebugLevel {
-		cfg.Debug = true
-	}
-	client, err := centreon.NewClient(cfg)
-	if err != nil {
-		return nil, errors.Wrap(err, "Error when create Centreon client")
-	}
-	shaByte, err := json.Marshal(cfg)
-	if err != nil {
-		return nil, err
-	}
-	sha := sha256.New()
-	if _, err := sha.Write([]byte(shaByte)); err != nil {
-		return nil, err
-	}
-
-	return &ComputedPlatform{
-		Client:   centreonhandler.NewCentreonHandler(client, log),
-		Platform: p,
-		Hash:     hex.EncodeToString(sha.Sum(nil)),
-	}, nil
-
 }

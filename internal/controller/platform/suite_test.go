@@ -25,7 +25,7 @@ import (
 
 var testEnv *envtest.Environment
 
-type CentreonControllerTestSuite struct {
+type PlatformControllerTestSuite struct {
 	suite.Suite
 	k8sClient client.Client
 	cfg       *rest.Config
@@ -33,10 +33,10 @@ type CentreonControllerTestSuite struct {
 }
 
 func TestPlatformControllerSuite(t *testing.T) {
-	suite.Run(t, new(CentreonControllerTestSuite))
+	suite.Run(t, new(PlatformControllerTestSuite))
 }
 
-func (t *CentreonControllerTestSuite) SetupSuite() {
+func (t *PlatformControllerTestSuite) SetupSuite() {
 
 	logf.SetLogger(zap.New(zap.UseDevMode(true)))
 	logrus.SetLevel(logrus.TraceLevel)
@@ -130,17 +130,17 @@ func (t *CentreonControllerTestSuite) SetupSuite() {
 	}()
 }
 
-func (t *CentreonControllerTestSuite) TearDownSuite() {
+func (t *PlatformControllerTestSuite) TearDownSuite() {
 	err := testEnv.Stop()
 	if err != nil {
 		panic(err)
 	}
 }
 
-func (t *CentreonControllerTestSuite) BeforeTest(suiteName, testName string) {
+func (t *PlatformControllerTestSuite) BeforeTest(suiteName, testName string) {
 
 }
 
-func (t *CentreonControllerTestSuite) AfterTest(suiteName, testName string) {
+func (t *PlatformControllerTestSuite) AfterTest(suiteName, testName string) {
 
 }
