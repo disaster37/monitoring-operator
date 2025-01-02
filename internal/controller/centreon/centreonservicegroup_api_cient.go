@@ -55,6 +55,10 @@ func (h *centreonServiceGroupApiClient) Get(o *centreoncrd.CentreonServiceGroup)
 		return nil, err
 	}
 
+	if csg == nil {
+		return nil, nil
+	}
+
 	object = &CentreonServiceGroup{
 		CentreonServiceGroup: csg,
 	}
@@ -96,19 +100,20 @@ func (h *centreonServiceGroupApiClient) Delete(o *centreoncrd.CentreonServiceGro
 }
 
 func (h *centreonServiceGroupApiClient) Diff(currentOject *CentreonServiceGroup, expectedObject *CentreonServiceGroup, originalObject *CentreonServiceGroup, o *centreoncrd.CentreonServiceGroup, ignoresDiff ...patch.CalculateOption) (patchResult *patch.PatchResult, err error) {
+	patchResult = &patch.PatchResult{}
 
 	csDiff, err := h.Client().DiffServiceGroup(currentOject.CentreonServiceGroup, expectedObject.CentreonServiceGroup, o.Spec.Policy.ExcludeFieldsOnDiff)
 	if err != nil {
 		return nil, errors.Wrap(err, "Error when diff CentreonServiceGroup")
 	}
 
-	patchDiff, err := json.ConfigCompatibleWithStandardLibrary.Marshal(csDiff)
-	if err != nil {
-		return nil, errors.Wrap(err, "Failed to convert patched object to byte sequence")
-	}
+	if csDiff.IsDiff {
+		patchDiff, err := json.ConfigCompatibleWithStandardLibrary.Marshal(csDiff)
+		if err != nil {
+			return nil, errors.Wrap(err, "Failed to convert patched object to byte sequence")
+		}
 
-	patchResult = &patch.PatchResult{
-		Patch: patchDiff,
+		patchResult.Patch = patchDiff
 	}
 
 	return patchResult, nil

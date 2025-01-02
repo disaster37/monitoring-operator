@@ -24,8 +24,7 @@ import (
 
 	// Import all Kubernetes client auth plugins (e.g. Azure, GCP, OIDC, etc.)
 	// to ensure that exec-entrypoint and run can make use of them.
-	"k8s.io/client-go/dynamic"
-	"k8s.io/client-go/kubernetes"
+
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
 	"k8s.io/utils/ptr"
 
@@ -45,7 +44,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/webhook"
 
 	monitorapi "github.com/disaster37/monitoring-operator/api/v1"
-	"github.com/disaster37/monitoring-operator/controllers"
 	"github.com/disaster37/operator-sdk-extra/pkg/helper"
 	//+kubebuilder:scaffold:imports
 )
@@ -185,134 +183,137 @@ func main() {
 		os.Exit(1)
 	}
 
-	// Get platforms
-	// Not block if errors, maybee not yet platform available
-	platforms, err := controllers.ComputedPlatformList(context.Background(), dynamic.NewForConfigOrDie(cfg), kubernetes.NewForConfigOrDie(cfg), log.WithFields(logrus.Fields{
-		"type": "CentreonHandler",
-	}))
-	if err != nil {
-		log.Errorf("Error when get platforms, we start controller with empty platform list: %s", err.Error())
-		platforms = map[string]*controllers.ComputedPlatform{}
-	}
-	// Set platform controllers
-	platformController := controllers.NewPlatformReconciler(mgr.GetClient(), mgr.GetScheme())
-	platformController.SetLogger(log.WithFields(logrus.Fields{
-		"type": "PlatformController",
-	}))
-	platformController.SetRecorder(mgr.GetEventRecorderFor("platform-controller"))
-	platformController.SetReconsiler(platformController)
-	platformController.SetPlatforms(platforms)
-	if err = platformController.SetupWithManager(mgr); err != nil {
-		setupLog.Error(err, "unable to create controller", "controller", "Platform")
-		os.Exit(1)
-	}
+	/*
 
-	// Template controller sub system
-	templateController := controllers.TemplateController{
-		Client: mgr.GetClient(),
-		Scheme: mgr.GetScheme(),
-	}
-	templateController.SetLogger(log.WithFields(logrus.Fields{
-		"type": "TemplateController",
-	}))
-
-	// Set CentreonService controller
-	centreonServiceController := controllers.NewCentreonServiceReconciler(mgr.GetClient(), mgr.GetScheme())
-	centreonServiceController.SetLogger(log.WithFields(logrus.Fields{
-		"type": "CentreonServiceController",
-	}))
-	centreonServiceController.SetRecorder(mgr.GetEventRecorderFor("centreonservice-controller"))
-	centreonServiceController.SetReconsiler(centreonServiceController)
-	centreonServiceController.SetPlatforms(platforms)
-	if err = centreonServiceController.SetupWithManager(mgr); err != nil {
-		setupLog.Error(err, "unable to create controller", "controller", "CentreonService")
-		os.Exit(1)
-	}
-
-	// Set CentreonServiceGroup controller
-	centreonServiceGroupController := controllers.NewCentreonServiceGroupReconciler(mgr.GetClient(), mgr.GetScheme())
-	centreonServiceGroupController.SetLogger(log.WithFields(logrus.Fields{
-		"type": "CentreonServiceGroupController",
-	}))
-	centreonServiceGroupController.SetRecorder(mgr.GetEventRecorderFor("centreonservicegroup-controller"))
-	centreonServiceGroupController.SetReconsiler(centreonServiceGroupController)
-	centreonServiceGroupController.SetPlatforms(platforms)
-	if err = centreonServiceGroupController.SetupWithManager(mgr); err != nil {
-		setupLog.Error(err, "unable to create controller", "controller", "CentreonServiceGroup")
-		os.Exit(1)
-	}
-
-	// Set Ingress controller
-	ingressController := controllers.NewIngressReconciler(mgr.GetClient(), mgr.GetScheme(), templateController)
-	ingressController.Reconciler.SetLogger(log.WithFields(logrus.Fields{
-		"type": "IngressController",
-	}))
-	ingressController.SetRecorder(mgr.GetEventRecorderFor("ingress-controller"))
-	ingressController.SetReconsiler(ingressController)
-	ingressController.SetPlatforms(platforms)
-	if err = ingressController.SetupWithManager(mgr); err != nil {
-		setupLog.Error(err, "unable to create controller", "controller", "Ingress")
-		os.Exit(1)
-	}
-
-	// Set route controller
-	isRouteCRD, err := controllers.IsRouteCRD(cfg)
-	if err != nil {
-		setupLog.Error(err, "unable to check API groups")
-		os.Exit(1)
-	}
-	if isRouteCRD {
-		routeController := controllers.NewRouteReconciler(mgr.GetClient(), mgr.GetScheme(), templateController)
-		routeController.Reconciler.SetLogger(log.WithFields(logrus.Fields{
-			"type": "RouteController",
+		// Get platforms
+		// Not block if errors, maybee not yet platform available
+		platforms, err := controllers.ComputedPlatformList(context.Background(), dynamic.NewForConfigOrDie(cfg), kubernetes.NewForConfigOrDie(cfg), log.WithFields(logrus.Fields{
+			"type": "CentreonHandler",
 		}))
-		routeController.SetRecorder(mgr.GetEventRecorderFor("route-controller"))
-		routeController.SetReconsiler(routeController)
-		routeController.SetPlatforms(platforms)
-		if err = routeController.SetupWithManager(mgr); err != nil {
-			setupLog.Error(err, "unable to create controller", "controller", "Route")
+		if err != nil {
+			log.Errorf("Error when get platforms, we start controller with empty platform list: %s", err.Error())
+			platforms = map[string]*controllers.ComputedPlatform{}
+		}
+		// Set platform controllers
+		platformController := controllers.NewPlatformReconciler(mgr.GetClient(), mgr.GetScheme())
+		platformController.SetLogger(log.WithFields(logrus.Fields{
+			"type": "PlatformController",
+		}))
+		platformController.SetRecorder(mgr.GetEventRecorderFor("platform-controller"))
+		platformController.SetReconsiler(platformController)
+		platformController.SetPlatforms(platforms)
+		if err = platformController.SetupWithManager(mgr); err != nil {
+			setupLog.Error(err, "unable to create controller", "controller", "Platform")
 			os.Exit(1)
 		}
-	}
 
-	// Set namespace
-	namespaceController := controllers.NewNamespaceReconciler(mgr.GetClient(), mgr.GetScheme(), templateController)
-	namespaceController.Reconciler.SetLogger(log.WithFields(logrus.Fields{
-		"type": "NamespaceController",
-	}))
-	namespaceController.SetRecorder(mgr.GetEventRecorderFor("namespace-controller"))
-	namespaceController.SetReconsiler(namespaceController)
-	namespaceController.SetPlatforms(platforms)
-	if err = namespaceController.SetupWithManager(mgr); err != nil {
-		setupLog.Error(err, "unable to create controller", "controller", "Namespace")
-		os.Exit(1)
-	}
+		// Template controller sub system
+		templateController := controllers.TemplateController{
+			Client: mgr.GetClient(),
+			Scheme: mgr.GetScheme(),
+		}
+		templateController.SetLogger(log.WithFields(logrus.Fields{
+			"type": "TemplateController",
+		}))
 
-	// Set node
-	nodeController := controllers.NewNodeReconciler(mgr.GetClient(), mgr.GetScheme(), templateController)
-	nodeController.Reconciler.SetLogger(log.WithFields(logrus.Fields{
-		"type": "NodeController",
-	}))
-	nodeController.SetRecorder(mgr.GetEventRecorderFor("node-controller"))
-	nodeController.SetReconsiler(nodeController)
-	nodeController.SetPlatforms(platforms)
-	if err = nodeController.SetupWithManager(mgr); err != nil {
-		setupLog.Error(err, "unable to create controller", "controller", "Node")
-		os.Exit(1)
-	}
+		// Set CentreonService controller
+		centreonServiceController := controllers.NewCentreonServiceReconciler(mgr.GetClient(), mgr.GetScheme())
+		centreonServiceController.SetLogger(log.WithFields(logrus.Fields{
+			"type": "CentreonServiceController",
+		}))
+		centreonServiceController.SetRecorder(mgr.GetEventRecorderFor("centreonservice-controller"))
+		centreonServiceController.SetReconsiler(centreonServiceController)
+		centreonServiceController.SetPlatforms(platforms)
+		if err = centreonServiceController.SetupWithManager(mgr); err != nil {
+			setupLog.Error(err, "unable to create controller", "controller", "CentreonService")
+			os.Exit(1)
+		}
 
-	// Set certificate
-	certificateController := controllers.NewCertificateReconciler(mgr.GetClient(), mgr.GetScheme(), templateController)
-	certificateController.Reconciler.SetLogger(log.WithFields(logrus.Fields{
-		"type": "CertificateController",
-	}))
-	certificateController.SetRecorder(mgr.GetEventRecorderFor("certificate-controller"))
-	certificateController.SetReconsiler(certificateController)
-	certificateController.SetPlatforms(platforms)
-	if err = certificateController.SetupWithManager(mgr); err != nil {
-		setupLog.Error(err, "unable to create controller", "controller", "Certificate")
-		os.Exit(1)
-	}
+		// Set CentreonServiceGroup controller
+		centreonServiceGroupController := controllers.NewCentreonServiceGroupReconciler(mgr.GetClient(), mgr.GetScheme())
+		centreonServiceGroupController.SetLogger(log.WithFields(logrus.Fields{
+			"type": "CentreonServiceGroupController",
+		}))
+		centreonServiceGroupController.SetRecorder(mgr.GetEventRecorderFor("centreonservicegroup-controller"))
+		centreonServiceGroupController.SetReconsiler(centreonServiceGroupController)
+		centreonServiceGroupController.SetPlatforms(platforms)
+		if err = centreonServiceGroupController.SetupWithManager(mgr); err != nil {
+			setupLog.Error(err, "unable to create controller", "controller", "CentreonServiceGroup")
+			os.Exit(1)
+		}
+
+		// Set Ingress controller
+		ingressController := controllers.NewIngressReconciler(mgr.GetClient(), mgr.GetScheme(), templateController)
+		ingressController.Reconciler.SetLogger(log.WithFields(logrus.Fields{
+			"type": "IngressController",
+		}))
+		ingressController.SetRecorder(mgr.GetEventRecorderFor("ingress-controller"))
+		ingressController.SetReconsiler(ingressController)
+		ingressController.SetPlatforms(platforms)
+		if err = ingressController.SetupWithManager(mgr); err != nil {
+			setupLog.Error(err, "unable to create controller", "controller", "Ingress")
+			os.Exit(1)
+		}
+
+		// Set route controller
+		isRouteCRD, err := controllers.IsRouteCRD(cfg)
+		if err != nil {
+			setupLog.Error(err, "unable to check API groups")
+			os.Exit(1)
+		}
+		if isRouteCRD {
+			routeController := controllers.NewRouteReconciler(mgr.GetClient(), mgr.GetScheme(), templateController)
+			routeController.Reconciler.SetLogger(log.WithFields(logrus.Fields{
+				"type": "RouteController",
+			}))
+			routeController.SetRecorder(mgr.GetEventRecorderFor("route-controller"))
+			routeController.SetReconsiler(routeController)
+			routeController.SetPlatforms(platforms)
+			if err = routeController.SetupWithManager(mgr); err != nil {
+				setupLog.Error(err, "unable to create controller", "controller", "Route")
+				os.Exit(1)
+			}
+		}
+
+		// Set namespace
+		namespaceController := controllers.NewNamespaceReconciler(mgr.GetClient(), mgr.GetScheme(), templateController)
+		namespaceController.Reconciler.SetLogger(log.WithFields(logrus.Fields{
+			"type": "NamespaceController",
+		}))
+		namespaceController.SetRecorder(mgr.GetEventRecorderFor("namespace-controller"))
+		namespaceController.SetReconsiler(namespaceController)
+		namespaceController.SetPlatforms(platforms)
+		if err = namespaceController.SetupWithManager(mgr); err != nil {
+			setupLog.Error(err, "unable to create controller", "controller", "Namespace")
+			os.Exit(1)
+		}
+
+		// Set node
+		nodeController := controllers.NewNodeReconciler(mgr.GetClient(), mgr.GetScheme(), templateController)
+		nodeController.Reconciler.SetLogger(log.WithFields(logrus.Fields{
+			"type": "NodeController",
+		}))
+		nodeController.SetRecorder(mgr.GetEventRecorderFor("node-controller"))
+		nodeController.SetReconsiler(nodeController)
+		nodeController.SetPlatforms(platforms)
+		if err = nodeController.SetupWithManager(mgr); err != nil {
+			setupLog.Error(err, "unable to create controller", "controller", "Node")
+			os.Exit(1)
+		}
+
+		// Set certificate
+		certificateController := controllers.NewCertificateReconciler(mgr.GetClient(), mgr.GetScheme(), templateController)
+		certificateController.Reconciler.SetLogger(log.WithFields(logrus.Fields{
+			"type": "CertificateController",
+		}))
+		certificateController.SetRecorder(mgr.GetEventRecorderFor("certificate-controller"))
+		certificateController.SetReconsiler(certificateController)
+		certificateController.SetPlatforms(platforms)
+		if err = certificateController.SetupWithManager(mgr); err != nil {
+			setupLog.Error(err, "unable to create controller", "controller", "Certificate")
+			os.Exit(1)
+		}
+	*/
 
 	//+kubebuilder:scaffold:builder
 

@@ -79,6 +79,10 @@ func (h *centreonServiceApiClient) Get(o *centreoncrd.CentreonService) (object *
 		return nil, err
 	}
 
+	if cs == nil {
+		return nil, nil
+	}
+
 	object = &CentreonService{
 		CentreonService: cs,
 	}
@@ -121,18 +125,21 @@ func (h *centreonServiceApiClient) Delete(o *centreoncrd.CentreonService) (err e
 
 func (h *centreonServiceApiClient) Diff(currentOject *CentreonService, expectedObject *CentreonService, originalObject *CentreonService, o *centreoncrd.CentreonService, ignoresDiff ...patch.CalculateOption) (patchResult *patch.PatchResult, err error) {
 
+	patchResult = &patch.PatchResult{}
+
 	csDiff, err := h.Client().DiffService(currentOject.CentreonService, expectedObject.CentreonService, o.Spec.Policy.ExcludeFieldsOnDiff)
 	if err != nil {
 		return nil, errors.Wrap(err, "Error when diff CentreonService")
 	}
 
-	patchDiff, err := json.ConfigCompatibleWithStandardLibrary.Marshal(csDiff)
-	if err != nil {
-		return nil, errors.Wrap(err, "Failed to convert patched object to byte sequence")
-	}
+	if csDiff.IsDiff {
+		patchDiff, err := json.ConfigCompatibleWithStandardLibrary.Marshal(csDiff)
+		if err != nil {
+			return nil, errors.Wrap(err, "Failed to convert patched object to byte sequence")
+		}
 
-	patchResult = &patch.PatchResult{
-		Patch: patchDiff,
+		patchResult.Patch = patchDiff
+
 	}
 
 	return patchResult, nil

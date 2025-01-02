@@ -21,6 +21,7 @@ import (
 
 	centreoncrd "github.com/disaster37/monitoring-operator/api/v1"
 	monitorapi "github.com/disaster37/monitoring-operator/api/v1"
+	"github.com/disaster37/monitoring-operator/internal/controller/platform"
 	"github.com/disaster37/monitoring-operator/pkg/centreonhandler"
 	"github.com/disaster37/operator-sdk-extra/pkg/controller"
 	"github.com/disaster37/operator-sdk-extra/pkg/helper"
@@ -44,7 +45,7 @@ type CentreonServiceReconciler struct {
 	name string
 }
 
-func NewCentreonServiceReconciler(client client.Client, logger *logrus.Entry, recorder record.EventRecorder) controller.Controller {
+func NewCentreonServiceReconciler(client client.Client, logger *logrus.Entry, recorder record.EventRecorder, platforms map[string]*platform.ComputedPlatform) controller.Controller {
 	return &CentreonServiceReconciler{
 		Controller: controller.NewBasicController(),
 		RemoteReconciler: controller.NewBasicRemoteReconciler[*centreoncrd.CentreonService, *CentreonService, centreonhandler.CentreonHandler](
@@ -58,6 +59,7 @@ func NewCentreonServiceReconciler(client client.Client, logger *logrus.Entry, re
 			centreonServiceName,
 			client,
 			recorder,
+			platforms,
 		),
 		name: centreonServiceName,
 	}

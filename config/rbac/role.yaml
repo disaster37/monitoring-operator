@@ -1,9 +1,7 @@
-
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
-  creationTimestamp: null
   name: monitoring-operator
 rules:
 - apiGroups:
@@ -17,56 +15,8 @@ rules:
 - apiGroups:
   - ""
   resources:
-  - namespaces
-  verbs:
-  - get
-  - list
-  - update
-  - watch
-- apiGroups:
-  - ""
-  resources:
-  - namespaces/finalizers
-  verbs:
-  - update
-- apiGroups:
-  - ""
-  resources:
-  - nodes
-  verbs:
-  - get
-  - list
-  - update
-  - watch
-- apiGroups:
-  - ""
-  resources:
-  - nodes/finalizers
-  verbs:
-  - update
-- apiGroups:
-  - ""
-  resources:
   - secrets
   verbs:
-  - get
-  - list
-  - patch
-  - update
-  - watch
-- apiGroups:
-  - ""
-  resources:
-  - secrets/finalizers
-  verbs:
-  - update
-- apiGroups:
-  - monitor.k8s.webcenter.fr
-  resources:
-  - centreonServices
-  verbs:
-  - create
-  - delete
   - get
   - list
   - patch
@@ -76,57 +26,7 @@ rules:
   - monitor.k8s.webcenter.fr
   resources:
   - centreonservicegroups
-  verbs:
-  - create
-  - delete
-  - get
-  - list
-  - patch
-  - update
-  - watch
-- apiGroups:
-  - monitor.k8s.webcenter.fr
-  resources:
-  - centreonservicegroups/finalizers
-  verbs:
-  - update
-- apiGroups:
-  - monitor.k8s.webcenter.fr
-  resources:
-  - centreonservicegroups/status
-  verbs:
-  - get
-  - patch
-  - update
-- apiGroups:
-  - monitor.k8s.webcenter.fr
-  resources:
   - centreonservices
-  verbs:
-  - create
-  - delete
-  - get
-  - list
-  - patch
-  - update
-  - watch
-- apiGroups:
-  - monitor.k8s.webcenter.fr
-  resources:
-  - centreonservices/finalizers
-  verbs:
-  - update
-- apiGroups:
-  - monitor.k8s.webcenter.fr
-  resources:
-  - centreonservices/status
-  verbs:
-  - get
-  - patch
-  - update
-- apiGroups:
-  - monitor.k8s.webcenter.fr
-  resources:
   - platforms
   verbs:
   - create
@@ -139,41 +39,20 @@ rules:
 - apiGroups:
   - monitor.k8s.webcenter.fr
   resources:
+  - centreonservicegroups/finalizers
+  - centreonservices/finalizers
   - platforms/finalizers
   verbs:
   - update
 - apiGroups:
   - monitor.k8s.webcenter.fr
   resources:
+  - centreonservicegroups/status
+  - centreonservices/status
   - platforms/status
   verbs:
   - get
   - patch
-  - update
-- apiGroups:
-  - monitor.k8s.webcenter.fr
-  resources:
-  - templates
-  verbs:
-  - get
-  - list
-  - patch
-  - update
-  - watch
-- apiGroups:
-  - networking.k8s.io
-  resources:
-  - ingresses
-  verbs:
-  - get
-  - list
-  - update
-  - watch
-- apiGroups:
-  - networking.k8s.io
-  resources:
-  - ingresses/finalizers
-  verbs:
   - update
 - apiGroups:
   - route.openshift.io
@@ -184,9 +63,3 @@ rules:
   - list
   - update
   - watch
-- apiGroups:
-  - route.openshift.io
-  resources:
-  - routes/finalizers
-  verbs:
-  - update

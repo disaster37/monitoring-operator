@@ -2,11 +2,17 @@ package centreon
 
 import (
 	"context"
+	"encoding/json"
+	"fmt"
 
+	"emperror.dev/errors"
+	"github.com/disaster37/generic-objectmatcher/patch"
 	centreoncrd "github.com/disaster37/monitoring-operator/api/v1"
 	"github.com/disaster37/monitoring-operator/internal/controller/common"
+	"github.com/disaster37/monitoring-operator/internal/controller/platform"
 	"github.com/disaster37/monitoring-operator/pkg/centreonhandler"
 	"github.com/disaster37/operator-sdk-extra/pkg/controller"
+	"github.com/disaster37/operator-sdk-extra/pkg/helper"
 	"github.com/disaster37/operator-sdk-extra/pkg/object"
 	"github.com/sirupsen/logrus"
 	"k8s.io/client-go/tools/record"
@@ -17,23 +23,24 @@ import (
 type centreonServiceGroupReconciler struct {
 	controller.RemoteReconcilerAction[*centreoncrd.CentreonServiceGroup, *CentreonServiceGroup, centreonhandler.CentreonHandler]
 	name      string
-	platforms map[string]*ComputedPlatform
+	platforms map[string]*platform.ComputedPlatform
 }
 
-func newCentreonServiceGroupReconciler(name string, client client.Client, recorder record.EventRecorder) controller.RemoteReconcilerAction[*centreoncrd.CentreonServiceGroup, *CentreonServiceGroup, centreonhandler.CentreonHandler] {
+func newCentreonServiceGroupReconciler(name string, client client.Client, recorder record.EventRecorder, platforms map[string]*platform.ComputedPlatform) controller.RemoteReconcilerAction[*centreoncrd.CentreonServiceGroup, *CentreonServiceGroup, centreonhandler.CentreonHandler] {
 	return &centreonServiceGroupReconciler{
 		RemoteReconcilerAction: controller.NewRemoteReconcilerAction[*centreoncrd.CentreonServiceGroup, *CentreonServiceGroup, centreonhandler.CentreonHandler](
 			client,
 			recorder,
 		),
-		name: name,
+		name:      name,
+		platforms: platforms,
 	}
 }
 
 func (h *centreonServiceGroupReconciler) GetRemoteHandler(ctx context.Context, req ctrl.Request, o object.RemoteObject, logger *logrus.Entry) (handler controller.RemoteExternalReconciler[*centreoncrd.CentreonServiceGroup, *CentreonServiceGroup, centreonhandler.CentreonHandler], res ctrl.Result, err error) {
 	cs := o.(*centreoncrd.CentreonServiceGroup)
 
-	meta, _, err := getClient(cs.Spec.PlatformRef, h.platforms)
+	meta, _, err := platform.GetClient(cs.Spec.PlatformRef, h.platforms)
 	if err != nil {
 		return nil, res, err
 	}
@@ -75,4 +82,43 @@ func (h *centreonServiceGroupReconciler) OnSuccess(ctx context.Context, o object
 	}
 
 	return h.RemoteReconcilerAction.OnSuccess(ctx, o, data, handler, diff, logger)
+}
+
+func (h *centreonServiceGroupReconciler) Diff(ctx context.Context, o object.RemoteObject, read controller.RemoteRead[*CentreonServiceGroup], data map[string]any, handler controller.RemoteExternalReconciler[*centreoncrd.CentreonServiceGroup, *CentreonServiceGroup, centreonhandler.CentreonHandler], logger *logrus.Entry, ignoreDiff ...patch.CalculateOption) (diff controller.RemoteDiff[*CentreonServiceGroup], res ctrl.Result, err error) {
+	// Get the original object from status to use 3-way diff
+
+	originalObject := new(CentreonServiceGroup)
+	if o.GetStatus().GetLastAppliedConfiguration() != "" {
+		if err = helper.UnZipBase64Decode(o.GetStatus().GetLastAppliedConfiguration(), originalObject); err != nil {
+			return diff, res, errors.Wrap(err, "Error when create object from 'lastAppliedConfiguration'")
+		}
+	}
+
+	diff = controller.NewBasicRemoteDiff[*CentreonServiceGroup]()
+
+	// Check if need to create object on remote
+	if read.GetCurrentObject() == nil {
+		diff.SetObjectToCreate(read.GetExpectedObject())
+		diff.AddDiff(fmt.Sprintf("Need to create new object %s on remote target", o.GetName()))
+
+		return diff, res, nil
+	}
+
+	differ, err := handler.Diff(read.GetCurrentObject(), read.GetExpectedObject(), originalObject, o.(*centreoncrd.CentreonServiceGroup), ignoreDiff...)
+	if err != nil {
+		return diff, res, errors.Wrapf(err, "Error when diffing %s for remote target", o.GetName())
+	}
+
+	if !differ.IsEmpty() {
+		csgDiff := &centreonhandler.CentreonServiceGroupDiff{}
+		if err = json.Unmarshal(differ.Patch, csgDiff); err != nil {
+			return diff, res, errors.Wrap(err, "Error when unmarshall the CentreonServiceGroup patch")
+		}
+		diff.AddDiff(string(differ.Patch))
+		csg := read.GetExpectedObject()
+		csg.CentreonServiceGroupDiff = csgDiff
+		diff.SetObjectToUpdate(csg)
+	}
+
+	return diff, res, nil
 }

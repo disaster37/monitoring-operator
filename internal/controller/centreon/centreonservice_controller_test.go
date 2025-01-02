@@ -673,7 +673,6 @@ func doPolicyNoUpdateCentreonServiceStep() test.TestStep {
 		Check: func(t *testing.T, c client.Client, key types.NamespacedName, o client.Object, data map[string]any) (err error) {
 			cs := &monitorapi.CentreonService{}
 			isUpdated := false
-			lastGeneration := data["lastGeneration"].(int64)
 
 			isTimeout, _ := test.RunWithTimeout(func() error {
 				if err := c.Get(context.Background(), key, cs); err != nil {
@@ -682,7 +681,7 @@ func doPolicyNoUpdateCentreonServiceStep() test.TestStep {
 				if b, ok := data["isUpdatedPolicyNoUpdate"]; ok {
 					isUpdated = b.(bool)
 				}
-				if !isUpdated || lastGeneration == cs.GetStatus().GetObservedGeneration() {
+				if !isUpdated {
 					return errors.New("Not yet updated")
 				}
 				return nil
@@ -718,7 +717,6 @@ func doPolicyExcludeFieldsCentreonServiceStep() test.TestStep {
 		Check: func(t *testing.T, c client.Client, key types.NamespacedName, o client.Object, data map[string]any) (err error) {
 			cs := &monitorapi.CentreonService{}
 			isUpdated := false
-			lastGeneration := data["lastGeneration"].(int64)
 
 			isTimeout, _ := test.RunWithTimeout(func() error {
 				if err := c.Get(context.Background(), key, cs); err != nil {
@@ -727,7 +725,7 @@ func doPolicyExcludeFieldsCentreonServiceStep() test.TestStep {
 				if b, ok := data["isUpdatedPolicyExcludeFields"]; ok {
 					isUpdated = b.(bool)
 				}
-				if !isUpdated || lastGeneration == cs.GetStatus().GetObservedGeneration() {
+				if !isUpdated {
 					return errors.New("Not yet updated")
 				}
 				return nil

@@ -8,9 +8,9 @@ import (
 
 	"dario.cat/mergo"
 	"emperror.dev/errors"
-	"github.com/disaster37/monitoring-operator/api/shared"
 	centreoncrd "github.com/disaster37/monitoring-operator/api/v1"
 	"github.com/disaster37/monitoring-operator/pkg/helpers"
+	"github.com/disaster37/monitoring-operator/pkg/object"
 	sprig "github.com/go-task/slim-sprig"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -21,7 +21,7 @@ import (
 type builder struct {
 	placehodlers                 map[string]any
 	supportedTemplateObjects     map[string]client.Object
-	supportedTemplateObjectsList []shared.ObjectList
+	supportedTemplateObjectsList []object.ObjectList
 	sourceObject                 client.Object
 	scheme                       runtime.ObjectTyper
 }
@@ -30,7 +30,7 @@ func newBuilder(o client.Object, scheme runtime.ObjectTyper) *builder {
 	return &builder{
 		sourceObject:                 o,
 		supportedTemplateObjects:     make(map[string]client.Object),
-		supportedTemplateObjectsList: make([]shared.ObjectList, 0),
+		supportedTemplateObjectsList: make([]object.ObjectList, 0),
 		placehodlers: map[string]any{
 			"name":        o.GetName(),
 			"namespace":   o.GetNamespace(),
@@ -49,17 +49,17 @@ func (h *builder) AddPlaceholders(placeholders map[string]any) *builder {
 	return h
 }
 
-func (h *builder) For(o client.Object, oList shared.ObjectList) *builder {
+func (h *builder) For(o client.Object, oList object.ObjectList) *builder {
 	o = helpers.GetObjectWithMeta(o, h.scheme)
 	h.supportedTemplateObjects[helpers.GetObjectType(o)] = o
 	h.supportedTemplateObjectsList = append(h.supportedTemplateObjectsList, oList)
 	return h
 }
 
-func (h *builder) Lists() []shared.ObjectList {
-	lists := make([]shared.ObjectList, 0, len(h.supportedTemplateObjectsList))
+func (h *builder) Lists() []object.ObjectList {
+	lists := make([]object.ObjectList, 0, len(h.supportedTemplateObjectsList))
 	for _, oList := range h.supportedTemplateObjectsList {
-		lists = append(lists, reflect.New(reflect.TypeOf(oList)).Interface().(shared.ObjectList))
+		lists = append(lists, reflect.New(reflect.TypeOf(oList)).Interface().(object.ObjectList))
 	}
 	return lists
 }

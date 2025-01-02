@@ -1,10 +1,8 @@
-
----
 apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.7.0
+    controller-gen.kubebuilder.io/version: v0.17.0
   creationTimestamp: null
   name: templates.monitor.k8s.webcenter.fr
 spec:
@@ -31,14 +29,19 @@ spec:
         description: Template is the Schema for the templates API
         properties:
           apiVersion:
-            description: 'APIVersion defines the versioned schema of this representation
-              of an object. Servers should convert recognized schemas to the latest
-              internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
+            description: |-
+              APIVersion defines the versioned schema of this representation of an object.
+              Servers should convert recognized schemas to the latest internal value, and
+              may reject unrecognized values.
+              More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources
             type: string
           kind:
-            description: 'Kind is a string value representing the REST resource this
-              object represents. Servers may infer this from the endpoint the client
-              submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
+            description: |-
+              Kind is a string value representing the REST resource this object represents.
+              Servers may infer this from the endpoint the client submits requests to.
+              Cannot be updated.
+              In CamelCase.
+              More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds
             type: string
           metadata:
             type: object
@@ -49,8 +52,9 @@ spec:
                 description: Name is the resource name generated from template
                 type: string
               template:
-                description: Template is the CentreonService template base on golang
-                  templating You need only provide the spec contend
+                description: |-
+                  Template is the CentreonService template base on golang templating
+                  You need only provide the spec contend
                 type: string
               type:
                 description: Type is the object type it generate from template
@@ -71,55 +75,9 @@ spec:
     storage: true
     subresources:
       status: {}
-  - name: v1alpha1
-    schema:
-      openAPIV3Schema:
-        description: Template is the Schema for the templates API
-        properties:
-          apiVersion:
-            description: 'APIVersion defines the versioned schema of this representation
-              of an object. Servers should convert recognized schemas to the latest
-              internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
-            type: string
-          kind:
-            description: 'Kind is a string value representing the REST resource this
-              object represents. Servers may infer this from the endpoint the client
-              submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
-            type: string
-          metadata:
-            type: object
-          spec:
-            description: TemplateSpec defines the desired state of Template
-            properties:
-              name:
-                description: Name is the resource name generated from template
-                type: string
-              template:
-                description: Template is the CentreonService template base on golang
-                  templating You need only provide the spec contend
-                type: string
-              type:
-                description: Type is the object type it generate from template
-                type: string
-            required:
-            - template
-            - type
-            type: object
-          status:
-            description: TemplateStatus defines the observed state of Template
-            properties:
-              status:
-                description: Fake status to generate bundle manifest without error
-                type: string
-            type: object
-        type: object
-    served: true
-    storage: false
-    subresources:
-      status: {}
 status:
   acceptedNames:
     kind: ""
     plural: ""
-  conditions: []
-  storedVersions: []
+  conditions: null
+  storedVersions: null
