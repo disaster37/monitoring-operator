@@ -34,7 +34,6 @@ func TestRouteControllerSuite(t *testing.T) {
 }
 
 func (t *RouteControllerTestSuite) SetupSuite() {
-
 	logf.SetLogger(zap.New(zap.UseDevMode(true)))
 	logrus.SetLevel(logrus.TraceLevel)
 	logrus.SetFormatter(&logrus.TextFormatter{

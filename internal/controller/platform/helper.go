@@ -88,7 +88,6 @@ func ComputedPlatformList(ctx context.Context, c client.Client, logger *logrus.E
 }
 
 func getComputedCentreonPlatform(p *monitorapi.Platform, s *corev1.Secret, log *logrus.Entry) (cp *ComputedPlatform, err error) {
-
 	if p == nil {
 		return nil, errors.New("Platform can't be null")
 	}
@@ -130,5 +129,4 @@ func getComputedCentreonPlatform(p *monitorapi.Platform, s *corev1.Secret, log *
 		Platform: p,
 		Hash:     hex.EncodeToString(sha.Sum(nil)),
 	}, nil
-
 }

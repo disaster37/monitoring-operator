@@ -21,17 +21,3 @@ func getLabels(o client.Object, customLabels ...map[string]string) (labels map[s
 
 	return labels
 }
-
-// getAnnotations permit to return global annotations must be set on all resources
-func getAnnotations(o client.Object, customAnnotation ...map[string]string) (annotations map[string]string) {
-	annotations = map[string]string{
-		centreoncrd.MonitoringAnnotationKey: "true",
-	}
-	for _, annotation := range customAnnotation {
-		for key, val := range annotation {
-			annotations[key] = val
-		}
-	}
-
-	return annotations
-}

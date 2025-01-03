@@ -120,11 +120,9 @@ func (h *centreonServiceApiClient) Delete(o *centreoncrd.CentreonService) (err e
 	}
 
 	return h.Client().DeleteService(o.Spec.Host, o.GetExternalName())
-
 }
 
 func (h *centreonServiceApiClient) Diff(currentOject *CentreonService, expectedObject *CentreonService, originalObject *CentreonService, o *centreoncrd.CentreonService, ignoresDiff ...patch.CalculateOption) (patchResult *patch.PatchResult, err error) {
-
 	patchResult = &patch.PatchResult{}
 
 	csDiff, err := h.Client().DiffService(currentOject.CentreonService, expectedObject.CentreonService, o.Spec.Policy.ExcludeFieldsOnDiff)

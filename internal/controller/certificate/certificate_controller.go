@@ -128,7 +128,6 @@ func viewCertificate() predicate.Predicate {
 			default:
 				return true
 			}
-
 		},
 		DeleteFunc: func(e event.DeleteEvent) bool {
 			switch e.Object.(type) {

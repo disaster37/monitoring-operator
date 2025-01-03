@@ -10,7 +10,6 @@ import (
 
 // CreateService permit to create new service on Centreon from spec
 func (h *CentreonHandlerImpl) CreateService(service *CentreonService) (err error) {
-
 	if service == nil {
 		return errors.New("Service must be provided")
 	}
@@ -49,7 +48,7 @@ func (h *CentreonHandlerImpl) CreateService(service *CentreonService) (err error
 	}
 
 	// Set service groups
-	if service.Groups != nil && len(service.Groups) > 0 {
+	if len(service.Groups) > 0 {
 		if err = h.client.API.Service().SetServiceGroups(service.Host, service.Name, service.Groups); err != nil {
 			return err
 		}
@@ -57,7 +56,7 @@ func (h *CentreonHandlerImpl) CreateService(service *CentreonService) (err error
 	}
 
 	// Set categories
-	if service.Categories != nil && len(service.Categories) > 0 {
+	if len(service.Categories) > 0 {
 		if err = h.client.API.Service().SetCategories(service.Host, service.Name, service.Categories); err != nil {
 			return err
 		}
@@ -65,7 +64,7 @@ func (h *CentreonHandlerImpl) CreateService(service *CentreonService) (err error
 	}
 
 	// Set macros
-	if service.Macros != nil && len(service.Macros) > 0 {
+	if len(service.Macros) > 0 {
 		for _, macro := range service.Macros {
 			if err = h.client.API.Service().SetMacro(service.Host, service.Name, macro); err != nil {
 				return err
@@ -77,12 +76,10 @@ func (h *CentreonHandlerImpl) CreateService(service *CentreonService) (err error
 	h.log.Debug("Create service successfully on Centreon")
 
 	return nil
-
 }
 
 // UpdateService permit to update existing service on Centreon from spec
 func (h *CentreonHandlerImpl) UpdateService(serviceDiff *CentreonServiceDiff) (err error) {
-
 	if serviceDiff == nil {
 		return errors.New("ServiceDiff must be provided")
 	}

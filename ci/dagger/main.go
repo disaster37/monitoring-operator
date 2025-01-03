@@ -16,9 +16,10 @@ package main
 
 import (
 	"context"
-	"dagger/monitoring-operator/internal/dagger"
 	"fmt"
 	"strings"
+
+	"dagger/monitoring-operator/internal/dagger"
 
 	"emperror.dev/errors"
 	"github.com/disaster37/dagger-library-go/lib/helper"
@@ -292,7 +293,6 @@ func (h *MonitoringOperator) CI(
 					WithExec(helper.ForgeCommandf("git checkout %s", branch))
 
 				return r.WithCustomContainer(ctr)
-
 			})
 		} else {
 			git = git.SetRepo(h.Src.WithDirectory(".", dir), dagger.GitSetRepoOpts{Branch: branch})

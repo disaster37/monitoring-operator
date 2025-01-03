@@ -10,7 +10,6 @@ import (
 
 func (t *CentreonHandlerTestSuite) TestCreateService() {
 	macro1 := &models.Macro{
-
 		Name:       "macro1",
 		Value:      "value",
 		IsPassword: "0",
@@ -77,7 +76,7 @@ func (t *CentreonHandlerTestSuite) TestCreateService() {
 		SetCategories(gomock.Eq("central"), gomock.Eq("ping"), gomock.Eq([]string{"cat1"})).
 		Return(nil)
 
-	//Mock set macros
+	// Mock set macros
 	t.mockService.EXPECT().
 		SetMacro(gomock.Eq("central"), gomock.Eq("ping"), gomock.Eq(macro1)).
 		Return(nil)
@@ -126,7 +125,6 @@ func (t *CentreonHandlerTestSuite) TestCreateService() {
 	}
 	err = t.client.CreateService(toCreate)
 	assert.Error(t.T(), err)
-
 }
 
 func (t *CentreonHandlerTestSuite) TestUpdateService() {
@@ -185,7 +183,7 @@ func (t *CentreonHandlerTestSuite) TestUpdateService() {
 		DeleteCategories(gomock.Eq("central"), gomock.Eq("ping2"), gomock.Eq([]string{"cat1"})).
 		Return(nil)
 
-	//Mock set macros
+	// Mock set macros
 	t.mockService.EXPECT().
 		SetMacro(gomock.Eq("central"), gomock.Eq("ping2"), gomock.Eq(macro2)).
 		Return(nil)
@@ -266,7 +264,6 @@ func (t *CentreonHandlerTestSuite) TestUpdateService() {
 }
 
 func (t *CentreonHandlerTestSuite) TestDeleteService() {
-
 	// Mock delete
 	t.mockService.EXPECT().
 		Delete(gomock.Eq("central"), gomock.Eq("ping")).
@@ -277,7 +274,6 @@ func (t *CentreonHandlerTestSuite) TestDeleteService() {
 }
 
 func (t *CentreonHandlerTestSuite) TestGetService() {
-
 	macro1 := &models.Macro{
 		Name:       "macro1",
 		Value:      "value1",
@@ -359,11 +355,9 @@ func (t *CentreonHandlerTestSuite) TestGetService() {
 
 	_, err = t.client.GetService("central", "")
 	assert.Error(t.T(), err)
-
 }
 
 func (t *CentreonHandlerTestSuite) TestDiffService() {
-
 	tests := []struct {
 		Name            string
 		ActualService   *CentreonService

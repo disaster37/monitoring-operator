@@ -25,7 +25,6 @@ func TestSuite(t *testing.T) {
 }
 
 func (t *CentreonHandlerTestSuite) SetupSuite() {
-
 	// Init Centreon mock
 	t.mockCtrl = gomock.NewController(t.T())
 	t.mockClient = mocks.NewMockAPI(t.mockCtrl)
@@ -63,5 +62,4 @@ func (t *CentreonHandlerTestSuite) TestNewCentreonHandler() {
 
 	assert.Equal(t.T(), client, ch.(*CentreonHandlerImpl).client)
 	assert.Equal(t.T(), log, ch.(*CentreonHandlerImpl).log)
-
 }

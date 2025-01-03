@@ -80,7 +80,6 @@ func (t *APITestSuite) SetupSuite() {
 			panic(err)
 		}
 	}()
-
 }
 
 func (t *APITestSuite) TearDownSuite() {

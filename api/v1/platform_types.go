@@ -46,7 +46,6 @@ type PlatformSpec struct {
 }
 
 type PlatformSpecCentreonSettings struct {
-
 	// URL is the full URL to access on Centreon API
 	// +operator-sdk:csv:customresourcedefinitions:type=spec
 	URL string `json:"url"`

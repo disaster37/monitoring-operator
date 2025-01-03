@@ -38,7 +38,6 @@ func newPlatformReconciler(name string, client client.Client, recorder record.Ev
 }
 
 func (h *platformReconciler) GetRemoteHandler(ctx context.Context, req ctrl.Request, o object.RemoteObject, logger *logrus.Entry) (handler controller.RemoteExternalReconciler[*centreoncrd.Platform, *ComputedPlatform, centreonhandler.CentreonHandler], res ctrl.Result, err error) {
-
 	handler = newPlaformApiClient(nil, logger, h.platforms)
 
 	return handler, res, nil
@@ -103,7 +102,6 @@ func (h *platformReconciler) OnError(ctx context.Context, o object.RemoteObject,
 }
 
 func (h *platformReconciler) OnSuccess(ctx context.Context, o object.RemoteObject, data map[string]any, handler controller.RemoteExternalReconciler[*centreoncrd.Platform, *ComputedPlatform, centreonhandler.CentreonHandler], diff controller.RemoteDiff[*ComputedPlatform], logger *logrus.Entry) (res ctrl.Result, err error) {
-
 	// Reset the current cluster errors
 	common.ControllerErrors.WithLabelValues(h.name, o.GetNamespace(), o.GetName()).Set(0)
 
@@ -111,7 +109,6 @@ func (h *platformReconciler) OnSuccess(ctx context.Context, o object.RemoteObjec
 }
 
 func (h *platformReconciler) Diff(ctx context.Context, o object.RemoteObject, read controller.RemoteRead[*ComputedPlatform], data map[string]any, handler controller.RemoteExternalReconciler[*centreoncrd.Platform, *ComputedPlatform, centreonhandler.CentreonHandler], logger *logrus.Entry, ignoreDiff ...patch.CalculateOption) (diff controller.RemoteDiff[*ComputedPlatform], res ctrl.Result, err error) {
-
 	diff = controller.NewBasicRemoteDiff[*ComputedPlatform]()
 
 	// New platform

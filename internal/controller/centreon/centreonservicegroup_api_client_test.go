@@ -9,7 +9,6 @@ import (
 )
 
 func TestCentreonServiceGroupBuild(t *testing.T) {
-
 	client := &centreonServiceGroupApiClient{}
 
 	o := &centreoncrd.CentreonServiceGroup{
@@ -30,5 +29,4 @@ func TestCentreonServiceGroupBuild(t *testing.T) {
 	csg, err := client.Build(o)
 	assert.NoError(t, err)
 	assert.Equal(t, expectedCSG, csg.CentreonServiceGroup)
-
 }

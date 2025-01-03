@@ -37,7 +37,6 @@ func TestPlatformControllerSuite(t *testing.T) {
 }
 
 func (t *PlatformControllerTestSuite) SetupSuite() {
-
 	logf.SetLogger(zap.New(zap.UseDevMode(true)))
 	logrus.SetLevel(logrus.TraceLevel)
 	logrus.SetFormatter(&logrus.TextFormatter{
@@ -138,9 +137,7 @@ func (t *PlatformControllerTestSuite) TearDownSuite() {
 }
 
 func (t *PlatformControllerTestSuite) BeforeTest(suiteName, testName string) {
-
 }
 
 func (t *PlatformControllerTestSuite) AfterTest(suiteName, testName string) {
-
 }

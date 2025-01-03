@@ -52,7 +52,6 @@ type TemplateSpec struct {
 }
 
 type TemplateTemplateDelimiter struct {
-
 	// Right is the right delimiter
 	// +operator-sdk:csv:customresourcedefinitions:type=spec
 	// +kubebuilder:validation:MinLength:=1

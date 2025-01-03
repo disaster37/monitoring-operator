@@ -49,15 +49,35 @@ spec:
             description: TemplateSpec defines the desired state of Template
             properties:
               name:
-                description: Name is the resource name generated from template
+                description: |-
+                  Deprecated: Use the full template instead to set the name
+                  Name is the resource name generated from template
                 type: string
               template:
-                description: |-
-                  Template is the CentreonService template base on golang templating
-                  You need only provide the spec contend
+                description: Template is the template to render. You can use the golang
+                  template syntaxe with sprig function
                 type: string
+              templateDelimiter:
+                description: |-
+                  TemplateDelimiter is the delimiter to use when render template
+                  It can be usefull if you use helm on top of them
+                properties:
+                  left:
+                    description: Left is the left delimiter
+                    minLength: 1
+                    type: string
+                  right:
+                    description: Right is the right delimiter
+                    minLength: 1
+                    type: string
+                required:
+                - left
+                - right
+                type: object
               type:
-                description: Type is the object type it generate from template
+                description: |-
+                  Deprecated: Use full template instead to set the type
+                  Type is the object type it generate from template
                 type: string
             required:
             - template

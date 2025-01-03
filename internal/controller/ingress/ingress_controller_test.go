@@ -38,7 +38,6 @@ func (t *IngressControllerTestSuite) TestIngressCentreonController() {
 	}
 
 	testCase.Run()
-
 }
 
 func doCreateIngressOldStep() test.TestStep {
@@ -263,7 +262,6 @@ func doUpdateIngressOldStep() test.TestStep {
 	return test.TestStep{
 		Name: "update",
 		Pre: func(c client.Client, data map[string]any) error {
-
 			logrus.Info("Update CentreonServiceTemplate template-ingress1")
 			template := &monitorapi.Template{}
 			if err := c.Get(context.Background(), types.NamespacedName{Namespace: "default", Name: "template-ingress1"}, template); err != nil {
@@ -394,7 +392,6 @@ func doDeleteIngressOldStep() test.TestStep {
 				}
 
 				return nil
-
 			}, time.Second*30, time.Second*1)
 
 			if err != nil || isTimeout {
@@ -633,7 +630,6 @@ func doUpdateIngressStep() test.TestStep {
 	return test.TestStep{
 		Name: "update",
 		Pre: func(c client.Client, data map[string]any) error {
-
 			logrus.Info("Update CentreonServiceTemplate template-ingress3")
 			template := &monitorapi.Template{}
 			if err := c.Get(context.Background(), types.NamespacedName{Namespace: "default", Name: "template-ingress3"}, template); err != nil {
@@ -767,7 +763,6 @@ func doDeleteIngressStep() test.TestStep {
 				}
 
 				return nil
-
 			}, time.Second*30, time.Second*1)
 
 			if err != nil || isTimeout {

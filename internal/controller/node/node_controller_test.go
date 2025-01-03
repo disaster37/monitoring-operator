@@ -39,7 +39,6 @@ func (t *NodeControllerTestSuite) TestNodeCentreonController() {
 	}
 
 	testCase.Run()
-
 }
 
 func doCreateNodeOldStep() test.TestStep {
@@ -142,7 +141,6 @@ func doUpdateNodeOldStep() test.TestStep {
 	return test.TestStep{
 		Name: "update",
 		Pre: func(c client.Client, data map[string]any) error {
-
 			logrus.Info("Update template template-node1")
 			template := &monitorapi.Template{}
 			if err := c.Get(context.Background(), types.NamespacedName{Namespace: "default", Name: "template-node1"}, template); err != nil {
@@ -253,7 +251,6 @@ func doDeleteNodeOldStep() test.TestStep {
 			return nil
 		},
 		Check: func(t *testing.T, c client.Client, key types.NamespacedName, o client.Object, data map[string]any) (err error) {
-
 			node := &corev1.Node{}
 			isDeleted := false
 
@@ -271,7 +268,6 @@ func doDeleteNodeOldStep() test.TestStep {
 				}
 
 				return nil
-
 			}, time.Second*30, time.Second*1)
 
 			if err != nil || isTimeout {
@@ -386,7 +382,6 @@ func doUpdateNodeStep() test.TestStep {
 	return test.TestStep{
 		Name: "update",
 		Pre: func(c client.Client, data map[string]any) error {
-
 			logrus.Info("Update template template-node3")
 			template := &monitorapi.Template{}
 			if err := c.Get(context.Background(), types.NamespacedName{Namespace: "default", Name: "template-node3"}, template); err != nil {
@@ -500,7 +495,6 @@ func doDeleteNodeStep() test.TestStep {
 			return nil
 		},
 		Check: func(t *testing.T, c client.Client, key types.NamespacedName, o client.Object, data map[string]any) (err error) {
-
 			node := &corev1.Node{}
 			isDeleted := false
 
@@ -518,7 +512,6 @@ func doDeleteNodeStep() test.TestStep {
 				}
 
 				return nil
-
 			}, time.Second*30, time.Second*1)
 
 			if err != nil || isTimeout {

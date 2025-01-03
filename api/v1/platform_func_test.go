@@ -26,10 +26,9 @@ func TestPlaformGetStatus(t *testing.T) {
 }
 
 func TestPlatformGetExternalName(t *testing.T) {
-	var o *Platform
 
 	// When name isn't set
-	o = &Platform{
+	o := &Platform{
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace: "default",
 			Name:      "test",

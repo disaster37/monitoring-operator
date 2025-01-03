@@ -203,7 +203,7 @@ categories:
 				Categories: []string{"cat1"},
 			}
 			assert.Equal(t, "appTest", cs.Labels["app"])
-			assert.Equal(t, "default.template-route2", cs.Labels["monitor.k8s.webcenter.fr/template-name"])
+			assert.Equal(t, "default.template-route2", cs.Labels["monitor.k8s.webcenter.fr/template"])
 			assert.Equal(t, fmt.Sprintf("%s.%s", key.Namespace, key.Name), cs.Labels["monitor.k8s.webcenter.fr/parent"])
 			assert.Equal(t, expectedCSSpec, cs.Spec)
 			assert.NotEmpty(t, cs.OwnerReferences)
@@ -216,7 +216,6 @@ func doUpdateRouteOldStep() test.TestStep {
 	return test.TestStep{
 		Name: "update",
 		Pre: func(c client.Client, data map[string]any) error {
-
 			logrus.Info("Update CentreonServiceTemplate template-route1")
 			template := &monitorapi.Template{}
 			if err := c.Get(context.Background(), types.NamespacedName{Namespace: "default", Name: "template-route1"}, template); err != nil {
@@ -347,7 +346,6 @@ func doDeleteRouteOldStep() test.TestStep {
 				}
 
 				return nil
-
 			}, time.Second*30, time.Second*1)
 
 			if err != nil || isTimeout {
@@ -407,7 +405,7 @@ kind: CentreonService
 spec:
   host: "localhost"
   name: "ping2"
-  template: "template2"
+  template: "template4"
   macros:
     name: "{{ .name }}"
     namespace: "{{ .namespace }}"
@@ -526,7 +524,7 @@ spec:
 				Categories: []string{"cat1"},
 			}
 			assert.Equal(t, "appTest", cs.Labels["app"])
-			assert.Equal(t, "default.template-route4", cs.Labels["monitor.k8s.webcenter.fr/template-name"])
+			assert.Equal(t, "default.template-route4", cs.Labels["monitor.k8s.webcenter.fr/template"])
 			assert.Equal(t, fmt.Sprintf("%s.%s", key.Namespace, key.Name), cs.Labels["monitor.k8s.webcenter.fr/parent"])
 			assert.Equal(t, expectedCSSpec, cs.Spec)
 			assert.NotEmpty(t, cs.OwnerReferences)
@@ -539,7 +537,6 @@ func doUpdateRouteStep() test.TestStep {
 	return test.TestStep{
 		Name: "update",
 		Pre: func(c client.Client, data map[string]any) error {
-
 			logrus.Info("Update CentreonServiceTemplate template-route3")
 			template := &monitorapi.Template{}
 			if err := c.Get(context.Background(), types.NamespacedName{Namespace: "default", Name: "template-route3"}, template); err != nil {
@@ -552,7 +549,7 @@ kind: CentreonService
 spec:
   host: "localhost"
   name: "ping1"
-  template: "template1"
+  template: "template3"
   macros:
     name: "{{ .name }}"
     namespace: "{{ .namespace }}"
@@ -673,7 +670,6 @@ func doDeleteRouteStep() test.TestStep {
 				}
 
 				return nil
-
 			}, time.Second*30, time.Second*1)
 
 			if err != nil || isTimeout {

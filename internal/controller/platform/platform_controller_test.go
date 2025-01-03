@@ -43,7 +43,6 @@ func (t *PlatformControllerTestSuite) TestPlatformController() {
 	}
 
 	testCase.Run()
-
 }
 
 func doCreatePlatformStep() test.TestStep {
@@ -109,7 +108,6 @@ func doCreatePlatformStep() test.TestStep {
 					return errors.New("Platform not yet loaded")
 				}
 				return nil
-
 			}, time.Second*30, time.Second*1)
 			if err != nil || isTimeout {
 				t.Fatalf("Failed to get Platform: %s", err.Error())
@@ -173,7 +171,6 @@ func doUpdatePlatformStep() test.TestStep {
 				}
 
 				return nil
-
 			}, time.Second*30, time.Second*1)
 			if err != nil || isTimeout {
 				t.Fatalf("Failed to get platform: %s", err.Error())
@@ -235,7 +232,6 @@ func doUpdatePlatformSecretStep() test.TestStep {
 				}
 
 				return nil
-
 			}, time.Second*30, time.Second*1)
 			if err != nil || isTimeout {
 				t.Fatalf("Failed to get platform: %s", err.Error())
@@ -257,7 +253,6 @@ func doListPlatformStep() test.TestStep {
 			return nil
 		},
 		Check: func(t *testing.T, c client.Client, key types.NamespacedName, o client.Object, data map[string]any) (err error) {
-
 			log := logrus.NewEntry(logrus.New())
 			log.Logger.SetLevel(logrus.DebugLevel)
 
@@ -313,7 +308,6 @@ func doDeletePlatformStep() test.TestStep {
 				}
 
 				return errors.New("Not yet deleted")
-
 			}, time.Second*30, time.Second*1)
 
 			if err != nil || isTimeout {

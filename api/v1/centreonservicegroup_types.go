@@ -101,5 +101,3 @@ type CentreonServiceGroupList struct {
 func init() {
 	SchemeBuilder.Register(&CentreonServiceGroup{}, &CentreonServiceGroupList{})
 }
-
-

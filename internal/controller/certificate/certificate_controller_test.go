@@ -38,7 +38,6 @@ func (t *CertificateControllerTestSuite) TestCertificateCentreonController() {
 	}
 
 	testCase.Run()
-
 }
 
 func doCreateCertificateOldStep() test.TestStep {
@@ -185,7 +184,6 @@ func doUpdateCertificateOldStep() test.TestStep {
 	return test.TestStep{
 		Name: "update",
 		Pre: func(c client.Client, data map[string]any) error {
-
 			logrus.Info("Update template template-certificate")
 			template := &centreoncrd.Template{}
 			if err := c.Get(context.Background(), types.NamespacedName{Namespace: "default", Name: "template-certificate"}, template); err != nil {
@@ -313,7 +311,6 @@ func doDeleteCertificateOldStep() test.TestStep {
 				}
 
 				return nil
-
 			}, time.Second*30, time.Second*1)
 
 			if err != nil || isTimeout {
@@ -472,7 +469,6 @@ func doUpdateCertificateStep() test.TestStep {
 	return test.TestStep{
 		Name: "update",
 		Pre: func(c client.Client, data map[string]any) error {
-
 			logrus.Info("Update template template-certificate2")
 			template := &centreoncrd.Template{}
 			if err := c.Get(context.Background(), types.NamespacedName{Namespace: "default", Name: "template-certificate2"}, template); err != nil {
@@ -603,7 +599,6 @@ func doDeleteCertificateStep() test.TestStep {
 				}
 
 				return nil
-
 			}, time.Second*30, time.Second*1)
 
 			if err != nil || isTimeout {

@@ -10,7 +10,6 @@ import (
 )
 
 func TestCentreonServiceBuild(t *testing.T) {
-
 	client := &centreonServiceApiClient{}
 
 	o := &centreoncrd.CentreonService{
@@ -61,6 +60,4 @@ func TestCentreonServiceBuild(t *testing.T) {
 	cs, err := client.Build(o)
 	assert.NoError(t, err)
 	assert.Equal(t, expectedCS, cs.CentreonService)
-
-
 }

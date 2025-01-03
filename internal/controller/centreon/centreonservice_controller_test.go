@@ -46,7 +46,6 @@ func (t *CentreonControllerTestSuite) TestCentreonServiceController() {
 	testCase.PreTest = doMockCentreonService(t.mockCentreonHandler)
 
 	testCase.Run()
-
 }
 
 func doMockCentreonService(mockCS *mocks.MockCentreonHandler) func(stepName *string, data map[string]any) error {

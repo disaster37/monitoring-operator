@@ -24,7 +24,6 @@ func newCentreonServiceGroupApiClient(client centreonhandler.CentreonHandler, lo
 }
 
 func (h *centreonServiceGroupApiClient) Build(o *centreoncrd.CentreonServiceGroup) (csg *CentreonServiceGroup, err error) {
-
 	csg = &CentreonServiceGroup{
 		CentreonServiceGroup: &centreonhandler.CentreonServiceGroup{
 			Name:        o.GetExternalName(),
@@ -38,9 +37,7 @@ func (h *centreonServiceGroupApiClient) Build(o *centreoncrd.CentreonServiceGrou
 }
 
 func (h *centreonServiceGroupApiClient) Get(o *centreoncrd.CentreonServiceGroup) (object *CentreonServiceGroup, err error) {
-	var (
-		serviceGroupName string
-	)
+	var serviceGroupName string
 
 	// Check if the current serviceGroup name is right before to search on Centreon
 	// Maybee we should to change it name
@@ -96,7 +93,6 @@ func (h *centreonServiceGroupApiClient) Delete(o *centreoncrd.CentreonServiceGro
 	}
 
 	return h.Client().DeleteServiceGroup(o.GetExternalName())
-
 }
 
 func (h *centreonServiceGroupApiClient) Diff(currentOject *CentreonServiceGroup, expectedObject *CentreonServiceGroup, originalObject *CentreonServiceGroup, o *centreoncrd.CentreonServiceGroup, ignoresDiff ...patch.CalculateOption) (patchResult *patch.PatchResult, err error) {

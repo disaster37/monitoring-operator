@@ -31,7 +31,6 @@ func GetItems(o client.ObjectList) (items []client.Object) {
 
 // GetObjectWithMeta return current object with TypeMeta to kwons the object type
 func GetObjectWithMeta(o client.Object, s runtime.ObjectTyper) client.Object {
-
 	if o == nil {
 		panic("Object can't be nil")
 	}
@@ -59,7 +58,6 @@ func GetObjectType(o schema.ObjectKind) string {
 
 // CloneObject permit to clone current object type
 func CloneObject[objectType comparable](o objectType) objectType {
-
 	if reflect.TypeOf(o).Kind() != reflect.Pointer {
 		panic("CloneObject work only with pointer")
 	}

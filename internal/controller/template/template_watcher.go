@@ -17,7 +17,6 @@ import (
 // WatchTemplate permit to search resource created from Template to reconcil parents of them
 func WatchTemplate(c client.Client, parent client.ObjectList) handler.MapFunc {
 	return func(ctx context.Context, a client.Object) []reconcile.Request {
-
 		var (
 			listRessources client.ObjectList
 			ls             labels.Selector

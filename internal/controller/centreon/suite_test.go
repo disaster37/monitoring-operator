@@ -163,7 +163,6 @@ func (t *CentreonControllerTestSuite) TearDownSuite() {
 }
 
 func (t *CentreonControllerTestSuite) BeforeTest(suiteName, testName string) {
-
 }
 
 func (t *CentreonControllerTestSuite) AfterTest(suiteName, testName string) {

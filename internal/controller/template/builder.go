@@ -73,7 +73,6 @@ func (h *builder) Objects() []client.Object {
 	}
 
 	return list
-
 }
 
 func (h *builder) Process(t *centreoncrd.Template) (object client.Object, err error) {
@@ -167,7 +166,6 @@ func (h *builder) Process(t *centreoncrd.Template) (object client.Object, err er
 	}
 
 	return newO, nil
-
 }
 
 // processName permit to get the resource name generated from template

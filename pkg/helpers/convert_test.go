@@ -16,7 +16,6 @@ func TestBoolToString(t *testing.T) {
 }
 
 func TestStringToBool(t *testing.T) {
-
 	assert.True(t, *StringToBool("1"))
 	assert.False(t, *StringToBool("0"))
 	assert.False(t, *StringToBool("fake"))
@@ -24,7 +23,6 @@ func TestStringToBool(t *testing.T) {
 }
 
 func TestCheckArgumentsToString(t *testing.T) {
-
 	assert.Equal(t, "", CheckArgumentsToString(nil))
 	assert.Equal(t, "", CheckArgumentsToString([]string{}))
 	assert.Equal(t, "!arg1", CheckArgumentsToString([]string{"arg1"}))
@@ -32,10 +30,8 @@ func TestCheckArgumentsToString(t *testing.T) {
 }
 
 func TestStringToSlice(t *testing.T) {
-
 	assert.Equal(t, []string{"test"}, StringToSlice("test", ","))
 	assert.Equal(t, []string{}, StringToSlice("", ","))
 	assert.Equal(t, []string{"test", "test2"}, StringToSlice("test,test2", ","))
 	assert.Equal(t, []string{"test", "test2"}, StringToSlice("test, test2", ","))
-
 }

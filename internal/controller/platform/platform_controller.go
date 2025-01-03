@@ -119,7 +119,6 @@ func viewOperatorNamespacePredicate() predicate.Predicate {
 	}
 	return predicate.Funcs{
 		UpdateFunc: func(e event.UpdateEvent) bool {
-
 			return e.ObjectNew.GetNamespace() == ns || e.ObjectOld.GetNamespace() == ns
 		},
 		DeleteFunc: func(e event.DeleteEvent) bool {
@@ -137,7 +136,6 @@ func viewOperatorNamespacePredicate() predicate.Predicate {
 // watchPlatformSecret permit to update client if platform secret change
 func watchCentreonPlatformSecret(c client.Client) handler.MapFunc {
 	return func(ctx context.Context, a client.Object) []reconcile.Request {
-
 		reconcileRequests := make([]reconcile.Request, 0)
 		listPlatforms := &centreoncrd.PlatformList{}
 

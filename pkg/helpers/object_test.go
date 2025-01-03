@@ -38,11 +38,9 @@ func TestGetObjectType(t *testing.T) {
 	o = GetObjectWithMeta(o, scheme.Scheme).(*corev1.Secret)
 
 	assert.Equal(t, "/v1/Secret", GetObjectType(o))
-
 }
 
 func TestCloneObject(t *testing.T) {
-
 	// Normal
 	o := &corev1.Secret{}
 	clone := CloneObject(o)
@@ -53,5 +51,4 @@ func TestCloneObject(t *testing.T) {
 	assert.Panics(t, func() {
 		CloneObject(s)
 	})
-
 }

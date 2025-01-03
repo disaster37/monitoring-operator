@@ -38,7 +38,6 @@ func (t *NamespaceControllerTestSuite) TestNamespaceCentreonController() {
 	}
 
 	testCase.Run()
-
 }
 
 func doCreateNamespaceOldStep() test.TestStep {
@@ -204,7 +203,6 @@ func doUpdateNamespaceOldStep() test.TestStep {
 	return test.TestStep{
 		Name: "update",
 		Pre: func(c client.Client, data map[string]any) error {
-
 			logrus.Info("Update template template-namespace1")
 			template := &monitorapi.Template{}
 			if err := c.Get(context.Background(), types.NamespacedName{Namespace: "default", Name: "template-namespace1"}, template); err != nil {
@@ -318,7 +316,6 @@ func doDeleteNamespaceOldStep() test.TestStep {
 			return nil
 		},
 		Check: func(t *testing.T, c client.Client, key types.NamespacedName, o client.Object, data map[string]any) (err error) {
-
 			// We can't test in envtest that the children is deleted
 			// https://stackoverflow.com/questions/64821970/operator-controller-could-not-delete-correlated-resources
 			// Namespace seems can't be deleted in envtest. Block on kubernetes finalizer
@@ -497,7 +494,6 @@ func doUpdateNamespaceStep() test.TestStep {
 	return test.TestStep{
 		Name: "update",
 		Pre: func(c client.Client, data map[string]any) error {
-
 			logrus.Info("Update template template-namespace3")
 			template := &monitorapi.Template{}
 			if err := c.Get(context.Background(), types.NamespacedName{Namespace: "default", Name: "template-namespace3"}, template); err != nil {
@@ -622,7 +618,6 @@ func doDeleteNamespaceStep() test.TestStep {
 			return nil
 		},
 		Check: func(t *testing.T, c client.Client, key types.NamespacedName, o client.Object, data map[string]any) (err error) {
-
 			// We can't test in envtest that the children is deleted
 			// https://stackoverflow.com/questions/64821970/operator-controller-could-not-delete-correlated-resources
 			// Namespace seems can't be deleted in envtest. Block on kubernetes finalizer

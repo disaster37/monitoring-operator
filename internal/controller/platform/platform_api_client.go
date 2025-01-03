@@ -53,5 +53,4 @@ func (h *platformApiClient) Delete(o *centreoncrd.Platform) (err error) {
 	delete(h.platforms, o.Name)
 
 	return nil
-
 }
