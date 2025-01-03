@@ -1,0 +1,687 @@
+package route
+
+import (
+	"context"
+	"errors"
+	"fmt"
+	"testing"
+	"time"
+
+	monitorapi "github.com/disaster37/monitoring-operator/api/v1"
+	"github.com/disaster37/monitoring-operator/pkg/helpers"
+	"github.com/disaster37/operator-sdk-extra/pkg/test"
+	routev1 "github.com/openshift/api/route/v1"
+	"github.com/sirupsen/logrus"
+	"github.com/stretchr/testify/assert"
+	k8serrors "k8s.io/apimachinery/pkg/api/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/apimachinery/pkg/util/intstr"
+	"sigs.k8s.io/controller-runtime/pkg/client"
+)
+
+func (t *RouteControllerTestSuite) TestRouteCentreonController() {
+	key := types.NamespacedName{
+		Name:      "t-route-" + helpers.RandomString(10),
+		Namespace: "default",
+	}
+	route := &routev1.Route{}
+	data := map[string]any{}
+
+	testCase := test.NewTestCase(t.T(), t.k8sClient, key, route, 5*time.Second, data)
+	testCase.Steps = []test.TestStep{
+		doCreateRouteOldStep(),
+		doUpdateRouteOldStep(),
+		doDeleteRouteOldStep(),
+		doCreateRouteStep(),
+		doUpdateRouteStep(),
+		doDeleteRouteStep(),
+	}
+
+	testCase.Run()
+}
+
+func doCreateRouteOldStep() test.TestStep {
+	return test.TestStep{
+		Name: "create",
+		Pre: func(c client.Client, data map[string]any) error {
+			template := &monitorapi.Template{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "template-route1",
+					Namespace: "default",
+				},
+				Spec: monitorapi.TemplateSpec{
+					Type: "CentreonService",
+					Template: `
+host: "localhost"
+name: "ping1"
+template: "template1"
+macros:
+  name: "{{ .name }}"
+  namespace: "{{ .namespace }}"
+arguments:
+  - "arg1"
+  - "arg2"
+activate: true
+groups:
+  - "sg1"
+categories:
+  - "cat1"`,
+				},
+			}
+			if err := c.Create(context.Background(), template); err != nil {
+				return err
+			}
+			logrus.Infof("Create template template-route1")
+
+			template = &monitorapi.Template{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "template-route2",
+					Namespace: "default",
+				},
+				Spec: monitorapi.TemplateSpec{
+					Type: "CentreonService",
+					Template: `
+host: "localhost"
+name: "ping2"
+template: "template2"
+macros:
+  name: "{{ .name }}"
+  namespace: "{{ .namespace }}"
+arguments:
+  - "arg1"
+  - "arg2"
+activate:  true
+groups:
+  - "sg1"
+categories:
+  - "cat1"`,
+				},
+			}
+			if err := c.Create(context.Background(), template); err != nil {
+				return err
+			}
+			logrus.Infof("Create template template-route2")
+
+			return nil
+		},
+		Do: func(c client.Client, key types.NamespacedName, o client.Object, data map[string]any) (err error) {
+			logrus.Infof("=== Add new Route %s/%s ===", key.Namespace, key.Name)
+
+			// Create route without annotations
+			route := &routev1.Route{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      key.Name,
+					Namespace: key.Namespace,
+					Labels: map[string]string{
+						"app": "appTest",
+						"env": "dev",
+					},
+					Annotations: map[string]string{
+						"monitor.k8s.webcenter.fr/templates": "[{\"namespace\":\"default\", \"name\": \"template-route1\"}, {\"namespace\":\"default\", \"name\": \"template-route2\"}]",
+					},
+				},
+				Spec: routev1.RouteSpec{
+					Host: "front.local.local",
+					Path: "/",
+					To: routev1.RouteTargetReference{
+						Kind: "Service",
+						Name: "fake",
+					},
+					Port: &routev1.RoutePort{
+						TargetPort: intstr.FromString("8080"),
+					},
+				},
+			}
+
+			if err = c.Create(context.Background(), route); err != nil {
+				return err
+			}
+
+			return nil
+		},
+		Check: func(t *testing.T, c client.Client, key types.NamespacedName, o client.Object, data map[string]any) (err error) {
+			cs := &monitorapi.CentreonService{}
+
+			isTimeout, err := test.RunWithTimeout(func() error {
+				if err := c.Get(context.Background(), types.NamespacedName{Namespace: key.Namespace, Name: "template-route1"}, cs); err != nil {
+					if k8serrors.IsNotFound(err) {
+						return errors.New("Not yet created")
+					}
+					t.Fatalf("Error when get Centreon service template-route1: %s", err.Error())
+				}
+				return nil
+			}, time.Second*30, time.Second*1)
+			if err != nil || isTimeout {
+				t.Fatalf("Failed to get Centreon service template-route1: %s", err.Error())
+			}
+
+			expectedCSSpec := monitorapi.CentreonServiceSpec{
+				Host:     "localhost",
+				Name:     "ping1",
+				Template: "template1",
+				Macros: map[string]string{
+					"name":      key.Name,
+					"namespace": key.Namespace,
+				},
+				Arguments:  []string{"arg1", "arg2"},
+				Activated:  true,
+				Groups:     []string{"sg1"},
+				Categories: []string{"cat1"},
+			}
+			assert.Equal(t, "appTest", cs.Labels["app"])
+			assert.Equal(t, "template-route1", cs.Name)
+			assert.Equal(t, "default.template-route1", cs.Labels["monitor.k8s.webcenter.fr/template"])
+			assert.Equal(t, fmt.Sprintf("%s.%s", key.Namespace, key.Name), cs.Labels["monitor.k8s.webcenter.fr/parent"])
+			assert.Equal(t, expectedCSSpec, cs.Spec)
+			assert.NotEmpty(t, cs.OwnerReferences)
+
+			// Get service generated by template-route2
+			isTimeout, err = test.RunWithTimeout(func() error {
+				if err := c.Get(context.Background(), types.NamespacedName{Namespace: key.Namespace, Name: "template-route2"}, cs); err != nil {
+					if k8serrors.IsNotFound(err) {
+						return errors.New("Not yet created")
+					}
+					t.Fatalf("Error when get Centreon service template-route2: %s", err.Error())
+				}
+				return nil
+			}, time.Second*30, time.Second*1)
+			if err != nil || isTimeout {
+				t.Fatalf("Failed to get Centreon service template-route2: %s", err.Error())
+			}
+			expectedCSSpec = monitorapi.CentreonServiceSpec{
+				Host:     "localhost",
+				Name:     "ping2",
+				Template: "template2",
+				Macros: map[string]string{
+					"name":      key.Name,
+					"namespace": key.Namespace,
+				},
+				Arguments:  []string{"arg1", "arg2"},
+				Activated:  true,
+				Groups:     []string{"sg1"},
+				Categories: []string{"cat1"},
+			}
+			assert.Equal(t, "appTest", cs.Labels["app"])
+			assert.Equal(t, "default.template-route2", cs.Labels["monitor.k8s.webcenter.fr/template-name"])
+			assert.Equal(t, fmt.Sprintf("%s.%s", key.Namespace, key.Name), cs.Labels["monitor.k8s.webcenter.fr/parent"])
+			assert.Equal(t, expectedCSSpec, cs.Spec)
+			assert.NotEmpty(t, cs.OwnerReferences)
+			return nil
+		},
+	}
+}
+
+func doUpdateRouteOldStep() test.TestStep {
+	return test.TestStep{
+		Name: "update",
+		Pre: func(c client.Client, data map[string]any) error {
+
+			logrus.Info("Update CentreonServiceTemplate template-route1")
+			template := &monitorapi.Template{}
+			if err := c.Get(context.Background(), types.NamespacedName{Namespace: "default", Name: "template-route1"}, template); err != nil {
+				return err
+			}
+
+			template.Spec.Template = `
+host: "localhost"
+name: "ping1"
+template: "template1"
+macros:
+  name: "{{ .name }}"
+  namespace: "{{ .namespace }}"
+arguments:
+  - "arg11"
+  - "arg21"
+activate: true
+groups:
+  - "sg1"
+categories:
+  - "cat1"`
+			if err := c.Update(context.Background(), template); err != nil {
+				return err
+			}
+
+			return nil
+		},
+		Do: func(c client.Client, key types.NamespacedName, o client.Object, data map[string]any) (err error) {
+			logrus.Infof("=== Update Route %s/%s ===", key.Namespace, key.Name)
+
+			if o == nil {
+				return errors.New("Route is null")
+			}
+			route := o.(*routev1.Route)
+
+			route.Annotations["test"] = "update"
+
+			// Get version of current CentreonService object
+			cs := &monitorapi.CentreonService{}
+			if err := c.Get(context.Background(), types.NamespacedName{Namespace: key.Namespace, Name: "template-route1"}, cs); err != nil {
+				return err
+			}
+
+			data["version"] = cs.ResourceVersion
+
+			if err = c.Update(context.Background(), route); err != nil {
+				return err
+			}
+
+			return nil
+		},
+		Check: func(t *testing.T, c client.Client, key types.NamespacedName, o client.Object, data map[string]any) (err error) {
+			cs := &monitorapi.CentreonService{}
+
+			version := data["version"].(string)
+
+			time.Sleep(5 * time.Second)
+
+			// Get service generated by template-ingress1
+			isTimeout, err := test.RunWithTimeout(func() error {
+				if err := c.Get(context.Background(), types.NamespacedName{Namespace: key.Namespace, Name: "template-route1"}, cs); err != nil {
+					if k8serrors.IsNotFound(err) {
+						t.Fatalf("Error when get Centreon service: %s", err.Error())
+					}
+					if cs.ResourceVersion == version {
+						return errors.New("Not yet updated")
+					}
+				}
+				return nil
+			}, time.Second*30, time.Second*1)
+			if err != nil || isTimeout {
+				t.Fatalf("Failed to get Centreon service template-route1: %s", err.Error())
+			}
+			expectedCSSpec := monitorapi.CentreonServiceSpec{
+				Host:     "localhost",
+				Name:     "ping1",
+				Template: "template1",
+				Macros: map[string]string{
+					"name":      key.Name,
+					"namespace": key.Namespace,
+				},
+				Arguments:  []string{"arg11", "arg21"},
+				Activated:  true,
+				Groups:     []string{"sg1"},
+				Categories: []string{"cat1"},
+			}
+			assert.Equal(t, "appTest", cs.Labels["app"])
+			assert.Equal(t, expectedCSSpec, cs.Spec)
+			assert.NotEmpty(t, cs.OwnerReferences)
+
+			return nil
+		},
+	}
+}
+
+func doDeleteRouteOldStep() test.TestStep {
+	return test.TestStep{
+		Name: "delete",
+		Do: func(c client.Client, key types.NamespacedName, o client.Object, data map[string]any) (err error) {
+			logrus.Infof("=== Delete Route %s/%s ===", key.Namespace, key.Name)
+			if o == nil {
+				return errors.New("Route is null")
+			}
+			route := o.(*routev1.Route)
+
+			wait := int64(0)
+			if err = c.Delete(context.Background(), route, &client.DeleteOptions{GracePeriodSeconds: &wait}); err != nil {
+				return err
+			}
+
+			return nil
+		},
+		Check: func(t *testing.T, c client.Client, key types.NamespacedName, o client.Object, data map[string]any) (err error) {
+			route := &routev1.Route{}
+			isDeleted := false
+
+			// We can't test in envtest that the children is deleted
+			// https://stackoverflow.com/questions/64821970/operator-controller-could-not-delete-correlated-resources
+
+			// Object can be deleted or marked as deleted
+			isTimeout, err := test.RunWithTimeout(func() error {
+				if err = c.Get(context.Background(), key, route); err != nil {
+					if k8serrors.IsNotFound(err) {
+						isDeleted = true
+						return nil
+					}
+					t.Fatal(err)
+				}
+
+				return nil
+
+			}, time.Second*30, time.Second*1)
+
+			if err != nil || isTimeout {
+				t.Fatalf("Route not deleted: %s", err.Error())
+			}
+			assert.True(t, isDeleted)
+
+			return nil
+		},
+	}
+}
+
+func doCreateRouteStep() test.TestStep {
+	return test.TestStep{
+		Name: "create",
+		Pre: func(c client.Client, data map[string]any) error {
+			template := &monitorapi.Template{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "template-route3",
+					Namespace: "default",
+				},
+				Spec: monitorapi.TemplateSpec{
+					Template: `
+apiVersion: monitor.k8s.webcenter.fr/v1
+kind: CentreonService
+spec:
+  host: "localhost"
+  name: "ping1"
+  template: "template3"
+  macros:
+    name: "{{ .name }}"
+    namespace: "{{ .namespace }}"
+  arguments:
+    - "arg1"
+    - "arg2"
+  activate: true
+  groups:
+    - "sg1"
+  categories:
+    - "cat1"`,
+				},
+			}
+			if err := c.Create(context.Background(), template); err != nil {
+				return err
+			}
+			logrus.Infof("Create template template-route3")
+
+			template = &monitorapi.Template{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "template-route4",
+					Namespace: "default",
+				},
+				Spec: monitorapi.TemplateSpec{
+					Template: `
+apiVersion: monitor.k8s.webcenter.fr/v1
+kind: CentreonService
+spec:
+  host: "localhost"
+  name: "ping2"
+  template: "template2"
+  macros:
+    name: "{{ .name }}"
+    namespace: "{{ .namespace }}"
+  arguments:
+    - "arg1"
+    - "arg2"
+  activate:  true
+  groups:
+    - "sg1"
+  categories:
+    - "cat1"`,
+				},
+			}
+			if err := c.Create(context.Background(), template); err != nil {
+				return err
+			}
+			logrus.Infof("Create template template-route4")
+
+			return nil
+		},
+		Do: func(c client.Client, key types.NamespacedName, o client.Object, data map[string]any) (err error) {
+			logrus.Infof("=== Add new Route %s/%s ===", key.Namespace, key.Name)
+
+			// Create route without annotations
+			route := &routev1.Route{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      key.Name,
+					Namespace: key.Namespace,
+					Labels: map[string]string{
+						"app": "appTest",
+						"env": "dev",
+					},
+					Annotations: map[string]string{
+						"monitor.k8s.webcenter.fr/templates": "[{\"namespace\":\"default\", \"name\": \"template-route3\"}, {\"namespace\":\"default\", \"name\": \"template-route4\"}]",
+					},
+				},
+				Spec: routev1.RouteSpec{
+					Host: "front.local.local",
+					Path: "/",
+					To: routev1.RouteTargetReference{
+						Kind: "Service",
+						Name: "fake",
+					},
+					Port: &routev1.RoutePort{
+						TargetPort: intstr.FromString("8080"),
+					},
+				},
+			}
+
+			if err = c.Create(context.Background(), route); err != nil {
+				return err
+			}
+
+			return nil
+		},
+		Check: func(t *testing.T, c client.Client, key types.NamespacedName, o client.Object, data map[string]any) (err error) {
+			cs := &monitorapi.CentreonService{}
+
+			isTimeout, err := test.RunWithTimeout(func() error {
+				if err := c.Get(context.Background(), types.NamespacedName{Namespace: key.Namespace, Name: "template-route3"}, cs); err != nil {
+					if k8serrors.IsNotFound(err) {
+						return errors.New("Not yet created")
+					}
+					t.Fatalf("Error when get Centreon service template-route3: %s", err.Error())
+				}
+				return nil
+			}, time.Second*30, time.Second*1)
+			if err != nil || isTimeout {
+				t.Fatalf("Failed to get Centreon service template-route3: %s", err.Error())
+			}
+
+			expectedCSSpec := monitorapi.CentreonServiceSpec{
+				Host:     "localhost",
+				Name:     "ping1",
+				Template: "template3",
+				Macros: map[string]string{
+					"name":      key.Name,
+					"namespace": key.Namespace,
+				},
+				Arguments:  []string{"arg1", "arg2"},
+				Activated:  true,
+				Groups:     []string{"sg1"},
+				Categories: []string{"cat1"},
+			}
+			assert.Equal(t, "appTest", cs.Labels["app"])
+			assert.Equal(t, "template-route3", cs.Name)
+			assert.Equal(t, "default.template-route3", cs.Labels["monitor.k8s.webcenter.fr/template"])
+			assert.Equal(t, fmt.Sprintf("%s.%s", key.Namespace, key.Name), cs.Labels["monitor.k8s.webcenter.fr/parent"])
+			assert.Equal(t, expectedCSSpec, cs.Spec)
+			assert.NotEmpty(t, cs.OwnerReferences)
+
+			// Get service generated by template-route2
+			isTimeout, err = test.RunWithTimeout(func() error {
+				if err := c.Get(context.Background(), types.NamespacedName{Namespace: key.Namespace, Name: "template-route4"}, cs); err != nil {
+					if k8serrors.IsNotFound(err) {
+						return errors.New("Not yet created")
+					}
+					t.Fatalf("Error when get Centreon service template-route4: %s", err.Error())
+				}
+				return nil
+			}, time.Second*30, time.Second*1)
+			if err != nil || isTimeout {
+				t.Fatalf("Failed to get Centreon service template-route4: %s", err.Error())
+			}
+			expectedCSSpec = monitorapi.CentreonServiceSpec{
+				Host:     "localhost",
+				Name:     "ping2",
+				Template: "template4",
+				Macros: map[string]string{
+					"name":      key.Name,
+					"namespace": key.Namespace,
+				},
+				Arguments:  []string{"arg1", "arg2"},
+				Activated:  true,
+				Groups:     []string{"sg1"},
+				Categories: []string{"cat1"},
+			}
+			assert.Equal(t, "appTest", cs.Labels["app"])
+			assert.Equal(t, "default.template-route4", cs.Labels["monitor.k8s.webcenter.fr/template-name"])
+			assert.Equal(t, fmt.Sprintf("%s.%s", key.Namespace, key.Name), cs.Labels["monitor.k8s.webcenter.fr/parent"])
+			assert.Equal(t, expectedCSSpec, cs.Spec)
+			assert.NotEmpty(t, cs.OwnerReferences)
+			return nil
+		},
+	}
+}
+
+func doUpdateRouteStep() test.TestStep {
+	return test.TestStep{
+		Name: "update",
+		Pre: func(c client.Client, data map[string]any) error {
+
+			logrus.Info("Update CentreonServiceTemplate template-route3")
+			template := &monitorapi.Template{}
+			if err := c.Get(context.Background(), types.NamespacedName{Namespace: "default", Name: "template-route3"}, template); err != nil {
+				return err
+			}
+
+			template.Spec.Template = `
+apiVersion: monitor.k8s.webcenter.fr/v1
+kind: CentreonService
+spec:
+  host: "localhost"
+  name: "ping1"
+  template: "template1"
+  macros:
+    name: "{{ .name }}"
+    namespace: "{{ .namespace }}"
+  arguments:
+    - "arg11"
+    - "arg21"
+  activate: true
+  groups:
+    - "sg1"
+  categories:
+    - "cat1"`
+			if err := c.Update(context.Background(), template); err != nil {
+				return err
+			}
+
+			return nil
+		},
+		Do: func(c client.Client, key types.NamespacedName, o client.Object, data map[string]any) (err error) {
+			logrus.Infof("=== Update Route %s/%s ===", key.Namespace, key.Name)
+
+			if o == nil {
+				return errors.New("Route is null")
+			}
+			route := o.(*routev1.Route)
+
+			route.Annotations["test"] = "update"
+
+			// Get version of current CentreonService object
+			cs := &monitorapi.CentreonService{}
+			if err := c.Get(context.Background(), types.NamespacedName{Namespace: key.Namespace, Name: "template-route3"}, cs); err != nil {
+				return err
+			}
+
+			data["version"] = cs.ResourceVersion
+
+			if err = c.Update(context.Background(), route); err != nil {
+				return err
+			}
+
+			return nil
+		},
+		Check: func(t *testing.T, c client.Client, key types.NamespacedName, o client.Object, data map[string]any) (err error) {
+			cs := &monitorapi.CentreonService{}
+
+			version := data["version"].(string)
+
+			time.Sleep(5 * time.Second)
+
+			// Get service generated by template-ingress1
+			isTimeout, err := test.RunWithTimeout(func() error {
+				if err := c.Get(context.Background(), types.NamespacedName{Namespace: key.Namespace, Name: "template-route3"}, cs); err != nil {
+					if k8serrors.IsNotFound(err) {
+						t.Fatalf("Error when get Centreon service: %s", err.Error())
+					}
+					if cs.ResourceVersion == version {
+						return errors.New("Not yet updated")
+					}
+				}
+				return nil
+			}, time.Second*30, time.Second*1)
+			if err != nil || isTimeout {
+				t.Fatalf("Failed to get Centreon service template-route3: %s", err.Error())
+			}
+			expectedCSSpec := monitorapi.CentreonServiceSpec{
+				Host:     "localhost",
+				Name:     "ping1",
+				Template: "template3",
+				Macros: map[string]string{
+					"name":      key.Name,
+					"namespace": key.Namespace,
+				},
+				Arguments:  []string{"arg11", "arg21"},
+				Activated:  true,
+				Groups:     []string{"sg1"},
+				Categories: []string{"cat1"},
+			}
+			assert.Equal(t, "appTest", cs.Labels["app"])
+			assert.Equal(t, expectedCSSpec, cs.Spec)
+			assert.NotEmpty(t, cs.OwnerReferences)
+
+			return nil
+		},
+	}
+}
+
+func doDeleteRouteStep() test.TestStep {
+	return test.TestStep{
+		Name: "delete",
+		Do: func(c client.Client, key types.NamespacedName, o client.Object, data map[string]any) (err error) {
+			logrus.Infof("=== Delete Route %s/%s ===", key.Namespace, key.Name)
+			if o == nil {
+				return errors.New("Route is null")
+			}
+			route := o.(*routev1.Route)
+
+			wait := int64(0)
+			if err = c.Delete(context.Background(), route, &client.DeleteOptions{GracePeriodSeconds: &wait}); err != nil {
+				return err
+			}
+
+			return nil
+		},
+		Check: func(t *testing.T, c client.Client, key types.NamespacedName, o client.Object, data map[string]any) (err error) {
+			route := &routev1.Route{}
+			isDeleted := false
+
+			// We can't test in envtest that the children is deleted
+			// https://stackoverflow.com/questions/64821970/operator-controller-could-not-delete-correlated-resources
+
+			// Object can be deleted or marked as deleted
+			isTimeout, err := test.RunWithTimeout(func() error {
+				if err = c.Get(context.Background(), key, route); err != nil {
+					if k8serrors.IsNotFound(err) {
+						isDeleted = true
+						return nil
+					}
+					t.Fatal(err)
+				}
+
+				return nil
+
+			}, time.Second*30, time.Second*1)
+
+			if err != nil || isTimeout {
+				t.Fatalf("Route not deleted: %s", err.Error())
+			}
+			assert.True(t, isDeleted)
+
+			return nil
+		},
+	}
+}

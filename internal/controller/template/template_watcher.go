@@ -49,11 +49,7 @@ func WatchTemplate(c client.Client, parent client.ObjectList) handler.MapFunc {
 				panic(err)
 			}
 
-			items, err := helpers.GetItems(listRessources)
-			if err != nil {
-				panic(err)
-			}
-
+			items := helpers.GetItems(listRessources)
 			for _, item := range items {
 				// Search parent to reconcile parent
 				for _, parent := range item.GetOwnerReferences() {
@@ -79,10 +75,7 @@ func WatchTemplate(c client.Client, parent client.ObjectList) handler.MapFunc {
 		}
 
 		// Now we need to open all annotations templates to found if this current template is called on
-		objects, err := helpers.GetItems(parent)
-		if err != nil {
-			panic(err)
-		}
+		objects := helpers.GetItems(parent)
 		for _, object := range objects {
 			targetTemplates := object.GetAnnotations()[fmt.Sprintf("%s/templates", centreoncrd.MonitoringAnnotationKey)]
 			if targetTemplates != "" {

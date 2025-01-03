@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"fmt"
 	"html/template"
-	"reflect"
 
 	"dario.cat/mergo"
 	"emperror.dev/errors"
@@ -42,16 +41,19 @@ func newBuilder(o client.Object, scheme runtime.ObjectTyper) *builder {
 }
 
 func (h *builder) AddPlaceholders(placeholders map[string]any) *builder {
-	if err := mergo.Merge(h.placehodlers, placeholders, mergo.WithAppendSlice); err != nil {
+	sourcePlaceholders := h.placehodlers
+	if err := mergo.Merge(&sourcePlaceholders, placeholders, mergo.WithAppendSlice); err != nil {
 		panic(err)
 	}
+
+	h.placehodlers = sourcePlaceholders
 
 	return h
 }
 
 func (h *builder) For(o client.Object, oList object.ObjectList) *builder {
 	o = helpers.GetObjectWithMeta(o, h.scheme)
-	h.supportedTemplateObjects[helpers.GetObjectType(o)] = o
+	h.supportedTemplateObjects[helpers.GetObjectType(o.GetObjectKind())] = o
 	h.supportedTemplateObjectsList = append(h.supportedTemplateObjectsList, oList)
 	return h
 }
@@ -59,7 +61,7 @@ func (h *builder) For(o client.Object, oList object.ObjectList) *builder {
 func (h *builder) Lists() []object.ObjectList {
 	lists := make([]object.ObjectList, 0, len(h.supportedTemplateObjectsList))
 	for _, oList := range h.supportedTemplateObjectsList {
-		lists = append(lists, reflect.New(reflect.TypeOf(oList)).Interface().(object.ObjectList))
+		lists = append(lists, helpers.CloneObject(oList))
 	}
 	return lists
 }
@@ -67,7 +69,7 @@ func (h *builder) Lists() []object.ObjectList {
 func (h *builder) Objects() []client.Object {
 	list := make([]client.Object, 0, len(h.supportedTemplateObjects))
 	for _, o := range h.supportedTemplateObjects {
-		list = append(list, reflect.New(reflect.TypeOf(o)).Interface().(client.Object))
+		list = append(list, helpers.CloneObject(o))
 	}
 
 	return list
@@ -76,12 +78,16 @@ func (h *builder) Objects() []client.Object {
 
 func (h *builder) Process(t *centreoncrd.Template) (object client.Object, err error) {
 	meta := &metav1.TypeMeta{}
-	object = helpers.GetObjectWithMeta(object, h.scheme)
 
 	h.placehodlers["templateName"] = t.Name
 	h.placehodlers["templateNamespace"] = t.Namespace
 
-	tGen, err := template.New("template").Funcs(sprig.FuncMap()).Parse(t.Spec.Template)
+	templateParser := template.New("template").Funcs(sprig.FuncMap())
+	if t.Spec.TemplateDelimiter != nil {
+		templateParser.Delims(t.Spec.TemplateDelimiter.Left, t.Spec.TemplateDelimiter.Right)
+	}
+
+	tGen, err := templateParser.Parse(t.Spec.Template)
 	if err != nil {
 		return nil, errors.Wrapf(err, "Error when parse template %s/%s from %s/%s", t.Namespace, t.Name, h.sourceObject.GetNamespace(), h.sourceObject.GetName())
 	}
@@ -119,7 +125,7 @@ func (h *builder) Process(t *centreoncrd.Template) (object client.Object, err er
 			if !cs.IsValid() {
 				return nil, fmt.Errorf("generated CentreonService is not valid: %+v", cs.Spec)
 			}
-			return cs, nil
+			return helpers.GetObjectWithMeta(cs, h.scheme), nil
 		case "CentreonServiceGroup":
 			centreonServiceGroupSpec := &centreoncrd.CentreonServiceGroupSpec{}
 			// Compute expected resource spec
@@ -139,7 +145,7 @@ func (h *builder) Process(t *centreoncrd.Template) (object client.Object, err er
 			if !centreonServiceGroup.IsValid() {
 				return nil, fmt.Errorf("generated CentreonServiceGroup is not valid: %+v", centreonServiceGroup.Spec)
 			}
-			return centreonServiceGroup, nil
+			return helpers.GetObjectWithMeta(centreonServiceGroup, h.scheme), nil
 		default:
 			return nil, errors.Errorf("Template of type %s is not supported", t.Spec.Type)
 		}
@@ -149,9 +155,9 @@ func (h *builder) Process(t *centreoncrd.Template) (object client.Object, err er
 		return nil, errors.Wrapf(err, "Error when Unmarshall template %s/%s from %s/%s", t.Namespace, t.Name, h.sourceObject.GetNamespace(), h.sourceObject.GetName())
 	}
 
-	o, isFound := h.supportedTemplateObjects[helpers.GetObjectType(object)]
+	o, isFound := h.supportedTemplateObjects[helpers.GetObjectType(meta)]
 	if !isFound {
-		return nil, errors.Errorf("No type '%s' found for template %s/%s from %s/%s", helpers.GetObjectType(object), t.Namespace, t.Name, h.sourceObject.GetNamespace(), h.sourceObject.GetName())
+		return nil, errors.Errorf("No type '%s' found for template %s/%s from %s/%s", helpers.GetObjectType(meta), t.Namespace, t.Name, h.sourceObject.GetNamespace(), h.sourceObject.GetName())
 	}
 
 	newO := helpers.CloneObject(o)

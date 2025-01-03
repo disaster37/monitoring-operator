@@ -39,16 +39,32 @@ func (r *TemplateReconciler) Read(ctx context.Context, resource client.Object, d
 	listNamespacedName := make([]types.NamespacedName, 0)
 	read = controller.NewBasicSentinelRead()
 	var v any
-	var placeholders map[string]any
+	placeholders := map[string]any{}
 	var expectedObject client.Object
 	var currentObject client.Object
 	expectedObjects := map[string][]client.Object{}
 	currentObjects := map[string][]client.Object{}
+	var namespace string
 
 	v, err = helper.Get(data, "placeholders")
-	if err != nil {
+	if err == nil {
 		placeholders = v.(map[string]any)
 	}
+
+	// Add a special workground for Namespace object that are cluster wide, so not namespace concept
+	switch resource.GetObjectKind().GroupVersionKind().Kind {
+	case "Namespace":
+		namespace = resource.GetName()
+		placeholders["namespace"] = namespace
+	case "Node":
+		namespace, err = helpers.GetOperatorNamespace()
+		if err != nil {
+			return nil, res, errors.Wrap(err, "Error when get operator namespace")
+		}
+	default:
+		namespace = resource.GetNamespace()
+	}
+
 	templateBuilder := newBuilder(resource, r.Client().Scheme()).
 		AddPlaceholders(placeholders).
 		For(&centreoncrd.CentreonServiceGroup{}, &centreoncrd.CentreonServiceGroupList{}).
@@ -90,19 +106,20 @@ func (r *TemplateReconciler) Read(ctx context.Context, resource client.Object, d
 		expectedObject.SetLabels(getLabels(
 			resource,
 			map[string]string{
-				fmt.Sprintf("%s/template", centreoncrd.MonitoringAnnotationKey): fmt.Sprintf("%s/%s", template.GetNamespace(), template.GetName()),
+				fmt.Sprintf("%s/template", centreoncrd.MonitoringAnnotationKey): fmt.Sprintf("%s.%s", template.GetNamespace(), template.GetName()),
+				fmt.Sprintf("%s/parent", centreoncrd.MonitoringAnnotationKey):   fmt.Sprintf("%s.%s", namespace, resource.GetName()),
 			},
 		))
-		expectedObject.SetNamespace(resource.GetNamespace())
+		expectedObject.SetNamespace(namespace)
 		if expectedObject.GetName() == "" {
 			expectedObject.SetName(template.GetName())
 		}
-		if expectedObjects[helpers.GetObjectType(expectedObject)] == nil {
-			expectedObjects[helpers.GetObjectType(expectedObject)] = []client.Object{
+		if expectedObjects[helpers.GetObjectType(expectedObject.GetObjectKind())] == nil {
+			expectedObjects[helpers.GetObjectType(expectedObject.GetObjectKind())] = []client.Object{
 				expectedObject,
 			}
 		} else {
-			expectedObjects[helpers.GetObjectType(expectedObject)] = append(expectedObjects[helpers.GetObjectType(expectedObject)], expectedObject)
+			expectedObjects[helpers.GetObjectType(expectedObject.GetObjectKind())] = append(expectedObjects[helpers.GetObjectType(expectedObject.GetObjectKind())], expectedObject)
 		}
 
 		// Get current object
@@ -113,32 +130,32 @@ func (r *TemplateReconciler) Read(ctx context.Context, resource client.Object, d
 				return read, res, errors.Wrapf(err, "Error when read object %s/%s", expectedObject.GetNamespace(), expectedObject.GetName())
 			}
 		} else {
-			if currentObjects[helpers.GetObjectType(currentObject)] == nil {
-				currentObjects[helpers.GetObjectType(currentObject)] = []client.Object{
+			if currentObjects[helpers.GetObjectType(currentObject.GetObjectKind())] == nil {
+				currentObjects[helpers.GetObjectType(currentObject.GetObjectKind())] = []client.Object{
 					currentObject,
 				}
 			} else {
-				currentObjects[helpers.GetObjectType(currentObject)] = append(currentObjects[helpers.GetObjectType(currentObject)], currentObject)
+				currentObjects[helpers.GetObjectType(currentObject.GetObjectKind())] = append(currentObjects[helpers.GetObjectType(currentObject.GetObjectKind())], currentObject)
 			}
 		}
 	}
 
 	// Get all object supported to check if there are orphan
 	// We need to gel all children object from labels
-	labelSelectors, err := labels.Parse(fmt.Sprintf("%s/parent=%s/%s", centreoncrd.MonitoringAnnotationKey, resource.GetNamespace(), resource.GetName()))
+	labelSelectors, err := labels.Parse(fmt.Sprintf("%s/parent=%s.%s", centreoncrd.MonitoringAnnotationKey, namespace, resource.GetName()))
 	if err != nil {
 		return read, res, errors.Wrap(err, "Error when generate label selector")
 	}
 	for _, currentObjectList := range templateBuilder.Lists() {
-		if err = r.Client().List(ctx, currentObjectList, &client.ListOptions{Namespace: resource.GetNamespace(), LabelSelector: labelSelectors}); err != nil {
+		if err = r.Client().List(ctx, currentObjectList, &client.ListOptions{Namespace: namespace, LabelSelector: labelSelectors}); err != nil {
 			return read, res, errors.Wrapf(err, "Error when read objects")
 		}
 
 		if len(currentObjectList.GetItems()) > 0 {
-			if currentObjects[helpers.GetObjectType(currentObjectList.GetItems()[0])] == nil {
-				currentObjects[helpers.GetObjectType(currentObjectList.GetItems()[0])] = currentObjectList.GetItems()
+			if currentObjects[helpers.GetObjectType(currentObjectList.GetItems()[0].GetObjectKind())] == nil {
+				currentObjects[helpers.GetObjectType(currentObjectList.GetItems()[0].GetObjectKind())] = currentObjectList.GetItems()
 			} else {
-				currentObjects[helpers.GetObjectType(currentObjectList.GetItems()[0])] = append(currentObjects[helpers.GetObjectType(currentObjectList.GetItems()[0])], currentObjectList.GetItems()...)
+				currentObjects[helpers.GetObjectType(currentObjectList.GetItems()[0].GetObjectKind())] = append(currentObjects[helpers.GetObjectType(currentObjectList.GetItems()[0].GetObjectKind())], currentObjectList.GetItems()...)
 			}
 		}
 	}

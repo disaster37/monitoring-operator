@@ -3,19 +3,19 @@ package helpers
 import (
 	"bytes"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"reflect"
 
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/cli-runtime/pkg/printers"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 // GetItems permit to get items contend from ObjectList interface
-func GetItems(o client.ObjectList) (items []client.Object, err error) {
+func GetItems(o client.ObjectList) (items []client.Object) {
 	if o == nil || reflect.ValueOf(o).IsNil() {
-		return nil, errors.New("ressource can't be nil")
+		panic("ressource can't be nil")
 	}
 
 	val := reflect.ValueOf(o).Elem()
@@ -26,11 +26,15 @@ func GetItems(o client.ObjectList) (items []client.Object, err error) {
 		items[i] = valueField.Index(i).Addr().Interface().(client.Object)
 	}
 
-	return items, nil
+	return items
 }
 
 // GetObjectWithMeta return current object with TypeMeta to kwons the object type
 func GetObjectWithMeta(o client.Object, s runtime.ObjectTyper) client.Object {
+
+	if o == nil {
+		panic("Object can't be nil")
+	}
 
 	y := printers.NewTypeSetter(s).ToPrinter(&printers.JSONPrinter{})
 	buf := new(bytes.Buffer)
@@ -46,15 +50,23 @@ func GetObjectWithMeta(o client.Object, s runtime.ObjectTyper) client.Object {
 }
 
 // GetObjectType print the current object type
-func GetObjectType(o client.Object) string {
-	return fmt.Sprintf("%s/%s/%s", o.GetObjectKind().GroupVersionKind().Kind, o.GetObjectKind().GroupVersionKind().Group, o.GetObjectKind().GroupVersionKind().Version)
+func GetObjectType(o schema.ObjectKind) string {
+	if o == nil {
+		panic("Object can't be nil")
+	}
+	return fmt.Sprintf("%s/%s/%s", o.GroupVersionKind().Group, o.GroupVersionKind().Version, o.GroupVersionKind().Kind)
 }
 
 // CloneObject permit to clone current object type
 func CloneObject[objectType comparable](o objectType) objectType {
+
 	if reflect.TypeOf(o).Kind() != reflect.Pointer {
 		panic("CloneObject work only with pointer")
 	}
 
-	return reflect.New(reflect.TypeOf(o)).Interface().(objectType)
+	if reflect.ValueOf(o).IsNil() {
+		panic("Object can't be nill")
+	}
+
+	return reflect.New(reflect.TypeOf(o).Elem()).Interface().(objectType)
 }

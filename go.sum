@@ -42,6 +42,10 @@ github.com/disaster37/operator-sdk-extra v0.1.10-0.20241230150020-0c6b831bde03 h
 github.com/disaster37/operator-sdk-extra v0.1.10-0.20241230150020-0c6b831bde03/go.mod h1:AHvFjK+QrJePEXMCc/0acjtP4dCDLGXhCi4SYp3/no0=
 github.com/disaster37/operator-sdk-extra v0.1.10-0.20241231145657-6399fb6218e8 h1:QVpb+RePTyLk1pv3VZFDkK0f67wSeQzdDIikbyVmkYQ=
 github.com/disaster37/operator-sdk-extra v0.1.10-0.20241231145657-6399fb6218e8/go.mod h1:AHvFjK+QrJePEXMCc/0acjtP4dCDLGXhCi4SYp3/no0=
+github.com/disaster37/operator-sdk-extra v0.1.10-0.20250103095940-4ee6b390f30a h1:FTKnlYFCDwN+RUBdxzn6DhRuAemPR0TYSYddw1LftiI=
+github.com/disaster37/operator-sdk-extra v0.1.10-0.20250103095940-4ee6b390f30a/go.mod h1:AHvFjK+QrJePEXMCc/0acjtP4dCDLGXhCi4SYp3/no0=
+github.com/disaster37/operator-sdk-extra v0.1.10-0.20250103142305-ad97c66319ba h1:9t35uYMIhdiDWMBpt7jJyDAc8InW+rylSSkEUFFZ+R8=
+github.com/disaster37/operator-sdk-extra v0.1.10-0.20250103142305-ad97c66319ba/go.mod h1:AHvFjK+QrJePEXMCc/0acjtP4dCDLGXhCi4SYp3/no0=
 github.com/emicklei/go-restful/v3 v3.11.0 h1:rAQeMHw1c7zTmncogyy8VvRZwtkmkZ4FxERmMY4rD+g=
 github.com/emicklei/go-restful/v3 v3.11.0/go.mod h1:6n3XBCmQQb25CM2LCACGz8ukIrRry+4bhvbpWn3mrbc=
 github.com/evanphx/json-patch v5.6.0+incompatible h1:jBYDEEiFBPxA0v50tFdvOzQQTCvpL6mnFh5mB2/l16U=

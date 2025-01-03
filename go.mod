@@ -7,7 +7,7 @@ require (
 	emperror.dev/errors v0.8.1
 	github.com/disaster37/generic-objectmatcher v1.0.2
 	github.com/disaster37/go-centreon-rest/v21 v21.0.7
-	github.com/disaster37/operator-sdk-extra v0.1.10-0.20241231145657-6399fb6218e8
+	github.com/disaster37/operator-sdk-extra v0.1.10-0.20250103142305-ad97c66319ba
 	github.com/go-task/slim-sprig v2.20.0+incompatible
 	github.com/golang/mock v1.6.0
 	github.com/json-iterator/go v1.1.12

@@ -51,7 +51,7 @@ type PlatformReconciler struct {
 	name string
 }
 
-func NewPlateformReconciler(client client.Client, logger *logrus.Entry, recorder record.EventRecorder, platforms map[string]*ComputedPlatform) controller.Controller {
+func NewPlatformReconciler(client client.Client, logger *logrus.Entry, recorder record.EventRecorder, platforms map[string]*ComputedPlatform) controller.Controller {
 	return &PlatformReconciler{
 		Controller: controller.NewBasicController(),
 		RemoteReconciler: controller.NewBasicRemoteReconciler[*centreoncrd.Platform, *ComputedPlatform, centreonhandler.CentreonHandler](

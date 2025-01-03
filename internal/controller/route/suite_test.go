@@ -1,4 +1,4 @@
-package platform
+package route
 
 import (
 	"os"
@@ -9,7 +9,6 @@ import (
 	routev1 "github.com/openshift/api/route/v1"
 	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/suite"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/rest"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -19,24 +18,22 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 
 	centreoncrd "github.com/disaster37/monitoring-operator/api/v1"
-	"github.com/disaster37/operator-sdk-extra/pkg/controller"
 	//+kubebuilder:scaffold:imports
 )
 
 var testEnv *envtest.Environment
 
-type PlatformControllerTestSuite struct {
+type RouteControllerTestSuite struct {
 	suite.Suite
 	k8sClient client.Client
 	cfg       *rest.Config
-	platforms map[string]*ComputedPlatform
 }
 
-func TestPlatformControllerSuite(t *testing.T) {
-	suite.Run(t, new(PlatformControllerTestSuite))
+func TestRouteControllerSuite(t *testing.T) {
+	suite.Run(t, new(RouteControllerTestSuite))
 }
 
-func (t *PlatformControllerTestSuite) SetupSuite() {
+func (t *RouteControllerTestSuite) SetupSuite() {
 
 	logf.SetLogger(zap.New(zap.UseDevMode(true)))
 	logrus.SetLevel(logrus.TraceLevel)
@@ -74,6 +71,9 @@ func (t *PlatformControllerTestSuite) SetupSuite() {
 		panic(err)
 	}
 
+	// Init controllers
+	os.Setenv("POD_NAMESPACE", "default")
+
 	// Init k8smanager and k8sclient
 	k8sManager, err := ctrl.NewManager(cfg, ctrl.Options{
 		Scheme: scheme.Scheme,
@@ -84,41 +84,12 @@ func (t *PlatformControllerTestSuite) SetupSuite() {
 	k8sClient := k8sManager.GetClient()
 	t.k8sClient = k8sClient
 
-	// Add indexers
-	if err = controller.SetupIndexerWithManager(
-		k8sManager,
-		centreoncrd.SetupPlatformIndexer,
-	); err != nil {
-		panic(err)
-	}
-
-	// Init controllers
-	os.Setenv("POD_NAMESPACE", "default")
-
-	platforms := map[string]*ComputedPlatform{
-		"default": {
-			Platform: &centreoncrd.Platform{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "default",
-					Namespace: "default",
-				},
-				Spec: centreoncrd.PlatformSpec{
-					IsDefault:        true,
-					PlatformType:     "centreon",
-					CentreonSettings: &centreoncrd.PlatformSpecCentreonSettings{},
-				},
-			},
-		},
-	}
-	t.platforms = platforms
-
-	platformReconsiler := NewPlatformReconciler(
+	routeReconsiler := NewRouteReconciler(
 		k8sClient,
 		logrus.NewEntry(logrus.StandardLogger()),
-		k8sManager.GetEventRecorderFor("plateform-controller"),
-		t.platforms,
+		k8sManager.GetEventRecorderFor("route-controller"),
 	)
-	if err = platformReconsiler.SetupWithManager(k8sManager); err != nil {
+	if err = routeReconsiler.SetupWithManager(k8sManager); err != nil {
 		panic(err)
 	}
 
@@ -130,17 +101,9 @@ func (t *PlatformControllerTestSuite) SetupSuite() {
 	}()
 }
 
-func (t *PlatformControllerTestSuite) TearDownSuite() {
+func (t *RouteControllerTestSuite) TearDownSuite() {
 	err := testEnv.Stop()
 	if err != nil {
 		panic(err)
 	}
-}
-
-func (t *PlatformControllerTestSuite) BeforeTest(suiteName, testName string) {
-
-}
-
-func (t *PlatformControllerTestSuite) AfterTest(suiteName, testName string) {
-
 }
