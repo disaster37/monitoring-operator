@@ -76,77 +76,7 @@ func (r *TemplateReconciler) Read(ctx context.Context, resource client.Object, d
 		For(&centreoncrd.CentreonServiceGroup{}, &centreoncrd.CentreonServiceGroupList{}).
 		For(&centreoncrd.CentreonService{}, &centreoncrd.CentreonServiceList{})
 
-	// Check if template annotations
-	targetTemplates := resource.GetAnnotations()[fmt.Sprintf("%s/templates", centreoncrd.MonitoringAnnotationKey)]
-	if targetTemplates != "" {
-		if err = json.Unmarshal([]byte(targetTemplates), &listNamespacedName); err != nil {
-			return nil, res, errors.Wrap(err, "Error when unmarshall the list of template")
-		}
-	}
-
-	// No template to process
-	// We stop here
-	if len(targetTemplates) == 0 {
-		logger.Debug("No template found")
-		return read, res, nil
-	}
-
-	// Get expected objects
-	// Get templates and process thems
-	for _, namespacedName := range listNamespacedName {
-		template = &centreoncrd.Template{}
-		logger.Debugf("Process template %s/%s", namespacedName.Namespace, namespacedName.Name)
-
-		if err = r.Client().Get(ctx, namespacedName, template); err != nil {
-			if !k8serrors.IsNotFound(err) {
-				logger.Warnf("Template %s/%s not found. We skip it", namespacedName.Namespace, namespacedName.Name)
-				continue
-			}
-			return nil, res, errors.Wrapf(err, "Error when get template %s/%s", namespacedName.Namespace, namespacedName.Name)
-		}
-
-		expectedObject, err = templateBuilder.Process(template)
-		if err != nil {
-			return read, res, errors.Wrapf(err, "Error when process template %s/%s; %s", namespacedName.Namespace, namespacedName.Name, err.Error())
-		}
-		expectedObject.SetLabels(getLabels(
-			resource,
-			map[string]string{
-				fmt.Sprintf("%s/template", centreoncrd.MonitoringAnnotationKey): fmt.Sprintf("%s.%s", template.GetNamespace(), template.GetName()),
-				fmt.Sprintf("%s/parent", centreoncrd.MonitoringAnnotationKey):   fmt.Sprintf("%s.%s", namespace, resource.GetName()),
-			},
-		))
-		expectedObject.SetNamespace(namespace)
-		if expectedObject.GetName() == "" {
-			expectedObject.SetName(template.GetName())
-		}
-		if expectedObjects[helpers.GetObjectType(expectedObject.GetObjectKind())] == nil {
-			expectedObjects[helpers.GetObjectType(expectedObject.GetObjectKind())] = []client.Object{
-				expectedObject,
-			}
-		} else {
-			expectedObjects[helpers.GetObjectType(expectedObject.GetObjectKind())] = append(expectedObjects[helpers.GetObjectType(expectedObject.GetObjectKind())], expectedObject)
-		}
-
-		// Get current object
-		// It's to temporary support object already created. There are not yet labels
-		currentObject = helpers.CloneObject(expectedObject)
-		if err = r.Client().Get(ctx, types.NamespacedName{Namespace: expectedObject.GetNamespace(), Name: expectedObject.GetName()}, currentObject); err != nil {
-			if !k8serrors.IsNotFound(err) {
-				return read, res, errors.Wrapf(err, "Error when read object %s/%s", expectedObject.GetNamespace(), expectedObject.GetName())
-			}
-		} else {
-			if currentObjects[helpers.GetObjectType(currentObject.GetObjectKind())] == nil {
-				currentObjects[helpers.GetObjectType(currentObject.GetObjectKind())] = []client.Object{
-					currentObject,
-				}
-			} else {
-				currentObjects[helpers.GetObjectType(currentObject.GetObjectKind())] = append(currentObjects[helpers.GetObjectType(currentObject.GetObjectKind())], currentObject)
-			}
-		}
-	}
-
-	// Get all object supported to check if there are orphan
+	// Get all existing objects  created from parent
 	// We need to gel all children object from labels
 	labelSelectors, err := labels.Parse(fmt.Sprintf("%s/parent=%s.%s", centreoncrd.MonitoringAnnotationKey, namespace, resource.GetName()))
 	if err != nil {
@@ -164,6 +94,72 @@ func (r *TemplateReconciler) Read(ctx context.Context, resource client.Object, d
 				currentObjects[helpers.GetObjectType(currentObjectList.GetItems()[0].GetObjectKind())] = append(currentObjects[helpers.GetObjectType(currentObjectList.GetItems()[0].GetObjectKind())], currentObjectList.GetItems()...)
 			}
 		}
+	}
+
+	// Compute expectings children from template
+	// Get templates and process thems
+	targetTemplates := resource.GetAnnotations()[fmt.Sprintf("%s/templates", centreoncrd.MonitoringAnnotationKey)]
+	if targetTemplates != "" {
+		if err = json.Unmarshal([]byte(targetTemplates), &listNamespacedName); err != nil {
+			return nil, res, errors.Wrap(err, "Error when unmarshall the list of template")
+		}
+	}
+
+	for _, namespacedName := range listNamespacedName {
+		template = &centreoncrd.Template{}
+		logger.Debugf("Process template %s/%s", namespacedName.Namespace, namespacedName.Name)
+
+		if err = r.Client().Get(ctx, namespacedName, template); err != nil {
+			if k8serrors.IsNotFound(err) {
+				logger.Warnf("Template %s/%s not found. We skip it", namespacedName.Namespace, namespacedName.Name)
+				continue
+			}
+			return nil, res, errors.Wrapf(err, "Error when get template %s/%s", namespacedName.Namespace, namespacedName.Name)
+		}
+
+		expectedObject, err = templateBuilder.Process(template)
+		if err != nil {
+			return read, res, errors.Wrapf(err, "Error when process template %s/%s; %s", namespacedName.Namespace, namespacedName.Name, err.Error())
+		}
+
+		if expectedObject != nil {
+			expectedObject.SetLabels(getLabels(
+				resource,
+				map[string]string{
+					fmt.Sprintf("%s/template", centreoncrd.MonitoringAnnotationKey): fmt.Sprintf("%s.%s", template.GetNamespace(), template.GetName()),
+					fmt.Sprintf("%s/parent", centreoncrd.MonitoringAnnotationKey):   fmt.Sprintf("%s.%s", namespace, resource.GetName()),
+				},
+			))
+			expectedObject.SetNamespace(namespace)
+			if expectedObject.GetName() == "" {
+				expectedObject.SetName(template.GetName())
+			}
+			if expectedObjects[helpers.GetObjectType(expectedObject.GetObjectKind())] == nil {
+				expectedObjects[helpers.GetObjectType(expectedObject.GetObjectKind())] = []client.Object{
+					expectedObject,
+				}
+			} else {
+				expectedObjects[helpers.GetObjectType(expectedObject.GetObjectKind())] = append(expectedObjects[helpers.GetObjectType(expectedObject.GetObjectKind())], expectedObject)
+			}
+
+			// Get current object
+			// It's to temporary support object already created. There are not yet labels
+			currentObject = helpers.CloneObject(expectedObject)
+			if err = r.Client().Get(ctx, types.NamespacedName{Namespace: expectedObject.GetNamespace(), Name: expectedObject.GetName()}, currentObject); err != nil {
+				if !k8serrors.IsNotFound(err) {
+					return read, res, errors.Wrapf(err, "Error when read object %s/%s", expectedObject.GetNamespace(), expectedObject.GetName())
+				}
+			} else {
+				if currentObjects[helpers.GetObjectType(currentObject.GetObjectKind())] == nil {
+					currentObjects[helpers.GetObjectType(currentObject.GetObjectKind())] = []client.Object{
+						currentObject,
+					}
+				} else {
+					currentObjects[helpers.GetObjectType(currentObject.GetObjectKind())] = append(currentObjects[helpers.GetObjectType(currentObject.GetObjectKind())], currentObject)
+				}
+			}
+		}
+
 	}
 
 	// Delete duplicate

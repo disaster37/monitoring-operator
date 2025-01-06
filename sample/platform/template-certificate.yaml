@@ -2,6 +2,8 @@ apiVersion: monitor.k8s.webcenter.fr/v1
 kind: Template
 metadata:
   name: check-certificate
+  labels:
+    test: test2
 spec:
   template: |
     apiVersion: monitor.k8s.webcenter.fr/v1

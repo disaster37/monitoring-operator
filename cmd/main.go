@@ -181,10 +181,22 @@ func main() {
 		panic(err)
 	}
 
+	hasRouteCapability := helper.HasCRD(clientStd, routev1.SchemeGroupVersion)
+
 	// Set indexers
+	indexers := []controller.Indexer{
+		centreoncrd.SetupPlatformIndexer,
+		centreoncrd.SetupCertificateIndexer,
+		centreoncrd.SetupIngressIndexer,
+		centreoncrd.SetupNamespaceIndexer,
+		centreoncrd.SetupNodeIndexer,
+	}
+	if hasRouteCapability {
+		indexers = append(indexers, centreoncrd.SetupRouteIndexer)
+	}
 	if err = controller.SetupIndexerWithManager(
 		mgr,
-		centreoncrd.SetupPlatformIndexer,
+		indexers...,
 	); err != nil {
 		panic(err)
 	}
@@ -226,7 +238,7 @@ func main() {
 	}
 
 	// Set route controller
-	if helper.HasCRD(clientStd, routev1.SchemeGroupVersion) {
+	if hasRouteCapability {
 		routeController := routecontroller.NewRouteReconciler(mgr.GetClient(), logrus.NewEntry(log), mgr.GetEventRecorderFor("route-controller"))
 		if err = routeController.SetupWithManager(mgr); err != nil {
 			setupLog.Error(err, "unable to create controller", "controller", "Route")

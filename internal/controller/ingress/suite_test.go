@@ -18,6 +18,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 
 	centreoncrd "github.com/disaster37/monitoring-operator/api/v1"
+	"github.com/disaster37/operator-sdk-extra/pkg/controller"
 	//+kubebuilder:scaffold:imports
 )
 
@@ -82,6 +83,14 @@ func (t *IngressControllerTestSuite) SetupSuite() {
 	}
 	k8sClient := k8sManager.GetClient()
 	t.k8sClient = k8sClient
+
+	// Add indexers
+	if err = controller.SetupIndexerWithManager(
+		k8sManager,
+		centreoncrd.SetupIngressIndexer,
+	); err != nil {
+		panic(err)
+	}
 
 	ingressReconsiler := NewIngressReconciler(
 		k8sClient,

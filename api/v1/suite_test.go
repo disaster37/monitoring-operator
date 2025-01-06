@@ -14,6 +14,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/envtest"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
+	routev1 "github.com/openshift/api/route/v1"
 	//+kubebuilder:scaffold:imports
 )
 
@@ -37,7 +38,10 @@ func (t *APITestSuite) SetupSuite() {
 
 	// Setup testenv
 	testEnv = &envtest.Environment{
-		CRDDirectoryPaths:        []string{filepath.Join("..", "..", "config", "crd", "bases")},
+		CRDDirectoryPaths: []string{
+			filepath.Join("../..", "config", "crd", "bases"),
+			filepath.Join("../..", "config", "crd", "externals"),
+		},
 		ErrorIfCRDPathMissing:    true,
 		ControlPlaneStartTimeout: 120 * time.Second,
 		ControlPlaneStopTimeout:  120 * time.Second,
@@ -53,6 +57,10 @@ func (t *APITestSuite) SetupSuite() {
 		panic(err)
 	}
 	err = AddToScheme(scheme.Scheme)
+	if err != nil {
+		panic(err)
+	}
+	err = routev1.AddToScheme(scheme.Scheme)
 	if err != nil {
 		panic(err)
 	}

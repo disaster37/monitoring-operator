@@ -95,6 +95,11 @@ func (h *builder) Process(t *centreoncrd.Template) (object client.Object, err er
 		return nil, errors.Wrapf(err, "Error when execute template %s/%s from %s/%s", t.Namespace, t.Name, h.sourceObject.GetNamespace(), h.sourceObject.GetName())
 	}
 
+	// Empty object after templating it
+	if buf.String() == "" || buf.String() == "---" {
+		return nil, nil
+	}
+
 	// We need to support old stategy when type is provided instead to set the full object on template
 	if t.Spec.Type != "" {
 
