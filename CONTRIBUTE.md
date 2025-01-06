@@ -82,6 +82,12 @@ We use dagger.io to run local task or to run pipeline on CI.
 dagger call --src . ci --version 0.0.0-test
 ```
 
+### Get cli on local
+
+```bash
+dagger call --src . -m operator-sdk sdk get cli export --path ./bin
+```
+
 ### Format code
 
 ```bash

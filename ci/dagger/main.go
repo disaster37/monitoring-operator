@@ -169,24 +169,23 @@ func (h *MonitoringOperator) CI(
 		channels = "alpha"
 	}
 
-	// Compute username registry
 	var username string
 	if ci {
 		username, err = registryUsername.Plaintext(ctx)
 		if err != nil {
 			return nil, errors.Wrap(err, "Error when get registry username")
 		}
-	}
 
-	version, err = h.GetVersion(
-		ctx,
-		version,
-		dagger.OperatorSDKGetVersionOpts{
-			IsBuildNumber: !isTag,
-		},
-	)
-	if err != nil {
-		return nil, errors.Wrap(err, "Error when get the target version")
+		version, err = h.GetVersion(
+			ctx,
+			version,
+			dagger.OperatorSDKGetVersionOpts{
+				IsBuildNumber: !isTag,
+			},
+		)
+		if err != nil {
+			return nil, errors.Wrap(err, "Error when get the target version")
+		}
 	}
 
 	h.OperatorSDK = h.Release(
@@ -237,13 +236,16 @@ func (h *MonitoringOperator) CI(
 		)
 		defer service.Stop(ctx)
 
-		// Deploy Elasticsearch operator to look
+		// Deploy operator to look
 		kubeCtr := h.OperatorSDK.Kube().Kubectl().
 			WithServiceBinding("kube.svc", service)
 
 		_, err = kubeCtr.
-			WithExec(helper.ForgeCommand("kubectl apply -n default --server-side=true -f config/samples/elasticsearch_v1_elasticsearch.yaml")).
-			WithExec(helper.ForgeCommand("kubectl -n default wait --for=condition=Ready=True --all elasticsearch --timeout=180s")).
+			WithExec(helper.ForgeCommand("kubectl apply -n default --server-side=true -f config/samples/monitor_v1_platform.yaml")).
+			WithExec(helper.ForgeCommand("kubectl apply -n default --server-side=true -f config/samples/monitor_v1_centreonservice.yaml")).
+			WithExec(helper.ForgeCommand("kubectl apply -n default --server-side=true -f config/samples/monitor_v1_centreonservicegroup.yaml")).
+			WithExec(helper.ForgeCommand("kubectl -n default wait --for=condition=Ready=True --all centreonservice --timeout=180s")).
+			WithExec(helper.ForgeCommand("kubectl -n default wait --for=condition=Ready=True --all centreonservicegroup --timeout=180s")).
 			Stdout(ctx)
 
 		// Get operators logs and Elasticsearch logs

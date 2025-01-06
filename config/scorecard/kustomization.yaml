@@ -15,4 +15,3 @@ patches:
     kind: Configuration
     name: config
     version: v1alpha3
-# +kubebuilder:scaffold:patches

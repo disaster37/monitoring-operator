@@ -1,0 +1,4 @@
+issues:
+  exclude:
+    - "SA1019: .+.Spec.Name is deprecated.*"
+    - "SA1019: .+.Spec.Type is deprecated.*"
