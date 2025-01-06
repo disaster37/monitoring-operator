@@ -40,6 +40,8 @@ func NewNodeReconciler(client client.Client, logger *logrus.Entry, recorder reco
 	}
 }
 
+//+kubebuilder:rbac:groups="",resources=nodes,verbs=get;list;watch;update
+//+kubebuilder:rbac:groups="",resources=nodes/finalizers,verbs=update
 //+kubebuilder:rbac:groups=monitor.k8s.webcenter.fr,resources=centreonservices,verbs=get;list;watch;create;update;patch;delete
 //+kubebuilder:rbac:groups=monitor.k8s.webcenter.fr,resources=centreonservicegroups,verbs=get;list;watch;create;update;patch;delete
 //+kubebuilder:rbac:groups="",resources=events,verbs=patch;get;create

@@ -40,6 +40,8 @@ func NewIngressReconciler(client client.Client, logger *logrus.Entry, recorder r
 	}
 }
 
+//+kubebuilder:rbac:groups=networking.k8s.io,resources=ingresses,verbs=get;list;watch;update
+//+kubebuilder:rbac:groups=networking.k8s.io,resources=ingresses/finalizers,verbs=update
 //+kubebuilder:rbac:groups=monitor.k8s.webcenter.fr,resources=centreonservices,verbs=get;list;watch;create;update;patch;delete
 //+kubebuilder:rbac:groups=monitor.k8s.webcenter.fr,resources=centreonservicegroups,verbs=get;list;watch;create;update;patch;delete
 //+kubebuilder:rbac:groups="",resources=events,verbs=patch;get;create

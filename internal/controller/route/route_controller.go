@@ -41,6 +41,7 @@ func NewRouteReconciler(client client.Client, logger *logrus.Entry, recorder rec
 }
 
 //+kubebuilder:rbac:groups=route.openshift.io,resources=routes,verbs=get;list;watch;update
+//+kubebuilder:rbac:groups="route.openshift.io",resources=routes/finalizers,verbs=update
 //+kubebuilder:rbac:groups=monitor.k8s.webcenter.fr,resources=centreonservices,verbs=get;list;watch;create;update;patch;delete
 //+kubebuilder:rbac:groups=monitor.k8s.webcenter.fr,resources=centreonservicegroups,verbs=get;list;watch;create;update;patch;delete
 //+kubebuilder:rbac:groups="",resources=events,verbs=patch;get;create
