@@ -24,6 +24,12 @@ type TemplateReconciler struct {
 	controller.SentinelReconcilerAction
 }
 
+//+kubebuilder:rbac:groups=monitor.k8s.webcenter.fr,resources=templates,verbs=get;list;watch;create;update;patch;delete
+//+kubebuilder:rbac:groups=monitor.k8s.webcenter.fr,resources=templates/status,verbs=get;update;patch
+//+kubebuilder:rbac:groups=monitor.k8s.webcenter.fr,resources=templates/finalizers,verbs=update
+//+kubebuilder:rbac:groups="",resources=events,verbs=patch;get;create
+
+// NewTemplateReconciler create template reconciler
 func NewTemplateReconciler(client client.Client, recorder record.EventRecorder) (sentinelReconcilerAction controller.SentinelReconcilerAction) {
 	return &TemplateReconciler{
 		SentinelReconcilerAction: controller.NewBasicSentinelAction(
