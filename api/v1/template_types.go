@@ -32,6 +32,7 @@ type TemplateSpec struct {
 	// Deprecated: Use full template instead to set the type
 	// Type is the object type it generate from template
 	// +operator-sdk:csv:customresourcedefinitions:type=spec
+	// +optional
 	Type string `json:"type"`
 
 	// Deprecated: Use the full template instead to set the name

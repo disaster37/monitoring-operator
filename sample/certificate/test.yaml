@@ -5,6 +5,6 @@ data:
 kind: Secret
 metadata:
   annotations:
-    monitor.k8s.webcenter.fr/templates: '[{"namespace":"default","name":"templatecentreonservice-sample"}]'
+    monitor.k8s.webcenter.fr/templates: '[{"namespace":"operators","name":"check-certificate"}]'
   name: test
 type: kubernetes.io/tls

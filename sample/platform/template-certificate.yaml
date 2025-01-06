@@ -1,0 +1,16 @@
+apiVersion: monitor.k8s.webcenter.fr/v1
+kind: Template
+metadata:
+  name: check-certificate
+spec:
+  template: |
+    apiVersion: monitor.k8s.webcenter.fr/v1
+    kind: CentreonService
+    spec:
+      host: "localhost"
+      name: "test-certificate-ping"
+      template: "template-test"
+      checkCommand: "ping"
+      macros:
+        LABEL: "{{ .labels.foo }}"
+      activate: true
