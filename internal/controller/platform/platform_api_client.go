@@ -39,6 +39,11 @@ func (h *platformApiClient) Create(object *ComputedPlatform, o *centreoncrd.Plat
 	}
 	h.platforms[o.Name] = object
 
+	h.logger.Infof("Add platform '%s'", o.Name)
+	if o.Spec.IsDefault {
+		h.logger.Infof("Platform '%s' is the default", o.Name)
+	}
+
 	return nil
 }
 
@@ -51,6 +56,8 @@ func (h *platformApiClient) Delete(o *centreoncrd.Platform) (err error) {
 		delete(h.platforms, "default")
 	}
 	delete(h.platforms, o.Name)
+
+	h.logger.Infof("Remove platform '%s'", o.Name)
 
 	return nil
 }
