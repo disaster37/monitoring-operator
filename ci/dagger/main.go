@@ -275,12 +275,6 @@ func (h *MonitoringOperator) CI(
 			}
 		}
 
-		// Commit and push only is not a PR and is CI
-		if !isTag {
-			// keep original version file
-			dir = dir.WithoutFile("VERSION")
-		}
-
 		// Compute the branch and directory
 		var branch string
 		git := dag.Git().
@@ -290,7 +284,11 @@ func (h *MonitoringOperator) CI(
 			// keep original version file
 			dir = dir.WithFile("VERSION", h.Src.File("VERSION"))
 
-			branch, _ = git.BaseContainer().WithExec(helper.ForgeCommand("git rev-parse --abbrev-ref HEAD")).Stdout(ctx)
+			branch, _ = git.BaseContainer().
+				WithDirectory("/project", dir).
+				WithWorkdir("/project").
+				WithExec(helper.ForgeCommand("git rev-parse --abbrev-ref HEAD")).
+				Stdout(ctx)
 		} else {
 			branch = defaultBranch
 		}
