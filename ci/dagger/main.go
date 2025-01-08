@@ -281,8 +281,12 @@ func (h *MonitoringOperator) CI(
 			SetConfig(gitUsername, gitEmail, dagger.GitSetConfigOpts{BaseRepoURL: "github.com", Token: gitToken})
 
 		if !isTag {
-			// keep original version file
-			dir = dir.WithFile("VERSION", h.Src.File("VERSION"))
+			
+			// keep original version file if exist
+			versionFile, err := h.Src.File("VERSION").Sync(ctx)
+			if err == nil {
+				dir = dir.WithFile("VERSION", versionFile)
+			}
 
 			branch, _ = git.BaseContainer().
 				WithDirectory("/project", dir).
