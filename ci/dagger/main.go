@@ -241,21 +241,29 @@ func (h *MonitoringOperator) CI(
 			WithServiceBinding("kube.svc", service)
 
 		_, err = kubeCtr.
-			WithExec(helper.ForgeCommand("kubectl apply -n default --server-side=true -f config/samples/monitor_v1_platform.yaml")).
-			WithExec(helper.ForgeCommand("kubectl apply -n default --server-side=true -f config/samples/monitor_v1_centreonservice.yaml")).
-			WithExec(helper.ForgeCommand("kubectl apply -n default --server-side=true -f config/samples/monitor_v1_centreonservicegroup.yaml")).
-			WithExec(helper.ForgeCommand("kubectl -n default wait --for=condition=Ready=True --all centreonservice --timeout=180s")).
-			WithExec(helper.ForgeCommand("kubectl -n default wait --for=condition=Ready=True --all centreonservicegroup --timeout=180s")).
+			WithExec(helper.ForgeCommand("kubectl apply -n default -f sample/centreon/")).
+			WithExec(helper.ForgeCommand("kubectl apply -n operators -f sample/platform/")).
+			WithExec(helper.ForgeCommand("kubectl -n operators wait --for=condition=Ready=True --all platform --timeout=180s")).
+			WithExec(helper.ForgeCommand("kubectl apply -n default -f sample/base/")).
+			WithExec(helper.ForgeCommand("kubectl -n default wait --for=condition=Ready=True centreonservicegroup --all --timeout=180s")).
+			WithExec(helper.ForgeCommand("kubectl -n default wait --for=condition=Ready=True centreonservice --all --timeout=180s")).
+			WithExec(helper.ForgeCommand("kubectl apply -n default -f sample/certificate/")).
+			WithExec(helper.ForgeCommand("kubectl -n default wait --for=condition=Ready=True centreonservice test-certificate --timeout=180s")).
+			WithExec(helper.ForgeCommand("kubectl apply -n default -f sample/namespace/")).
+			WithExec(helper.ForgeCommand("kubectl -n test-namespace wait --for=condition=Ready=True centreonservice test-namespace --timeout=180s")).
+			WithExec(helper.ForgeCommand("kubectl apply -n default -f sample/node/test.yaml")).
+			WithExec(helper.ForgeCommand("kubectl -n operators wait --for=condition=Ready=True centreonservice test-node --timeout=180s")).
+			WithExec(helper.ForgeCommand("kubectl apply -n default -f sample/ingress/")).
+			WithExec(helper.ForgeCommand("kubectl -n default wait --for=condition=Ready=True centreonservice test-ingress --timeout=180s")).
 			Stdout(ctx)
 
 		// Get operators logs and Elasticsearch logs
 		_, _ = kubeCtr.
 			WithExec(helper.ForgeScript("kubectl get -n operators pods -o name | xargs -I {} kubectl logs -n operators {}")).
-			WithExec(helper.ForgeScript("kubectl get -n default pods -o name | xargs -I {} kubectl logs -n default {}")).
 			Stdout(ctx)
 
 		if err != nil {
-			return nil, errors.Wrap(err, "Error when deploy Elasticsearch cluster for testing operator")
+			return nil, errors.Wrap(err, "Error testing operator")
 		}
 
 		// Publish latest image

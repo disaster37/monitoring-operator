@@ -5,9 +5,9 @@ data:
 kind: Secret
 metadata:
   annotations:
-    monitor.k8s.webcenter.fr/templates: '[{"namespace":"operators","name":"check-certificate"}]'
+    monitor.k8s.webcenter.fr/templates: '[{"namespace":"operators","name":"check-something"}]'
   labels:
     monitor.k8s.webcenter.fr: "true"
     foo: bar
-  name: test
+  name: test-certificate
 type: kubernetes.io/tls
