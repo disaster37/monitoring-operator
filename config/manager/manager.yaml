@@ -10,7 +10,7 @@ metadata:
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: controller-manager
+  name: monitoring-operator
   namespace: system
   labels:
     control-plane: monitoring-operator
