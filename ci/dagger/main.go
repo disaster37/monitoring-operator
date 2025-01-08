@@ -139,6 +139,10 @@ func (h *MonitoringOperator) CI(
 	// +optional
 	isPullRequest bool,
 
+	// Set the current branch name. It's needed because of CI overwrite the branch name by PR
+	// +optional
+	branchName string,
+
 	// Set true to skip test
 	// +optional
 	skipTest bool,
@@ -281,18 +285,13 @@ func (h *MonitoringOperator) CI(
 			SetConfig(gitUsername, gitEmail, dagger.GitSetConfigOpts{BaseRepoURL: "github.com", Token: gitToken})
 
 		if !isTag {
-			
-			// keep original version file if exist
-			versionFile, err := h.Src.File("VERSION").Sync(ctx)
-			if err == nil {
-				dir = dir.WithFile("VERSION", versionFile)
-			}
+			// keep original version file
+			dir = dir.WithFile("VERSION", h.Src.File("VERSION"))
 
-			branch, _ = git.BaseContainer().
-				WithDirectory("/project", dir).
-				WithWorkdir("/project").
-				WithExec(helper.ForgeCommand("git rev-parse --abbrev-ref HEAD")).
-				Stdout(ctx)
+			if branchName == "" {
+				return nil, errors.New("You need to provide the branch name")
+			}
+			branch = branchName
 		} else {
 			branch = defaultBranch
 		}
@@ -311,7 +310,7 @@ func (h *MonitoringOperator) CI(
 		} else {
 			git = git.SetRepo(h.Src.WithDirectory(".", dir), dagger.GitSetRepoOpts{Branch: branch})
 		}
-		if _, err = git.CommitAndPush(ctx, "Commit from Jenkins pipeline"); err != nil {
+		if _, err = git.CommitAndPush(ctx, "Commit from CI pipeline"); err != nil {
 			return nil, errors.Wrap(err, "Error when commit and push files change")
 		}
 
