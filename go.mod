@@ -1,6 +1,6 @@
 module github.com/disaster37/monitoring-operator
 
-go 1.23.2
+go 1.23.4
 
 require (
 	dario.cat/mergo v1.0.1

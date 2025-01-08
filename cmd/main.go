@@ -193,7 +193,6 @@ func main() {
 		centreoncrd.SetupIngressIndexer,
 		centreoncrd.SetupNamespaceIndexer,
 		centreoncrd.SetupNodeIndexer,
-		centreoncrd.SetupRouteIndexer,
 	}
 	if hasRouteCapability {
 		indexers = append(indexers, centreoncrd.SetupRouteIndexer)
