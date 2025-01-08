@@ -242,18 +242,20 @@ func (h *MonitoringOperator) CI(
 
 		_, err = kubeCtr.
 			WithExec(helper.ForgeCommand("kubectl apply -n default -f sample/centreon/")).
+			WithExec(helper.ForgeCommand("sleep 30")).
 			WithExec(helper.ForgeCommand("kubectl apply -n operators -f sample/platform/")).
 			WithExec(helper.ForgeCommand("kubectl -n operators wait --for=condition=Ready=True --all platform --timeout=180s")).
 			WithExec(helper.ForgeCommand("kubectl apply -n default -f sample/base/")).
 			WithExec(helper.ForgeCommand("kubectl -n default wait --for=condition=Ready=True centreonservicegroup --all --timeout=180s")).
 			WithExec(helper.ForgeCommand("kubectl -n default wait --for=condition=Ready=True centreonservice --all --timeout=180s")).
 			WithExec(helper.ForgeCommand("kubectl apply -n default -f sample/certificate/")).
-			WithExec(helper.ForgeCommand("kubectl -n default wait --for=condition=Ready=True centreonservice test-certificate --timeout=180s")).
 			WithExec(helper.ForgeCommand("kubectl apply -n default -f sample/namespace/")).
-			WithExec(helper.ForgeCommand("kubectl -n test-namespace wait --for=condition=Ready=True centreonservice test-namespace --timeout=180s")).
 			WithExec(helper.ForgeCommand("kubectl apply -n default -f sample/node/test.yaml")).
-			WithExec(helper.ForgeCommand("kubectl -n operators wait --for=condition=Ready=True centreonservice test-node --timeout=180s")).
 			WithExec(helper.ForgeCommand("kubectl apply -n default -f sample/ingress/")).
+			WithExec(helper.ForgeCommand("sleep 30")).
+			WithExec(helper.ForgeCommand("kubectl -n default wait --for=condition=Ready=True centreonservice test-certificate --timeout=180s")).
+			WithExec(helper.ForgeCommand("kubectl -n test-namespace wait --for=condition=Ready=True centreonservice test-namespace --timeout=180s")).
+			WithExec(helper.ForgeCommand("kubectl -n operators wait --for=condition=Ready=True centreonservice test-node --timeout=180s")).
 			WithExec(helper.ForgeCommand("kubectl -n default wait --for=condition=Ready=True centreonservice test-ingress --timeout=180s")).
 			Stdout(ctx)
 
