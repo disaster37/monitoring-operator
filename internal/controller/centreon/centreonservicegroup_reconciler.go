@@ -40,7 +40,7 @@ func newCentreonServiceGroupReconciler(name string, client client.Client, record
 func (h *centreonServiceGroupReconciler) GetRemoteHandler(ctx context.Context, req ctrl.Request, o object.RemoteObject, logger *logrus.Entry) (handler controller.RemoteExternalReconciler[*centreoncrd.CentreonServiceGroup, *CentreonServiceGroup, centreonhandler.CentreonHandler], res ctrl.Result, err error) {
 	cs := o.(*centreoncrd.CentreonServiceGroup)
 
-	meta, _, err := platform.GetClient(cs.Spec.PlatformRef, h.platforms)
+	meta, _, err := platform.GetClient(cs.GetPlatform(), h.platforms)
 	if err != nil {
 		return nil, res, err
 	}
@@ -53,6 +53,10 @@ func (h *centreonServiceGroupReconciler) GetRemoteHandler(ctx context.Context, r
 func (h *centreonServiceGroupReconciler) Configure(ctx context.Context, o object.RemoteObject, data map[string]any, handler controller.RemoteExternalReconciler[*centreoncrd.CentreonServiceGroup, *CentreonServiceGroup, centreonhandler.CentreonHandler], logger *logrus.Entry) (res ctrl.Result, err error) {
 	// Set prometheus Metrics
 	common.ControllerInstances.WithLabelValues(h.name, o.GetNamespace(), o.GetName()).Set(1)
+
+	// Set plaformRef status
+	csg := o.(*centreoncrd.CentreonServiceGroup)
+	csg.Status.PlatformRef = csg.GetPlatform()
 
 	return h.RemoteReconcilerAction.Configure(ctx, o, data, handler, logger)
 }

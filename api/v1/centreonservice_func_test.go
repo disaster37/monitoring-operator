@@ -97,3 +97,31 @@ func TestCentreonServiceGetExternalName(t *testing.T) {
 
 	assert.Equal(t, "test", o.GetExternalName())
 }
+
+func TestCentreonServiceGetPlatform(t *testing.T) {
+	var o *CentreonService
+
+	// When platform is set
+	o = &CentreonService{
+		ObjectMeta: metav1.ObjectMeta{
+			Namespace: "default",
+			Name:      "test",
+		},
+		Spec: CentreonServiceSpec{
+			PlatformRef: "test2",
+		},
+	}
+
+	assert.Equal(t, "test2", o.GetPlatform())
+
+	// When platform isn't set
+	o = &CentreonService{
+		ObjectMeta: metav1.ObjectMeta{
+			Namespace: "default",
+			Name:      "test",
+		},
+		Spec: CentreonServiceSpec{},
+	}
+
+	assert.Equal(t, "default", o.GetPlatform())
+}

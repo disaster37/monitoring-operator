@@ -21,6 +21,14 @@ func (o *CentreonService) GetExternalName() string {
 	return o.Spec.Name
 }
 
+func (o *CentreonService) GetPlatform() string {
+	if o.Spec.PlatformRef == "" {
+		return "default"
+	}
+
+	return o.Spec.PlatformRef
+}
+
 // IsValid check Centreon service is valid for Centreon
 func (c *CentreonService) IsValid() bool {
 	if c.Spec.Host == "" || c.Spec.Name == "" || c.Spec.Template == "" {

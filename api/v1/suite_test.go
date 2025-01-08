@@ -1,11 +1,17 @@
 package v1
 
 import (
+	"crypto/tls"
+	"fmt"
+	"net"
+	"os"
 	"path/filepath"
 	"testing"
 	"time"
 
 	"github.com/disaster37/operator-sdk-extra/pkg/controller"
+	"github.com/disaster37/operator-sdk-extra/pkg/test"
+	routev1 "github.com/openshift/api/route/v1"
 	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/suite"
 	"k8s.io/client-go/kubernetes/scheme"
@@ -14,7 +20,8 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/envtest"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
-	routev1 "github.com/openshift/api/route/v1"
+	metricsserver "sigs.k8s.io/controller-runtime/pkg/metrics/server"
+	"sigs.k8s.io/controller-runtime/pkg/webhook"
 	//+kubebuilder:scaffold:imports
 )
 
@@ -36,6 +43,8 @@ func (t *APITestSuite) SetupSuite() {
 		DisableQuote: true,
 	})
 
+	os.Setenv("POD_NAMESPACE", "default")
+
 	// Setup testenv
 	testEnv = &envtest.Environment{
 		CRDDirectoryPaths: []string{
@@ -45,6 +54,9 @@ func (t *APITestSuite) SetupSuite() {
 		ErrorIfCRDPathMissing:    true,
 		ControlPlaneStartTimeout: 120 * time.Second,
 		ControlPlaneStopTimeout:  120 * time.Second,
+		WebhookInstallOptions: envtest.WebhookInstallOptions{
+			Paths: []string{filepath.Join("..", "..", "config", "webhook")},
+		},
 	}
 	cfg, err := testEnv.Start()
 	if err != nil {
@@ -66,8 +78,16 @@ func (t *APITestSuite) SetupSuite() {
 	}
 
 	// Init k8smanager and k8sclient
+	webhookInstallOptions := &testEnv.WebhookInstallOptions
 	k8sManager, err := ctrl.NewManager(cfg, ctrl.Options{
 		Scheme: scheme.Scheme,
+		WebhookServer: webhook.NewServer(webhook.Options{
+			Host:    webhookInstallOptions.LocalServingHost,
+			Port:    webhookInstallOptions.LocalServingPort,
+			CertDir: webhookInstallOptions.LocalServingCertDir,
+		}),
+		LeaderElection: false,
+		Metrics:        metricsserver.Options{BindAddress: "0"},
 	})
 	if err != nil {
 		panic(err)
@@ -75,9 +95,29 @@ func (t *APITestSuite) SetupSuite() {
 	k8sClient := k8sManager.GetClient()
 	t.k8sClient = k8sClient
 
+	// Setup indexer
 	if err := controller.SetupIndexerWithManager(
 		k8sManager,
 		SetupPlatformIndexer,
+		SetupCentreonServiceIndexer,
+		SetupCentreonServiceGroupIndexer,
+		SetupCertificateIndexer,
+		SetupIngressIndexer,
+		SetupNamespaceIndexer,
+		SetupNodeIndexer,
+		SetupRouteIndexer,
+	); err != nil {
+		panic(err)
+	}
+
+	// Setup webhook
+	if err := controller.SetupWebhookWithManager(
+		k8sManager,
+		k8sClient,
+		SetupCentreonServiceWebhookWithManager,
+		SetupCentreonServiceGroupWebhookWithManager,
+		SetupPlatformWebhookWithManager,
+		SetupTemplateWebhookWithManager,
 	); err != nil {
 		panic(err)
 	}
@@ -88,6 +128,21 @@ func (t *APITestSuite) SetupSuite() {
 			panic(err)
 		}
 	}()
+
+	// wait for the webhook server to get ready
+	dialer := &net.Dialer{Timeout: time.Second}
+	addrPort := fmt.Sprintf("%s:%d", webhookInstallOptions.LocalServingHost, webhookInstallOptions.LocalServingPort)
+	isTimeout, err := test.RunWithTimeout(func() error {
+		conn, err := tls.DialWithDialer(dialer, "tcp", addrPort, &tls.Config{InsecureSkipVerify: true})
+		if err != nil {
+			return err
+		}
+		return conn.Close()
+	}, time.Second*30, time.Second*1)
+	if err != nil || isTimeout {
+		panic("Webhook not ready")
+	}
+
 }
 
 func (t *APITestSuite) TearDownSuite() {

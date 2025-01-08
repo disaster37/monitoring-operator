@@ -10,6 +10,7 @@ require (
 	github.com/disaster37/operator-sdk-extra v0.1.10-0.20250103142305-ad97c66319ba
 	github.com/go-task/slim-sprig v2.20.0+incompatible
 	github.com/golang/mock v1.6.0
+	github.com/google/go-cmp v0.6.0
 	github.com/json-iterator/go v1.1.12
 	github.com/openshift/api v3.9.0+incompatible
 	github.com/pkg/errors v0.9.1
@@ -17,7 +18,6 @@ require (
 	github.com/sirupsen/logrus v1.9.3
 	github.com/stretchr/testify v1.10.0
 	github.com/thoas/go-funk v0.9.3
-	golang.org/x/net v0.33.0
 	k8s.io/api v0.32.0
 	k8s.io/apimachinery v0.32.0
 	k8s.io/cli-runtime v0.32.0
@@ -57,7 +57,6 @@ require (
 	github.com/golang/protobuf v1.5.4 // indirect
 	github.com/google/cel-go v0.22.0 // indirect
 	github.com/google/gnostic-models v0.6.8 // indirect
-	github.com/google/go-cmp v0.6.0 // indirect
 	github.com/google/gofuzz v1.2.0 // indirect
 	github.com/google/uuid v1.6.0 // indirect
 	github.com/grpc-ecosystem/grpc-gateway/v2 v2.20.0 // indirect
@@ -97,6 +96,7 @@ require (
 	go.uber.org/zap v1.27.0 // indirect
 	golang.org/x/crypto v0.31.0 // indirect
 	golang.org/x/exp v0.0.0-20240719175910-8a7402abbf56 // indirect
+	golang.org/x/net v0.33.0 // indirect
 	golang.org/x/oauth2 v0.23.0 // indirect
 	golang.org/x/sync v0.10.0 // indirect
 	golang.org/x/sys v0.28.0 // indirect

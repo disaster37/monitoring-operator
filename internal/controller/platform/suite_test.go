@@ -6,10 +6,11 @@ import (
 	"testing"
 	"time"
 
+	centreoncrd "github.com/disaster37/monitoring-operator/api/v1"
+	"github.com/disaster37/operator-sdk-extra/pkg/controller"
 	routev1 "github.com/openshift/api/route/v1"
 	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/suite"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/rest"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -17,9 +18,8 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/envtest"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
-
-	centreoncrd "github.com/disaster37/monitoring-operator/api/v1"
-	"github.com/disaster37/operator-sdk-extra/pkg/controller"
+	metricsserver "sigs.k8s.io/controller-runtime/pkg/metrics/server"
+	"sigs.k8s.io/controller-runtime/pkg/webhook"
 	//+kubebuilder:scaffold:imports
 )
 
@@ -43,6 +43,9 @@ func (t *PlatformControllerTestSuite) SetupSuite() {
 		DisableQuote: true,
 	})
 
+	// Init controllers
+	os.Setenv("POD_NAMESPACE", "default")
+
 	// Setup testenv
 	testEnv = &envtest.Environment{
 		CRDDirectoryPaths: []string{
@@ -52,6 +55,9 @@ func (t *PlatformControllerTestSuite) SetupSuite() {
 		ErrorIfCRDPathMissing:    true,
 		ControlPlaneStopTimeout:  120 * time.Second,
 		ControlPlaneStartTimeout: 120 * time.Second,
+		WebhookInstallOptions: envtest.WebhookInstallOptions{
+			Paths: []string{filepath.Join("..", "..", "..", "config", "webhook")},
+		},
 	}
 	cfg, err := testEnv.Start()
 	if err != nil {
@@ -74,8 +80,16 @@ func (t *PlatformControllerTestSuite) SetupSuite() {
 	}
 
 	// Init k8smanager and k8sclient
+	webhookInstallOptions := &testEnv.WebhookInstallOptions
 	k8sManager, err := ctrl.NewManager(cfg, ctrl.Options{
 		Scheme: scheme.Scheme,
+		WebhookServer: webhook.NewServer(webhook.Options{
+			Host:    webhookInstallOptions.LocalServingHost,
+			Port:    webhookInstallOptions.LocalServingPort,
+			CertDir: webhookInstallOptions.LocalServingCertDir,
+		}),
+		LeaderElection: false,
+		Metrics:        metricsserver.Options{BindAddress: "0"},
 	})
 	if err != nil {
 		panic(err)
@@ -83,32 +97,33 @@ func (t *PlatformControllerTestSuite) SetupSuite() {
 	k8sClient := k8sManager.GetClient()
 	t.k8sClient = k8sClient
 
-	// Add indexers
-	if err = controller.SetupIndexerWithManager(
+	// Setup indexer
+	if err := controller.SetupIndexerWithManager(
 		k8sManager,
 		centreoncrd.SetupPlatformIndexer,
+		centreoncrd.SetupCentreonServiceIndexer,
+		centreoncrd.SetupCentreonServiceGroupIndexer,
+		centreoncrd.SetupCertificateIndexer,
+		centreoncrd.SetupIngressIndexer,
+		centreoncrd.SetupNamespaceIndexer,
+		centreoncrd.SetupNodeIndexer,
+		centreoncrd.SetupRouteIndexer,
 	); err != nil {
 		panic(err)
 	}
 
-	// Init controllers
-	os.Setenv("POD_NAMESPACE", "default")
-
-	platforms := map[string]*ComputedPlatform{
-		"default": {
-			Platform: &centreoncrd.Platform{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "default",
-					Namespace: "default",
-				},
-				Spec: centreoncrd.PlatformSpec{
-					IsDefault:        true,
-					PlatformType:     "centreon",
-					CentreonSettings: &centreoncrd.PlatformSpecCentreonSettings{},
-				},
-			},
-		},
+	// Setup webhook
+	if err := controller.SetupWebhookWithManager(
+		k8sManager,
+		k8sClient,
+		centreoncrd.SetupCentreonServiceWebhookWithManager,
+		centreoncrd.SetupCentreonServiceGroupWebhookWithManager,
+		centreoncrd.SetupPlatformWebhookWithManager,
+	); err != nil {
+		panic(err)
 	}
+
+	platforms := map[string]*ComputedPlatform{}
 	t.platforms = platforms
 
 	platformReconsiler := NewPlatformReconciler(

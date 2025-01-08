@@ -340,7 +340,7 @@ apiVersion: monitor.k8s.webcenter.fr/v1
 kind: CentreonService
 spec:
   host: "localhost"
-  name: "ping1"
+  name: "ping3"
   template: "template3"
   macros:
     name: "{{ .name }}"
@@ -371,7 +371,7 @@ apiVersion: monitor.k8s.webcenter.fr/v1
 kind: CentreonService
 spec:
   host: "localhost"
-  name: "ping2"
+  name: "ping4"
   template: "template4"
   macros:
     name: "{{ .name }}"
@@ -436,7 +436,7 @@ spec:
 			}
 			expectedCSSpec := monitorapi.CentreonServiceSpec{
 				Host:     "localhost",
-				Name:     "ping1",
+				Name:     "ping3",
 				Template: "template3",
 				Macros: map[string]string{
 					"name":      key.Name,
@@ -469,7 +469,7 @@ spec:
 			}
 			expectedCSSpec = monitorapi.CentreonServiceSpec{
 				Host:     "localhost",
-				Name:     "ping2",
+				Name:     "ping4",
 				Template: "template4",
 				Macros: map[string]string{
 					"name":      key.Name,
@@ -505,7 +505,7 @@ apiVersion: monitor.k8s.webcenter.fr/v1
 kind: CentreonService
 spec:
   host: "localhost"
-  name: "ping1"
+  name: "ping3"
   template: "template3"
   macros:
     name: "{{ .name }}"
@@ -579,7 +579,7 @@ spec:
 			}
 			expectedCSSpec := monitorapi.CentreonServiceSpec{
 				Host:     "localhost",
-				Name:     "ping1",
+				Name:     "ping3",
 				Template: "template3",
 				Macros: map[string]string{
 					"name":      key.Name,

@@ -14,7 +14,7 @@ func (t *APITestSuite) TestSetupPlatformIndexer() {
 			Namespace: "default",
 		},
 		Spec: PlatformSpec{
-			IsDefault:    true,
+			IsDefault:    false,
 			PlatformType: "centreon",
 			CentreonSettings: &PlatformSpecCentreonSettings{
 				URL:                   "http://localhost",

@@ -81,7 +81,6 @@ spec:
                 type: string
             required:
             - template
-            - type
             type: object
           status:
             description: TemplateStatus defines the observed state of Template

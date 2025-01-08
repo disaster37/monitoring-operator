@@ -66,6 +66,10 @@ type CentreonServiceGroupStatus struct {
 	// The service group name
 	// +operator-sdk:csv:customresourcedefinitions:type=status
 	ServiceGroupName string `json:"serviceGroupName,omitempty"`
+
+	// The platform ref
+	// +operator-sdk:csv:customresourcedefinitions:type=status
+	PlatformRef string `json:"platformRef,omitempty"`
 }
 
 //+kubebuilder:object:root=true
@@ -79,7 +83,7 @@ type CentreonServiceGroupStatus struct {
 // +kubebuilder:printcolumn:name="Error",type="boolean",JSONPath=".status.isOnError",description="Is on error"
 // +kubebuilder:printcolumn:name="Ready",type="string",JSONPath=".status.conditions[?(@.type=='Ready')].status",description="health"
 // +kubebuilder:printcolumn:name="ServiceGroup",type="string",JSONPath=".status.serviceGroupName"
-// +kubebuilder:printcolumn:name="Platform",type="string",JSONPath=".spec.platformRef"
+// +kubebuilder:printcolumn:name="Platform",type="string",JSONPath=".status.platformRef"
 // +kubebuilder:printcolumn:name="Age",type="date",JSONPath=".metadata.creationTimestamp"
 type CentreonServiceGroup struct {
 	metav1.TypeMeta   `json:",inline"`

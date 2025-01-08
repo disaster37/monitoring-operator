@@ -38,12 +38,6 @@ github.com/disaster37/go-kibana-rest/v8 v8.5.0 h1:Wr2CMopHj0wAh7kq3p355jXctISL1L
 github.com/disaster37/go-kibana-rest/v8 v8.5.0/go.mod h1:wVGm1b93CSmsHYoxzqhDszv347xr+fELdigS8XLO+bg=
 github.com/disaster37/k8s-objectmatcher v1.8.2 h1:txjV3rh/h6b9AhjE1PNuCNqdthemGoE8uadIlQ2sJf4=
 github.com/disaster37/k8s-objectmatcher v1.8.2/go.mod h1:2nRtPBxwgkwCBjerqlRF4oV9pqAVC1bxtl6Y4/iAt3U=
-github.com/disaster37/operator-sdk-extra v0.1.10-0.20241230150020-0c6b831bde03 h1:1xePpJAQ1AGHtsOCNhiRtGKyziHbuHXRulq24VOhyDQ=
-github.com/disaster37/operator-sdk-extra v0.1.10-0.20241230150020-0c6b831bde03/go.mod h1:AHvFjK+QrJePEXMCc/0acjtP4dCDLGXhCi4SYp3/no0=
-github.com/disaster37/operator-sdk-extra v0.1.10-0.20241231145657-6399fb6218e8 h1:QVpb+RePTyLk1pv3VZFDkK0f67wSeQzdDIikbyVmkYQ=
-github.com/disaster37/operator-sdk-extra v0.1.10-0.20241231145657-6399fb6218e8/go.mod h1:AHvFjK+QrJePEXMCc/0acjtP4dCDLGXhCi4SYp3/no0=
-github.com/disaster37/operator-sdk-extra v0.1.10-0.20250103095940-4ee6b390f30a h1:FTKnlYFCDwN+RUBdxzn6DhRuAemPR0TYSYddw1LftiI=
-github.com/disaster37/operator-sdk-extra v0.1.10-0.20250103095940-4ee6b390f30a/go.mod h1:AHvFjK+QrJePEXMCc/0acjtP4dCDLGXhCi4SYp3/no0=
 github.com/disaster37/operator-sdk-extra v0.1.10-0.20250103142305-ad97c66319ba h1:9t35uYMIhdiDWMBpt7jJyDAc8InW+rylSSkEUFFZ+R8=
 github.com/disaster37/operator-sdk-extra v0.1.10-0.20250103142305-ad97c66319ba/go.mod h1:AHvFjK+QrJePEXMCc/0acjtP4dCDLGXhCi4SYp3/no0=
 github.com/emicklei/go-restful/v3 v3.11.0 h1:rAQeMHw1c7zTmncogyy8VvRZwtkmkZ4FxERmMY4rD+g=

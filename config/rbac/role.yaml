@@ -15,6 +15,24 @@ rules:
 - apiGroups:
   - ""
   resources:
+  - namespaces
+  - nodes
+  verbs:
+  - get
+  - list
+  - update
+  - watch
+- apiGroups:
+  - ""
+  resources:
+  - namespaces/finalizers
+  - nodes/finalizers
+  - secrets/finalizers
+  verbs:
+  - update
+- apiGroups:
+  - ""
+  resources:
   - secrets
   verbs:
   - get
@@ -28,6 +46,7 @@ rules:
   - centreonservicegroups
   - centreonservices
   - platforms
+  - templates
   verbs:
   - create
   - delete
@@ -42,6 +61,7 @@ rules:
   - centreonservicegroups/finalizers
   - centreonservices/finalizers
   - platforms/finalizers
+  - templates/finalizers
   verbs:
   - update
 - apiGroups:
@@ -50,9 +70,25 @@ rules:
   - centreonservicegroups/status
   - centreonservices/status
   - platforms/status
+  - templates/status
   verbs:
   - get
   - patch
+  - update
+- apiGroups:
+  - networking.k8s.io
+  resources:
+  - ingresses
+  verbs:
+  - get
+  - list
+  - update
+  - watch
+- apiGroups:
+  - networking.k8s.io
+  resources:
+  - ingresses/finalizers
+  verbs:
   - update
 - apiGroups:
   - route.openshift.io
@@ -63,3 +99,9 @@ rules:
   - list
   - update
   - watch
+- apiGroups:
+  - route.openshift.io
+  resources:
+  - routes/finalizers
+  verbs:
+  - update

@@ -83,6 +83,8 @@ spec:
                 description: |-
                   PlatformType is the platform type.
                   It support only `centreon` at this time
+                enum:
+                - centreon
                 type: string
             required:
             - isDefault

@@ -31,7 +31,7 @@ spec:
     - jsonPath: .status.serviceGroupName
       name: ServiceGroup
       type: string
-    - jsonPath: .spec.platformRef
+    - jsonPath: .status.platformRef
       name: Platform
       type: string
     - jsonPath: .metadata.creationTimestamp
@@ -180,6 +180,9 @@ spec:
                 description: observedGeneration is the current generation applied
                 format: int64
                 type: integer
+              platformRef:
+                description: The platform ref
+                type: string
               serviceGroupName:
                 description: The service group name
                 type: string

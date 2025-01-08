@@ -37,6 +37,7 @@ type PlatformSpec struct {
 	// PlatformType is the platform type.
 	// It support only `centreon` at this time
 	// +operator-sdk:csv:customresourcedefinitions:type=spec
+	// +kubebuilder:validation:Enum=centreon
 	PlatformType string `json:"type"`
 
 	// CentreonSettings is the setting for Centreon plateform type

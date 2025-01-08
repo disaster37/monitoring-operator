@@ -41,6 +41,9 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/metrics/server"
 	"sigs.k8s.io/controller-runtime/pkg/webhook"
 
+	"github.com/disaster37/operator-sdk-extra/pkg/controller"
+	"github.com/disaster37/operator-sdk-extra/pkg/helper"
+
 	centreoncrd "github.com/disaster37/monitoring-operator/api/v1"
 	centreoncontroller "github.com/disaster37/monitoring-operator/internal/controller/centreon"
 	certificatecontroller "github.com/disaster37/monitoring-operator/internal/controller/certificate"
@@ -49,8 +52,6 @@ import (
 	nodecontroller "github.com/disaster37/monitoring-operator/internal/controller/node"
 	platformcontroller "github.com/disaster37/monitoring-operator/internal/controller/platform"
 	routecontroller "github.com/disaster37/monitoring-operator/internal/controller/route"
-	"github.com/disaster37/operator-sdk-extra/pkg/controller"
-	"github.com/disaster37/operator-sdk-extra/pkg/helper"
 	//+kubebuilder:scaffold:imports
 )
 
@@ -186,10 +187,13 @@ func main() {
 	// Set indexers
 	indexers := []controller.Indexer{
 		centreoncrd.SetupPlatformIndexer,
+		centreoncrd.SetupCentreonServiceIndexer,
+		centreoncrd.SetupCentreonServiceGroupIndexer,
 		centreoncrd.SetupCertificateIndexer,
 		centreoncrd.SetupIngressIndexer,
 		centreoncrd.SetupNamespaceIndexer,
 		centreoncrd.SetupNodeIndexer,
+		centreoncrd.SetupRouteIndexer,
 	}
 	if hasRouteCapability {
 		indexers = append(indexers, centreoncrd.SetupRouteIndexer)
@@ -199,6 +203,20 @@ func main() {
 		indexers...,
 	); err != nil {
 		panic(err)
+	}
+
+	// Add webhooks
+	if os.Getenv("ENABLE_WEBHOOKS") != "false" {
+		if err := controller.SetupWebhookWithManager(
+			mgr,
+			mgr.GetClient(),
+			centreoncrd.SetupCentreonServiceWebhookWithManager,
+			centreoncrd.SetupCentreonServiceGroupWebhookWithManager,
+			centreoncrd.SetupPlatformWebhookWithManager,
+			centreoncrd.SetupTemplateWebhookWithManager,
+		); err != nil {
+			panic(err)
+		}
 	}
 
 	// Get platforms
