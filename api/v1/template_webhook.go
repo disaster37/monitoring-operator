@@ -19,7 +19,9 @@ package v1
 import (
 	"bytes"
 	"fmt"
+	"strings"
 	"text/template"
+	"unicode"
 
 	"github.com/disaster37/monitoring-operator/api/shared"
 	sprig "github.com/go-task/slim-sprig"
@@ -71,7 +73,10 @@ func (r *Template) validateTemplate() *field.Error {
 		return field.Invalid(field.NewPath("spec").Child("template"), r.Spec.Template, fmt.Sprintf("Error when execute template with golang template: %s", err.Error()))
 	}
 
-	if buf.String() == "" || buf.String() == "---" {
+	cleanTemplate := strings.TrimFunc(buf.String(), func(r rune) bool {
+		return !unicode.IsSpace(r)
+	})
+	if cleanTemplate == "" || cleanTemplate == "---" {
 		return nil
 	}
 
