@@ -81,5 +81,4 @@ func (t *APITestSuite) TestSetupPlatformWebhook() {
 	}
 	err = t.k8sClient.Create(context.Background(), o)
 	assert.Error(t.T(), err)
-
 }

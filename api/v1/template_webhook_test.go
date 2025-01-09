@@ -73,5 +73,4 @@ spec:
 	}
 	err = t.k8sClient.Create(context.Background(), o)
 	assert.Error(t.T(), err)
-
 }

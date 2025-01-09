@@ -142,7 +142,6 @@ func (t *APITestSuite) SetupSuite() {
 	if err != nil || isTimeout {
 		panic("Webhook not ready")
 	}
-
 }
 
 func (t *APITestSuite) TearDownSuite() {

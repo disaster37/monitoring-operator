@@ -86,7 +86,6 @@ func TestCentreonServiceGroupGetExternalName(t *testing.T) {
 	assert.Equal(t, "test", o.GetExternalName())
 }
 
-
 func TestCentreonServiceGroupGetPlatform(t *testing.T) {
 	var o *CentreonServiceGroup
 

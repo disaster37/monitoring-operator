@@ -106,7 +106,6 @@ func (r *CentreonService) ValidateCreate() (admission.Warnings, error) {
 	}
 
 	return nil, nil
-
 }
 
 // ValidateUpdate implements webhook.Validator so a webhook will be registered for the type

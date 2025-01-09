@@ -47,7 +47,6 @@ func SetupTemplateWebhookWithManager(mgr ctrl.Manager, client client.Client) err
 var _ webhook.Validator = &Template{}
 
 func (r *Template) validateTemplate() *field.Error {
-
 	placeholders := map[string]any{
 		"templateName":      r.Name,
 		"templateNamespace": r.Namespace,
@@ -88,7 +87,6 @@ func (r *Template) validateTemplate() *field.Error {
 	}
 
 	return nil
-
 }
 
 // ValidateCreate implements webhook.Validator so a webhook will be registered for the type

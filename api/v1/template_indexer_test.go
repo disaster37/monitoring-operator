@@ -105,7 +105,6 @@ func (t *APITestSuite) TestSetupIngressIndexer() {
 
 	err := t.k8sClient.Create(context.Background(), ingress)
 	assert.NoError(t.T(), err)
-
 }
 
 func (t *APITestSuite) TestSetupNamespaceIndexer() {
@@ -120,7 +119,6 @@ func (t *APITestSuite) TestSetupNamespaceIndexer() {
 
 	err := t.k8sClient.Create(context.Background(), namespace)
 	assert.NoError(t.T(), err)
-
 }
 
 func (t *APITestSuite) TestSetupNodeIndexer() {
@@ -135,7 +133,6 @@ func (t *APITestSuite) TestSetupNodeIndexer() {
 
 	err := t.k8sClient.Create(context.Background(), node)
 	assert.NoError(t.T(), err)
-
 }
 
 func (t *APITestSuite) TestSetupRouteIndexer() {
@@ -162,5 +159,4 @@ func (t *APITestSuite) TestSetupRouteIndexer() {
 
 	err := t.k8sClient.Create(context.Background(), route)
 	assert.NoError(t.T(), err)
-
 }

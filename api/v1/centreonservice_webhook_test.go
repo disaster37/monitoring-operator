@@ -99,5 +99,4 @@ func (t *APITestSuite) TestSetupCentreonServiceWebhook() {
 	o.Spec.PlatformRef = "test2"
 	err = t.k8sClient.Update(context.Background(), o)
 	assert.Error(t.T(), err)
-
 }
