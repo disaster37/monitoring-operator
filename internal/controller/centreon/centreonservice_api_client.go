@@ -70,8 +70,8 @@ func (h *centreonServiceApiClient) Get(o *centreoncrd.CentreonService) (object *
 		host = o.Status.Host
 		serviceName = o.Status.ServiceName
 	} else {
-		host = o.GetExternalName()
-		serviceName = o.Spec.Name
+		host = o.Spec.Host
+		serviceName = o.GetExternalName()
 	}
 
 	cs, err := h.Client().GetService(host, serviceName)
