@@ -7,7 +7,6 @@ import (
 
 	"dario.cat/mergo"
 	"emperror.dev/errors"
-	"github.com/Azure/go-autorest/logger"
 	centreoncrd "github.com/disaster37/monitoring-operator/api/v1"
 	"github.com/disaster37/monitoring-operator/pkg/helpers"
 	"github.com/disaster37/monitoring-operator/pkg/object"
