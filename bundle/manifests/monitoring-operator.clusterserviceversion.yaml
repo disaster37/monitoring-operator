@@ -53,7 +53,7 @@ metadata:
           },
           "spec": {
             "name": "{{ .templateName }}-{{ .name }}",
-            "template": "host: localhost\nname: \"test-ping-{{ .namespace }}\"\ntemplate: template-test\nactivate: true\nmacros:\n  CHECKTYPE: quota\n  EXTRAOPTIONS: -sS\n  NAMESPACE: {{ .namespace }}\n",
+            "template": "host: localhost\nname: \"test-ping-{{ .namespace }}\"\ntemplate: template-test\nactivate: true\nmacros:\n  CHECKTYPE: quota\n  EXTRAOPTIONS: -sS\n  NAMESPACE: {{ .namespace }}",
             "type": "CentreonService"
           }
         }
@@ -61,14 +61,14 @@ metadata:
     capabilities: Basic Install
     categories: Monitoring
     containerImage: quay.io/webcenter/monitoring-operator:v1.0.1
-    createdAt: "2022-05-19T00:00:00Z"
+    createdAt: "2025-01-09T14:22:03Z"
     description: A Kubernetes operator based on the Operator SDK for creating and
       managing monitoring resources on Centreon
-    operators.operatorframework.io/builder: operator-sdk-v1.23.0
-    operators.operatorframework.io/project_layout: go.kubebuilder.io/v3
+    operators.operatorframework.io/builder: operator-sdk-v1.38.0
+    operators.operatorframework.io/project_layout: go.kubebuilder.io/v4
     repository: https://github.com/disaster37/monitoring-operator
     support: None
-  name: monitoring-operator.v1.0.1
+  name: monitoring-operator.v0.0.1-pr.31
   namespace: placeholder
 spec:
   apiservicedefinitions: {}
@@ -117,147 +117,12 @@ spec:
         displayName: No Update
         path: policy.noUpdate
       statusDescriptors:
-      - description: List of conditions
-        displayName: Conditions
-        path: conditions
+      - description: The platform ref
+        displayName: Platform Ref
+        path: platformRef
       - description: The service group name
         displayName: Service Group Name
         path: serviceGroupName
-      version: v1
-    - description: CentreonServiceGroup is the Schema for the centreonservicegroups
-        API
-      displayName: Centreon Service Group
-      kind: CentreonServiceGroup
-      name: centreonservicegroups.monitor.k8s.webcenter.fr
-      resources:
-      - kind: None
-        name: None
-        version: None
-      specDescriptors:
-      - description: Activate or disable service
-        displayName: Activated
-        path: activate
-      - description: The serviceGroup description
-        displayName: Description
-        path: description
-      - description: The serviceGroup name
-        displayName: Name
-        path: name
-      - description: PlatformRef is the target platform where to create serviceGroup
-        displayName: Platform Ref
-        path: platformRef
-      - description: Policy define the policy that controller need to respect when
-          it reconcile resource
-        displayName: Policy
-        path: policy
-      - description: ExcludeFieldsOnDiff is the list of fields to exclude when diff
-          step is processing
-        displayName: Exclude Fields On Diff
-        path: policy.excludeFields
-      - description: NoCreate is true if controller can't create resource on remote
-          provider
-        displayName: No Create
-        path: policy.noCreate
-      - description: NoDelete is true if controller can't delete resource on remote
-          provider
-        displayName: No Delete
-        path: policy.noDelete
-      - description: NoUpdate is true if controller can't update resource on remote
-          provider
-        displayName: No Update
-        path: policy.noUpdate
-      statusDescriptors:
-      - description: List of conditions
-        displayName: Conditions
-        path: conditions
-      - description: The service group name
-        displayName: Service Group Name
-        path: serviceGroupName
-      version: v1alpha1
-    - description: CentreonService is the Schema for the centreonservices API
-      displayName: Centreon Service
-      kind: CentreonService
-      name: centreonservices.monitor.k8s.webcenter.fr
-      resources:
-      - kind: None
-        name: None
-        version: None
-      specDescriptors:
-      - description: Activate or disable service
-        displayName: Activated
-        path: activate
-      - description: The active check enable
-        displayName: Active Check Enabled
-        path: activeChecksEnabled
-      - description: The list of arguments
-        displayName: Arguments
-        path: arguments
-      - description: The list of categories
-        displayName: Categories
-        path: categories
-      - description: The check command
-        displayName: Check Command
-        path: checkCommand
-      - description: The list of service groups
-        displayName: Groups
-        path: groups
-      - description: The host to attach the service
-        displayName: Host
-        path: host
-      - description: The map of macros
-        displayName: Macros
-        path: macros
-      - description: The max check attemps
-        displayName: Max Check Attempts
-        path: maxCheckAttempts
-      - description: The service name
-        displayName: Name
-        path: name
-      - description: The normal check interval
-        displayName: Normal Check Interval
-        path: normalCheckInterval
-      - description: The passive check enable
-        displayName: Passive Check Enabled
-        path: passiveChecksEnabled
-      - description: PlatformRef is the target platform where to create service
-        displayName: Platform Ref
-        path: platformRef
-      - description: Policy define the policy that controller need to respect when
-          it reconcile resource
-        displayName: Policy
-        path: policy
-      - description: ExcludeFieldsOnDiff is the list of fields to exclude when diff
-          step is processing
-        displayName: Exclude Fields On Diff
-        path: policy.excludeFields
-      - description: NoCreate is true if controller can't create resource on remote
-          provider
-        displayName: No Create
-        path: policy.noCreate
-      - description: NoDelete is true if controller can't delete resource on remote
-          provider
-        displayName: No Delete
-        path: policy.noDelete
-      - description: NoUpdate is true if controller can't update resource on remote
-          provider
-        displayName: No Update
-        path: policy.noUpdate
-      - description: The retry check interval
-        displayName: Retry Check Interval
-        path: retryCheckInterval
-      - description: The service templates
-        displayName: Template
-        path: template
-      statusDescriptors:
-      - description: List of conditions
-        displayName: Conditions
-        path: conditions
-      - description: The host affected to service on Centreon
-        displayName: Host
-        path: host
-      - description: The service name
-        displayName: Service Name
-        path: serviceName
       version: v1
     - description: CentreonService is the Schema for the centreonservices API
       displayName: Centreon Service
@@ -334,51 +199,15 @@ spec:
         displayName: Template
         path: template
       statusDescriptors:
-      - description: List of conditions
-        displayName: Conditions
-        path: conditions
       - description: The host affected to service on Centreon
         displayName: Host
         path: host
+      - description: The platform ref
+        displayName: Platform Ref
+        path: platformRef
       - description: The service name
         displayName: Service Name
         path: serviceName
-      version: v1alpha1
-    - description: Platform is the Schema for the platforms API
-      displayName: Platform
-      kind: Platform
-      name: platforms.monitor.k8s.webcenter.fr
-      resources:
-      - kind: Secret
-        name: monitoring-credentials
-        version: v1
-      specDescriptors:
-      - description: CentreonSettings is the setting for Centreon plateform type
-        displayName: Centreon Settings
-        path: centreonSettings
-      - description: Secret is the secret that store the username and password to
-          access on Centreon API It need to have `username` and `password` key
-        displayName: Secret
-        path: centreonSettings.secret
-      - description: SelfSignedCertificat is true if you shouldn't check Centreon
-          API certificate
-        displayName: Self Signed Certificate
-        path: centreonSettings.selfSignedCertificat
-      - description: URL is the full URL to access on Centreon API
-        displayName: URL
-        path: centreonSettings.url
-      - description: IsDefault is set to tru to use this plateform when is not specify
-          on resource to create
-        displayName: Is Default
-        path: isDefault
-      - description: PlatformType is the platform type. It support only `centreon`
-          at this time
-        displayName: Platform Type
-        path: type
-      statusDescriptors:
-      - description: List of conditions
-        displayName: Conditions
-        path: conditions
       version: v1
     - description: Platform is the Schema for the platforms API
       displayName: Platform
@@ -392,8 +221,9 @@ spec:
       - description: CentreonSettings is the setting for Centreon plateform type
         displayName: Centreon Settings
         path: centreonSettings
-      - description: Secret is the secret that store the username and password to
-          access on Centreon API It need to have `username` and `password` key
+      - description: |-
+          Secret is the secret that store the username and password to access on Centreon API
+          It need to have `username` and `password` key
         displayName: Secret
         path: centreonSettings.secret
       - description: SelfSignedCertificat is true if you shouldn't check Centreon
@@ -407,41 +237,11 @@ spec:
           on resource to create
         displayName: Is Default
         path: isDefault
-      - description: PlatformType is the platform type. It support only `centreon`
-          at this time
+      - description: |-
+          PlatformType is the platform type.
+          It support only `centreon` at this time
         displayName: Platform Type
         path: type
-      statusDescriptors:
-      - description: List of conditions
-        displayName: Conditions
-        path: conditions
-      version: v1alpha1
-    - description: Template is the Schema for the templates API
-      displayName: Template
-      kind: Template
-      name: templates.monitor.k8s.webcenter.fr
-      resources:
-      - kind: CentreonService
-        name: centreonService
-        version: v1
-      - kind: CentreonServiceGroup
-        name: centreonServiceGroup
-        version: v1
-      specDescriptors:
-      - description: Name is the resource name generated from template
-        displayName: Name
-        path: name
-      - description: Template is the CentreonService template base on golang templating
-          You need only provide the spec contend
-        displayName: Template
-        path: template
-      - description: Type is the object type it generate from template
-        displayName: Type
-        path: type
-      statusDescriptors:
-      - description: Fake status to generate bundle manifest without error
-        displayName: Status
-        path: status
       version: v1
     - description: Template is the Schema for the templates API
       displayName: Template
@@ -450,26 +250,41 @@ spec:
       resources:
       - kind: CentreonService
         name: centreonService
-        version: v1alpha1
+        version: v1
       - kind: CentreonServiceGroup
         name: centreonServiceGroup
-        version: v1alpha1
+        version: v1
       specDescriptors:
-      - description: Name is the resource name generated from template
+      - description: |-
+          Deprecated: Use the full template instead to set the name
+          Name is the resource name generated from template
         displayName: Name
         path: name
-      - description: Template is the CentreonService template base on golang templating
-          You need only provide the spec contend
+      - description: Template is the template to render. You can use the golang template
+          syntaxe with sprig function
         displayName: Template
         path: template
-      - description: Type is the object type it generate from template
+      - description: |-
+          TemplateDelimiter is the delimiter to use when render template
+          It can be usefull if you use helm on top of them
+        displayName: Template Delimiter
+        path: templateDelimiter
+      - description: Left is the left delimiter
+        displayName: Left
+        path: templateDelimiter.left
+      - description: Right is the right delimiter
+        displayName: Right
+        path: templateDelimiter.right
+      - description: |-
+          Deprecated: Use full template instead to set the type
+          Type is the object type it generate from template
         displayName: Type
         path: type
       statusDescriptors:
       - description: Fake status to generate bundle manifest without error
         displayName: Status
         path: status
-      version: v1alpha1
+      version: v1
   description: |
     A Kubernetes operator based on the Operator SDK for creating and managing monitoring resources on Centreon.
 
@@ -505,20 +320,6 @@ spec:
           - ""
           resources:
           - namespaces
-          verbs:
-          - get
-          - list
-          - update
-          - watch
-        - apiGroups:
-          - ""
-          resources:
-          - namespaces/finalizers
-          verbs:
-          - update
-        - apiGroups:
-          - ""
-          resources:
           - nodes
           verbs:
           - get
@@ -528,7 +329,9 @@ spec:
         - apiGroups:
           - ""
           resources:
+          - namespaces/finalizers
           - nodes/finalizers
+          - secrets/finalizers
           verbs:
           - update
         - apiGroups:
@@ -542,27 +345,12 @@ spec:
           - update
           - watch
         - apiGroups:
-          - ""
-          resources:
-          - secrets/finalizers
-          verbs:
-          - update
-        - apiGroups:
-          - monitor.k8s.webcenter.fr
-          resources:
-          - centreonServices
-          verbs:
-          - create
-          - delete
-          - get
-          - list
-          - patch
-          - update
-          - watch
-        - apiGroups:
           - monitor.k8s.webcenter.fr
           resources:
           - centreonservicegroups
+          - centreonservices
+          - platforms
+          - templates
           verbs:
           - create
           - delete
@@ -575,78 +363,22 @@ spec:
           - monitor.k8s.webcenter.fr
           resources:
           - centreonservicegroups/finalizers
+          - centreonservices/finalizers
+          - platforms/finalizers
+          - templates/finalizers
           verbs:
           - update
         - apiGroups:
           - monitor.k8s.webcenter.fr
           resources:
           - centreonservicegroups/status
-          verbs:
-          - get
-          - patch
-          - update
-        - apiGroups:
-          - monitor.k8s.webcenter.fr
-          resources:
-          - centreonservices
-          verbs:
-          - create
-          - delete
-          - get
-          - list
-          - patch
-          - update
-          - watch
-        - apiGroups:
-          - monitor.k8s.webcenter.fr
-          resources:
-          - centreonservices/finalizers
-          verbs:
-          - update
-        - apiGroups:
-          - monitor.k8s.webcenter.fr
-          resources:
           - centreonservices/status
-          verbs:
-          - get
-          - patch
-          - update
-        - apiGroups:
-          - monitor.k8s.webcenter.fr
-          resources:
-          - platforms
-          verbs:
-          - create
-          - delete
-          - get
-          - list
-          - patch
-          - update
-          - watch
-        - apiGroups:
-          - monitor.k8s.webcenter.fr
-          resources:
-          - platforms/finalizers
-          verbs:
-          - update
-        - apiGroups:
-          - monitor.k8s.webcenter.fr
-          resources:
           - platforms/status
+          - templates/status
           verbs:
           - get
           - patch
           - update
-        - apiGroups:
-          - monitor.k8s.webcenter.fr
-          resources:
-          - templates
-          verbs:
-          - get
-          - list
-          - patch
-          - update
-          - watch
         - apiGroups:
           - networking.k8s.io
           resources:
@@ -677,68 +409,49 @@ spec:
           - routes/finalizers
           verbs:
           - update
-        - apiGroups:
-          - authentication.k8s.io
-          resources:
-          - tokenreviews
-          verbs:
-          - create
-        - apiGroups:
-          - authorization.k8s.io
-          resources:
-          - subjectaccessreviews
-          verbs:
-          - create
         serviceAccountName: monitoring-operator-monitoring-operator
       deployments:
       - label:
-          control-plane: controller-manager
-        name: monitoring-operator-controller-manager
+          app.kubernetes.io/managed-by: kustomize
+          app.kubernetes.io/name: tmp
+          control-plane: monitoring-operator
+        name: monitoring-operator-monitoring-operator
         spec:
           replicas: 1
           selector:
             matchLabels:
-              control-plane: controller-manager
+              control-plane: monitoring-operator
           strategy: {}
           template:
             metadata:
+              annotations:
+                kubectl.kubernetes.io/default-container: manager
               labels:
-                control-plane: controller-manager
+                control-plane: monitoring-operator
             spec:
               containers:
               - args:
-                - --secure-listen-address=0.0.0.0:8443
-                - --upstream=http://127.0.0.1:8080/
-                - --logtostderr=true
-                - --v=10
-                image: gcr.io/kubebuilder/kube-rbac-proxy:v0.8.0
-                name: kube-rbac-proxy
-                ports:
-                - containerPort: 8443
-                  name: https
-                  protocol: TCP
-                resources:
-                  limits:
-                    cpu: 300m
-                    memory: 128Mi
-                  requests:
-                    cpu: 100m
-                    memory: 20Mi
-              - args:
-                - --health-probe-bind-address=:8081
-                - --metrics-bind-address=127.0.0.1:8080
+                - --metrics-bind-address=:8443
                 - --leader-elect
+                - --health-probe-bind-address=:8081
                 command:
                 - /manager
                 env:
-                - name: OPERATOR_NAMESPACE
+                - name: POD_NAME
                   valueFrom:
                     fieldRef:
+                      apiVersion: v1
+                      fieldPath: metadata.name
+                - name: POD_NAMESPACE
+                  valueFrom:
+                    fieldRef:
+                      apiVersion: v1
                       fieldPath: metadata.namespace
                 - name: LOG_LEVEL
-                  value: DEBUG
-                image: quay.io/webcenter/monitoring-operator:1.0.1
-                imagePullPolicy: Always
+                  value: INFO
+                - name: LOG_FORMATTER
+                  value: json
+                image: quay.io/webcenter/monitoring-operator:0.0.1-pr.31
                 livenessProbe:
                   httpGet:
                     path: /healthz
@@ -755,12 +468,15 @@ spec:
                 resources:
                   limits:
                     cpu: 500m
-                    memory: 512Mi
+                    memory: 128Mi
                   requests:
-                    cpu: 100m
-                    memory: 20Mi
+                    cpu: 10m
+                    memory: 64Mi
                 securityContext:
                   allowPrivilegeEscalation: false
+                  capabilities:
+                    drop:
+                    - ALL
               securityContext:
                 runAsNonRoot: true
               serviceAccountName: monitoring-operator-monitoring-operator
@@ -819,8 +535,89 @@ spec:
   - email: linuxworkgroup@hotmail.com
     name: disaster37
   maturity: stable
-  minKubeVersion: v1.18.0
+  minKubeVersion: 1.23.0
   provider:
     name: webcenter.fr
     url: https://github.com/disaster37/monitoring-operator
-  version: 1.0.1
+  version: 0.0.1-pr.31
+  webhookdefinitions:
+  - admissionReviewVersions:
+    - v1
+    containerPort: 443
+    deploymentName: monitoring-operator-monitoring-operator
+    failurePolicy: Fail
+    generateName: centreonservice.monitor.k8s.webcenter.fr
+    rules:
+    - apiGroups:
+      - monitor.k8s.webcenter.fr
+      apiVersions:
+      - v1
+      operations:
+      - CREATE
+      - UPDATE
+      resources:
+      - centreonservices
+    sideEffects: None
+    targetPort: 9443
+    type: ValidatingAdmissionWebhook
+    webhookPath: /validate-monitor-k8s-webcenter-fr-v1-centreonservice
+  - admissionReviewVersions:
+    - v1
+    containerPort: 443
+    deploymentName: monitoring-operator-monitoring-operator
+    failurePolicy: Fail
+    generateName: centreonservicegroup.monitor.k8s.webcenter.fr
+    rules:
+    - apiGroups:
+      - monitor.k8s.webcenter.fr
+      apiVersions:
+      - v1
+      operations:
+      - CREATE
+      - UPDATE
+      resources:
+      - centreonservicegroups
+    sideEffects: None
+    targetPort: 9443
+    type: ValidatingAdmissionWebhook
+    webhookPath: /validate-monitor-k8s-webcenter-fr-v1-centreonservicegroup
+  - admissionReviewVersions:
+    - v1
+    containerPort: 443
+    deploymentName: monitoring-operator-monitoring-operator
+    failurePolicy: Fail
+    generateName: platform.monitor.k8s.webcenter.fr
+    rules:
+    - apiGroups:
+      - monitor.k8s.webcenter.fr
+      apiVersions:
+      - v1
+      operations:
+      - CREATE
+      - UPDATE
+      resources:
+      - platforms
+    sideEffects: None
+    targetPort: 9443
+    type: ValidatingAdmissionWebhook
+    webhookPath: /validate-monitor-k8s-webcenter-fr-v1-platform
+  - admissionReviewVersions:
+    - v1
+    containerPort: 443
+    deploymentName: monitoring-operator-monitoring-operator
+    failurePolicy: Fail
+    generateName: template.monitor.k8s.webcenter.fr
+    rules:
+    - apiGroups:
+      - monitor.k8s.webcenter.fr
+      apiVersions:
+      - v1
+      operations:
+      - CREATE
+      - UPDATE
+      resources:
+      - templates
+    sideEffects: None
+    targetPort: 9443
+    type: ValidatingAdmissionWebhook
+    webhookPath: /validate-monitor-k8s-webcenter-fr-v1-template

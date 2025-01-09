@@ -9,7 +9,6 @@ import (
 )
 
 func (t *CentreonHandlerTestSuite) TestCreateServiceGroup() {
-
 	toCreate := &CentreonServiceGroup{
 		Name:        "sg1",
 		Description: "my sg",
@@ -54,7 +53,6 @@ func (t *CentreonHandlerTestSuite) TestCreateServiceGroup() {
 	}
 	err = t.client.CreateServiceGroup(toCreate)
 	assert.Error(t.T(), err)
-
 }
 
 func (t *CentreonHandlerTestSuite) TestUpdateServiceGroup() {
@@ -109,11 +107,9 @@ func (t *CentreonHandlerTestSuite) TestUpdateServiceGroup() {
 	}
 	err = t.client.UpdateServiceGroup(toUpdate)
 	assert.Error(t.T(), err)
-
 }
 
 func (t *CentreonHandlerTestSuite) TestDeleteServiceGroup() {
-
 	// Mock delete
 	t.mockServiceGroup.EXPECT().
 		Delete(gomock.Eq("sg1")).
@@ -124,7 +120,6 @@ func (t *CentreonHandlerTestSuite) TestDeleteServiceGroup() {
 }
 
 func (t *CentreonHandlerTestSuite) TestGetServiceGroup() {
-
 	expected := &CentreonServiceGroup{
 		Name:        "sg1",
 		Description: "my sg",
@@ -162,11 +157,9 @@ func (t *CentreonHandlerTestSuite) TestGetServiceGroup() {
 	// When bad parameters
 	_, err = t.client.GetServiceGroup("")
 	assert.Error(t.T(), err)
-
 }
 
 func (t *CentreonHandlerTestSuite) TestDiffServiceGroup() {
-
 	tests := []struct {
 		Name            string
 		ActualService   *CentreonServiceGroup

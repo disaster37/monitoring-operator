@@ -4,4 +4,5 @@ resources:
 - monitor_v1_centreonservicegroup.yaml
 - monitor_v1_template.yaml
 - monitor_v1_platform.yaml
-    #+kubebuilder:scaffold:manifestskustomizesamples
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization

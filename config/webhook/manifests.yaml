@@ -1,0 +1,86 @@
+---
+apiVersion: admissionregistration.k8s.io/v1
+kind: ValidatingWebhookConfiguration
+metadata:
+  name: validating-webhook-configuration
+webhooks:
+- admissionReviewVersions:
+  - v1
+  clientConfig:
+    service:
+      name: webhook-service
+      namespace: system
+      path: /validate-monitor-k8s-webcenter-fr-v1-centreonservice
+  failurePolicy: Fail
+  name: centreonservice.monitor.k8s.webcenter.fr
+  rules:
+  - apiGroups:
+    - monitor.k8s.webcenter.fr
+    apiVersions:
+    - v1
+    operations:
+    - CREATE
+    - UPDATE
+    resources:
+    - centreonservices
+  sideEffects: None
+- admissionReviewVersions:
+  - v1
+  clientConfig:
+    service:
+      name: webhook-service
+      namespace: system
+      path: /validate-monitor-k8s-webcenter-fr-v1-centreonservicegroup
+  failurePolicy: Fail
+  name: centreonservicegroup.monitor.k8s.webcenter.fr
+  rules:
+  - apiGroups:
+    - monitor.k8s.webcenter.fr
+    apiVersions:
+    - v1
+    operations:
+    - CREATE
+    - UPDATE
+    resources:
+    - centreonservicegroups
+  sideEffects: None
+- admissionReviewVersions:
+  - v1
+  clientConfig:
+    service:
+      name: webhook-service
+      namespace: system
+      path: /validate-monitor-k8s-webcenter-fr-v1-platform
+  failurePolicy: Fail
+  name: platform.monitor.k8s.webcenter.fr
+  rules:
+  - apiGroups:
+    - monitor.k8s.webcenter.fr
+    apiVersions:
+    - v1
+    operations:
+    - CREATE
+    - UPDATE
+    resources:
+    - platforms
+  sideEffects: None
+- admissionReviewVersions:
+  - v1
+  clientConfig:
+    service:
+      name: webhook-service
+      namespace: system
+      path: /validate-monitor-k8s-webcenter-fr-v1-template
+  failurePolicy: Fail
+  name: template.monitor.k8s.webcenter.fr
+  rules:
+  - apiGroups:
+    - monitor.k8s.webcenter.fr
+    apiVersions:
+    - v1
+    operations:
+    - CREATE
+    - UPDATE
+    resources:
+    - templates
+  sideEffects: None

@@ -1,0 +1,28 @@
+{
+  "name": "monitoring-operator",
+  "engineVersion": "v0.14.0",
+  "sdk": "go",
+  "dependencies": [
+    {
+      "name": "codecov",
+      "source": "github.com/kpenfound/dagger-modules/codecov@codecov/v0.1.1",
+      "pin": "9c07696ffaaecf5cb951dd846c492afdeae34456"
+    },
+    {
+      "name": "git",
+      "source": "github.com/disaster37/dagger-library-go/git",
+      "pin": "85553f1da750637800f4d06a72b6e3bd7854ef7a"
+    },
+    {
+      "name": "golang",
+      "source": "github.com/disaster37/dagger-library-go/golang",
+      "pin": "85553f1da750637800f4d06a72b6e3bd7854ef7a"
+    },
+    {
+      "name": "operator-sdk",
+      "source": "github.com/disaster37/dagger-library-go/operator-sdk",
+      "pin": "85553f1da750637800f4d06a72b6e3bd7854ef7a"
+    }
+  ],
+  "source": "ci/dagger"
+}

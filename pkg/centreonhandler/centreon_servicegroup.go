@@ -7,7 +7,6 @@ import (
 
 // CreateServiceGroup permit to create new serviceGroup on Centreon from spec
 func (h *CentreonHandlerImpl) CreateServiceGroup(sg *CentreonServiceGroup) (err error) {
-
 	if sg == nil {
 		return errors.New("ServiceGroup must be provided")
 	}
@@ -41,12 +40,10 @@ func (h *CentreonHandlerImpl) CreateServiceGroup(sg *CentreonServiceGroup) (err 
 	h.log.Debug("Create serviceGroup successfully on Centreon")
 
 	return nil
-
 }
 
 // UpdateServiceGroup permit to update existing serviceGroup on Centreon from spec
 func (h *CentreonHandlerImpl) UpdateServiceGroup(serviceGroupDiff *CentreonServiceGroupDiff) (err error) {
-
 	if serviceGroupDiff == nil {
 		return errors.New("ServiceGroupDiff must be provided")
 	}

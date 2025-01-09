@@ -2,7 +2,6 @@ package shared
 
 // Policy define the policy that controller need to respect when it reconcile resource
 type Policy struct {
-
 	// NoDelete is true if controller can't delete resource on remote provider
 	// +operator-sdk:csv:customresourcedefinitions:type=spec
 	// +optional

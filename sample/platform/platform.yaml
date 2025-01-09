@@ -6,6 +6,6 @@ spec:
   isDefault: true
   type: centreon
   centreonSettings:
-    url: "http://centreon-test/centreon/api/index.php"
+    url: "http://centreon-test.default.svc/centreon/api/index.php"
     selfSignedCertificat: true
     secret: centreon

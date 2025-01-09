@@ -1,4 +1,4 @@
-OPERATOR_NAMESPACE ?= "default"
+POD_NAMESPACE ?= "default"
 
 # VERSION defines the project version for the bundle.
 # Update this value when you upgrade the version of your project.
@@ -109,7 +109,7 @@ build: generate fmt vet ## Build manager binary.
 	go build -o bin/manager .
 
 run: manifests generate fmt vet install ## Run a controller from your host.
-	OPERATOR_NAMESPACE=$(OPERATOR_NAMESPACE) LOG_LEVEL=debug go run .
+	POD_NAMESPACE=$(POD_NAMESPACE) LOG_LEVEL=debug go run .
 
 install-sample: manifests kustomize ## Install samples
 	$(KUSTOMIZE) build config/samples | kubectl apply -f -

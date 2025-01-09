@@ -15,8 +15,8 @@ limitations under the License.
 */
 
 // Package v1 contains API Schema definitions for the monitor v1 API group
-//+kubebuilder:object:generate=true
-//+groupName=monitor.k8s.webcenter.fr
+// +kubebuilder:object:generate=true
+// +groupName=monitor.k8s.webcenter.fr
 package v1
 
 import (

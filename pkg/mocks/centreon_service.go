@@ -7,7 +7,7 @@ package mocks
 import (
 	reflect "reflect"
 
-	v1alpha1 "github.com/disaster37/monitoring-operator/api/v1alpha1"
+	v1 "github.com/disaster37/monitoring-operator/api/v1"
 	gomock "github.com/golang/mock/gomock"
 	logrus "github.com/sirupsen/logrus"
 )
@@ -36,7 +36,7 @@ func (m *MockCentreonService) EXPECT() *MockCentreonServiceMockRecorder {
 }
 
 // Delete mocks base method.
-func (m *MockCentreonService) Delete(arg0 *v1alpha1.CentreonService) error {
+func (m *MockCentreonService) Delete(arg0 *v1.CentreonService) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Delete", arg0)
 	ret0, _ := ret[0].(error)
@@ -50,7 +50,7 @@ func (mr *MockCentreonServiceMockRecorder) Delete(arg0 interface{}) *gomock.Call
 }
 
 // Reconcile mocks base method.
-func (m *MockCentreonService) Reconcile(arg0 *v1alpha1.CentreonService) (bool, bool, error) {
+func (m *MockCentreonService) Reconcile(arg0 *v1.CentreonService) (bool, bool, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Reconcile", arg0)
 	ret0, _ := ret[0].(bool)

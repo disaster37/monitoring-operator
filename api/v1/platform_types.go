@@ -17,6 +17,7 @@ limitations under the License.
 package v1
 
 import (
+	"github.com/disaster37/operator-sdk-extra/pkg/apis"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -36,6 +37,7 @@ type PlatformSpec struct {
 	// PlatformType is the platform type.
 	// It support only `centreon` at this time
 	// +operator-sdk:csv:customresourcedefinitions:type=spec
+	// +kubebuilder:validation:Enum=centreon
 	PlatformType string `json:"type"`
 
 	// CentreonSettings is the setting for Centreon plateform type
@@ -45,7 +47,6 @@ type PlatformSpec struct {
 }
 
 type PlatformSpecCentreonSettings struct {
-
 	// URL is the full URL to access on Centreon API
 	// +operator-sdk:csv:customresourcedefinitions:type=spec
 	URL string `json:"url"`
@@ -62,10 +63,7 @@ type PlatformSpecCentreonSettings struct {
 
 // PlatformStatus defines the observed state of Platform
 type PlatformStatus struct {
-
-	// List of conditions
-	// +operator-sdk:csv:customresourcedefinitions:type=status
-	Conditions []metav1.Condition `json:"conditions"`
+	apis.BasicRemoteObjectStatus `json:",inline"`
 }
 
 //+kubebuilder:object:root=true
@@ -74,9 +72,9 @@ type PlatformStatus struct {
 
 // Platform is the Schema for the platforms API
 // +operator-sdk:csv:customresourcedefinitions:resources={{Secret,v1,monitoring-credentials}}
-// +kubebuilder:printcolumn:name="Healthy",type="string",JSONPath=".status.conditions[0].status",description="Resource state on Centreon"
-// +kubebuilder:printcolumn:name="Default",type="boolean",JSONPath=".spec.isDefault"
-// +kubebuilder:printcolumn:name="Type",type="string",JSONPath=".spec.type"
+// +kubebuilder:printcolumn:name="Sync",type="boolean",JSONPath=".status.isSync"
+// +kubebuilder:printcolumn:name="Error",type="boolean",JSONPath=".status.isOnError",description="Is on error"
+// +kubebuilder:printcolumn:name="Ready",type="string",JSONPath=".status.conditions[?(@.type=='Ready')].status",description="health"
 // +kubebuilder:printcolumn:name="Age",type="date",JSONPath=".metadata.creationTimestamp"
 type Platform struct {
 	metav1.TypeMeta   `json:",inline"`

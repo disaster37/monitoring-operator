@@ -29,19 +29,39 @@ type TemplateSpec struct {
 	// INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
 	// Important: Run "make" to regenerate code after modifying this file
 
+	// Deprecated: Use full template instead to set the type
 	// Type is the object type it generate from template
 	// +operator-sdk:csv:customresourcedefinitions:type=spec
+	// +optional
 	Type string `json:"type"`
 
+	// Deprecated: Use the full template instead to set the name
 	// Name is the resource name generated from template
 	// +operator-sdk:csv:customresourcedefinitions:type=spec
 	// +optional
 	Name string `json:"name,omitempty"`
 
-	// Template is the CentreonService template base on golang templating
-	// You need only provide the spec contend
+	// Template is the template to render. You can use the golang template syntaxe with sprig function
 	// +operator-sdk:csv:customresourcedefinitions:type=spec
 	Template string `json:"template"`
+
+	// TemplateDelimiter is the delimiter to use when render template
+	// It can be usefull if you use helm on top of them
+	// +operator-sdk:csv:customresourcedefinitions:type=spec
+	// +optional
+	TemplateDelimiter *TemplateTemplateDelimiter `json:"templateDelimiter,omitempty"`
+}
+
+type TemplateTemplateDelimiter struct {
+	// Right is the right delimiter
+	// +operator-sdk:csv:customresourcedefinitions:type=spec
+	// +kubebuilder:validation:MinLength:=1
+	Right string `json:"right"`
+
+	// Left is the left delimiter
+	// +operator-sdk:csv:customresourcedefinitions:type=spec
+	// +kubebuilder:validation:MinLength:=1
+	Left string `json:"left"`
 }
 
 // TemplateStatus defines the observed state of Template

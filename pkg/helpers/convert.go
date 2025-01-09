@@ -6,7 +6,6 @@ import (
 )
 
 func BoolToString(value *bool) (result string) {
-
 	if value == nil {
 		return "2"
 	}
@@ -15,7 +14,6 @@ func BoolToString(value *bool) (result string) {
 		return "1"
 	}
 	return "0"
-
 }
 
 func StringToBool(value string) (result *bool) {

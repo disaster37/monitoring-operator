@@ -1,0 +1,12 @@
+apiVersion: monitor.k8s.webcenter.fr/v1
+kind: CentreonService
+metadata:
+  name: test-ci
+spec:
+  activate: true
+  checkCommand: ping
+  host: localhost
+  macros:
+    LABEL: bar
+  name: test-ci
+  template: template-test

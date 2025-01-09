@@ -66,7 +66,155 @@ spec:
       - description: The service group name
         displayName: Service Group Name
         path: serviceGroupName
-      version: v1
+      version: v1alpha1
+    - description: CentreonService is the Schema for the centreonservices API
+      displayName: Centreon Service
+      kind: CentreonService
+      name: centreonservices.monitor.k8s.webcenter.fr
+      resources:
+      - kind: None
+        name: None
+        version: None
+      specDescriptors:
+      - description: Activate or disable service
+        displayName: Activated
+        path: activate
+      - description: The active check enable
+        displayName: Active Check Enabled
+        path: activeChecksEnabled
+      - description: The list of arguments
+        displayName: Arguments
+        path: arguments
+      - description: The list of categories
+        displayName: Categories
+        path: categories
+      - description: The check command
+        displayName: Check Command
+        path: checkCommand
+      - description: The list of service groups
+        displayName: Groups
+        path: groups
+      - description: The host to attach the service
+        displayName: Host
+        path: host
+      - description: The map of macros
+        displayName: Macros
+        path: macros
+      - description: The max check attemps
+        displayName: Max Check Attempts
+        path: maxCheckAttempts
+      - description: The service name
+        displayName: Name
+        path: name
+      - description: The normal check interval
+        displayName: Normal Check Interval
+        path: normalCheckInterval
+      - description: The passive check enable
+        displayName: Passive Check Enabled
+        path: passiveChecksEnabled
+      - description: PlatformRef is the target platform where to create service
+        displayName: Platform Ref
+        path: platformRef
+      - description: Policy define the policy that controller need to respect when
+          it reconcile resource
+        displayName: Policy
+        path: policy
+      - description: ExcludeFieldsOnDiff is the list of fields to exclude when diff
+          step is processing
+        displayName: Exclude Fields On Diff
+        path: policy.excludeFields
+      - description: NoCreate is true if controller can't create resource on remote
+          provider
+        displayName: No Create
+        path: policy.noCreate
+      - description: NoDelete is true if controller can't delete resource on remote
+          provider
+        displayName: No Delete
+        path: policy.noDelete
+      - description: NoUpdate is true if controller can't update resource on remote
+          provider
+        displayName: No Update
+        path: policy.noUpdate
+      - description: The retry check interval
+        displayName: Retry Check Interval
+        path: retryCheckInterval
+      - description: The service templates
+        displayName: Template
+        path: template
+      statusDescriptors:
+      - description: List of conditions
+        displayName: Conditions
+        path: conditions
+      - description: The host affected to service on Centreon
+        displayName: Host
+        path: host
+      - description: The service name
+        displayName: Service Name
+        path: serviceName
+      version: v1alpha1
+    - description: Platform is the Schema for the platforms API
+      displayName: Platform
+      kind: Platform
+      name: platforms.monitor.k8s.webcenter.fr
+      resources:
+      - kind: Secret
+        name: monitoring-credentials
+        version: v1
+      specDescriptors:
+      - description: CentreonSettings is the setting for Centreon plateform type
+        displayName: Centreon Settings
+        path: centreonSettings
+      - description: Secret is the secret that store the username and password to
+          access on Centreon API It need to have `username` and `password` key
+        displayName: Secret
+        path: centreonSettings.secret
+      - description: SelfSignedCertificat is true if you shouldn't check Centreon
+          API certificate
+        displayName: Self Signed Certificate
+        path: centreonSettings.selfSignedCertificat
+      - description: URL is the full URL to access on Centreon API
+        displayName: URL
+        path: centreonSettings.url
+      - description: IsDefault is set to tru to use this plateform when is not specify
+          on resource to create
+        displayName: Is Default
+        path: isDefault
+      - description: PlatformType is the platform type. It support only `centreon`
+          at this time
+        displayName: Platform Type
+        path: type
+      statusDescriptors:
+      - description: List of conditions
+        displayName: Conditions
+        path: conditions
+      version: v1alpha1
+    - description: Template is the Schema for the templates API
+      displayName: Template
+      kind: Template
+      name: templates.monitor.k8s.webcenter.fr
+      resources:
+      - kind: CentreonService
+        name: centreonService
+        version: v1alpha1
+      - kind: CentreonServiceGroup
+        name: centreonServiceGroup
+        version: v1alpha1
+      specDescriptors:
+      - description: Name is the resource name generated from template
+        displayName: Name
+        path: name
+      - description: Template is the CentreonService template base on golang templating
+          You need only provide the spec contend
+        displayName: Template
+        path: template
+      - description: Type is the object type it generate from template
+        displayName: Type
+        path: type
+      statusDescriptors:
+      - description: Fake status to generate bundle manifest without error
+        displayName: Status
+        path: status
+      version: v1alpha1
     - description: CentreonServiceGroup is the Schema for the centreonservicegroups
         API
       displayName: Centreon Service Group
@@ -110,97 +258,12 @@ spec:
         displayName: No Update
         path: policy.noUpdate
       statusDescriptors:
-      - description: List of conditions
-        displayName: Conditions
-        path: conditions
+      - description: The platform ref
+        displayName: Platform Ref
+        path: platformRef
       - description: The service group name
         displayName: Service Group Name
         path: serviceGroupName
-      version: v1alpha1
-    - description: CentreonService is the Schema for the centreonservices API
-      displayName: Centreon Service
-      kind: CentreonService
-      name: centreonservices.monitor.k8s.webcenter.fr
-      resources:
-      - kind: None
-        name: None
-        version: None
-      specDescriptors:
-      - description: Activate or disable service
-        displayName: Activated
-        path: activate
-      - description: The active check enable
-        displayName: Active Check Enabled
-        path: activeChecksEnabled
-      - description: The list of arguments
-        displayName: Arguments
-        path: arguments
-      - description: The list of categories
-        displayName: Categories
-        path: categories
-      - description: The check command
-        displayName: Check Command
-        path: checkCommand
-      - description: The list of service groups
-        displayName: Groups
-        path: groups
-      - description: The host to attach the service
-        displayName: Host
-        path: host
-      - description: The map of macros
-        displayName: Macros
-        path: macros
-      - description: The max check attemps
-        displayName: Max Check Attempts
-        path: maxCheckAttempts
-      - description: The service name
-        displayName: Name
-        path: name
-      - description: The normal check interval
-        displayName: Normal Check Interval
-        path: normalCheckInterval
-      - description: The passive check enable
-        displayName: Passive Check Enabled
-        path: passiveChecksEnabled
-      - description: PlatformRef is the target platform where to create service
-        displayName: Platform Ref
-        path: platformRef
-      - description: Policy define the policy that controller need to respect when
-          it reconcile resource
-        displayName: Policy
-        path: policy
-      - description: ExcludeFieldsOnDiff is the list of fields to exclude when diff
-          step is processing
-        displayName: Exclude Fields On Diff
-        path: policy.excludeFields
-      - description: NoCreate is true if controller can't create resource on remote
-          provider
-        displayName: No Create
-        path: policy.noCreate
-      - description: NoDelete is true if controller can't delete resource on remote
-          provider
-        displayName: No Delete
-        path: policy.noDelete
-      - description: NoUpdate is true if controller can't update resource on remote
-          provider
-        displayName: No Update
-        path: policy.noUpdate
-      - description: The retry check interval
-        displayName: Retry Check Interval
-        path: retryCheckInterval
-      - description: The service templates
-        displayName: Template
-        path: template
-      statusDescriptors:
-      - description: List of conditions
-        displayName: Conditions
-        path: conditions
-      - description: The host affected to service on Centreon
-        displayName: Host
-        path: host
-      - description: The service name
-        displayName: Service Name
-        path: serviceName
       version: v1
     - description: CentreonService is the Schema for the centreonservices API
       displayName: Centreon Service
@@ -277,51 +340,15 @@ spec:
         displayName: Template
         path: template
       statusDescriptors:
-      - description: List of conditions
-        displayName: Conditions
-        path: conditions
       - description: The host affected to service on Centreon
         displayName: Host
         path: host
+      - description: The platform ref
+        displayName: Platform Ref
+        path: platformRef
       - description: The service name
         displayName: Service Name
         path: serviceName
-      version: v1alpha1
-    - description: Platform is the Schema for the platforms API
-      displayName: Platform
-      kind: Platform
-      name: platforms.monitor.k8s.webcenter.fr
-      resources:
-      - kind: Secret
-        name: monitoring-credentials
-        version: v1
-      specDescriptors:
-      - description: CentreonSettings is the setting for Centreon plateform type
-        displayName: Centreon Settings
-        path: centreonSettings
-      - description: Secret is the secret that store the username and password to
-          access on Centreon API It need to have `username` and `password` key
-        displayName: Secret
-        path: centreonSettings.secret
-      - description: SelfSignedCertificat is true if you shouldn't check Centreon
-          API certificate
-        displayName: Self Signed Certificate
-        path: centreonSettings.selfSignedCertificat
-      - description: URL is the full URL to access on Centreon API
-        displayName: URL
-        path: centreonSettings.url
-      - description: IsDefault is set to tru to use this plateform when is not specify
-          on resource to create
-        displayName: Is Default
-        path: isDefault
-      - description: PlatformType is the platform type. It support only `centreon`
-          at this time
-        displayName: Platform Type
-        path: type
-      statusDescriptors:
-      - description: List of conditions
-        displayName: Conditions
-        path: conditions
       version: v1
     - description: Platform is the Schema for the platforms API
       displayName: Platform
@@ -335,8 +362,9 @@ spec:
       - description: CentreonSettings is the setting for Centreon plateform type
         displayName: Centreon Settings
         path: centreonSettings
-      - description: Secret is the secret that store the username and password to
-          access on Centreon API It need to have `username` and `password` key
+      - description: |-
+          Secret is the secret that store the username and password to access on Centreon API
+          It need to have `username` and `password` key
         displayName: Secret
         path: centreonSettings.secret
       - description: SelfSignedCertificat is true if you shouldn't check Centreon
@@ -350,41 +378,11 @@ spec:
           on resource to create
         displayName: Is Default
         path: isDefault
-      - description: PlatformType is the platform type. It support only `centreon`
-          at this time
+      - description: |-
+          PlatformType is the platform type.
+          It support only `centreon` at this time
         displayName: Platform Type
         path: type
-      statusDescriptors:
-      - description: List of conditions
-        displayName: Conditions
-        path: conditions
-      version: v1alpha1
-    - description: Template is the Schema for the templates API
-      displayName: Template
-      kind: Template
-      name: templates.monitor.k8s.webcenter.fr
-      resources:
-      - kind: CentreonService
-        name: centreonService
-        version: v1
-      - kind: CentreonServiceGroup
-        name: centreonServiceGroup
-        version: v1
-      specDescriptors:
-      - description: Name is the resource name generated from template
-        displayName: Name
-        path: name
-      - description: Template is the CentreonService template base on golang templating
-          You need only provide the spec contend
-        displayName: Template
-        path: template
-      - description: Type is the object type it generate from template
-        displayName: Type
-        path: type
-      statusDescriptors:
-      - description: Fake status to generate bundle manifest without error
-        displayName: Status
-        path: status
       version: v1
     - description: Template is the Schema for the templates API
       displayName: Template
@@ -393,26 +391,41 @@ spec:
       resources:
       - kind: CentreonService
         name: centreonService
-        version: v1alpha1
+        version: v1
       - kind: CentreonServiceGroup
         name: centreonServiceGroup
-        version: v1alpha1
+        version: v1
       specDescriptors:
-      - description: Name is the resource name generated from template
+      - description: |-
+          Deprecated: Use the full template instead to set the name
+          Name is the resource name generated from template
         displayName: Name
         path: name
-      - description: Template is the CentreonService template base on golang templating
-          You need only provide the spec contend
+      - description: Template is the template to render. You can use the golang template
+          syntaxe with sprig function
         displayName: Template
         path: template
-      - description: Type is the object type it generate from template
+      - description: |-
+          TemplateDelimiter is the delimiter to use when render template
+          It can be usefull if you use helm on top of them
+        displayName: Template Delimiter
+        path: templateDelimiter
+      - description: Left is the left delimiter
+        displayName: Left
+        path: templateDelimiter.left
+      - description: Right is the right delimiter
+        displayName: Right
+        path: templateDelimiter.right
+      - description: |-
+          Deprecated: Use full template instead to set the type
+          Type is the object type it generate from template
         displayName: Type
         path: type
       statusDescriptors:
       - description: Fake status to generate bundle manifest without error
         displayName: Status
         path: status
-      version: v1alpha1
+      version: v1
   description: |
     A Kubernetes operator based on the Operator SDK for creating and managing monitoring resources on Centreon.
 
@@ -455,7 +468,7 @@ spec:
   - email: linuxworkgroup@hotmail.com
     name: disaster37
   maturity: stable
-  minKubeVersion: v1.18.0
+  minKubeVersion: 1.23.0
   provider:
     name: webcenter.fr
     url: https://github.com/disaster37/monitoring-operator

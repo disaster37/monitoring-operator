@@ -1,0 +1,11 @@
+apiVersion: monitor.k8s.webcenter.fr/v1
+kind: CentreonServiceGroup
+metadata:
+  name: test-ci
+spec:
+  activate: true
+  description: test
+  name: SG_TEST_CI
+  policy:
+    excludeFields:
+      - activate
