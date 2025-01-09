@@ -286,7 +286,10 @@ func (h *MonitoringOperator) CI(
 
 		if !isTag {
 			// keep original version file
-			dir = dir.WithFile("VERSION", h.Src.File("VERSION"))
+			versionFile, err := h.Src.File("VERSION").Sync(ctx)
+			if err == nil {
+				dir = dir.WithFile("VERSION", versionFile)
+			}
 
 			if branchName == "" {
 				return nil, errors.New("You need to provide the branch name")
