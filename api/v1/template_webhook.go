@@ -87,7 +87,7 @@ func (r *Template) validateTemplate() *field.Error {
 
 	if r.Spec.Type == "" {
 		if data["apiVersion"] == nil || data["kind"] == nil {
-			return field.Invalid(field.NewPath("spec").Child("template"), r.Spec.Template, "You need to provide the 'apiVersion' and 'kind' on given template")
+			return field.Invalid(field.NewPath("spec").Child("template"), r.Spec.Template, fmt.Sprintf("You need to provide the 'apiVersion' and 'kind' on given template: %s", cleanTemplate))
 		}
 	}
 
