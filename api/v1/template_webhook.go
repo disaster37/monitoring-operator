@@ -74,7 +74,7 @@ func (r *Template) validateTemplate() *field.Error {
 	}
 
 	cleanTemplate := strings.TrimFunc(buf.String(), func(r rune) bool {
-		return !unicode.IsSpace(r)
+		return unicode.IsSpace(r)
 	})
 	if cleanTemplate == "" || cleanTemplate == "---" {
 		return nil
@@ -87,7 +87,7 @@ func (r *Template) validateTemplate() *field.Error {
 
 	if r.Spec.Type == "" {
 		if data["apiVersion"] == nil || data["kind"] == nil {
-			return field.Invalid(field.NewPath("spec").Child("template"), r.Spec.Template, fmt.Sprintf("You need to provide the 'apiVersion' and 'kind' on given template: %s", cleanTemplate))
+			return field.Invalid(field.NewPath("spec").Child("template"), r.Spec.Template, fmt.Sprintf("You need to provide the 'apiVersion' and 'kind' on given template: '%s'", cleanTemplate))
 		}
 	}
 
