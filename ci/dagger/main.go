@@ -289,6 +289,8 @@ func (h *MonitoringOperator) CI(
 			versionFile, err := h.Src.File("VERSION").Sync(ctx)
 			if err == nil {
 				dir = dir.WithFile("VERSION", versionFile)
+			} else {
+				dir = dir.WithoutFile("VERSION")
 			}
 
 			if branchName == "" {
