@@ -3,7 +3,7 @@ package template
 import (
 	"bytes"
 	"fmt"
-	"html/template"
+	"text/template"
 
 	"dario.cat/mergo"
 	"emperror.dev/errors"
