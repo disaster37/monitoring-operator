@@ -7,6 +7,7 @@ import (
 
 	"dario.cat/mergo"
 	"emperror.dev/errors"
+	"github.com/Azure/go-autorest/logger"
 	centreoncrd "github.com/disaster37/monitoring-operator/api/v1"
 	"github.com/disaster37/monitoring-operator/pkg/helpers"
 	"github.com/disaster37/monitoring-operator/pkg/object"
@@ -156,18 +157,18 @@ func (h *builder) Process(t *centreoncrd.Template) (object client.Object, err er
 	}
 
 	if err := yaml.Unmarshal(buf.Bytes(), meta); err != nil {
-		return nil, errors.Wrapf(err, "Error when Unmarshall template %s/%s from %s/%s", t.Namespace, t.Name, h.sourceObject.GetNamespace(), h.sourceObject.GetName())
+		return nil, errors.Wrapf(err, "Error when Unmarshall template %s/%s from %s/%s with template: \n%s", t.Namespace, t.Name, h.sourceObject.GetNamespace(), h.sourceObject.GetName(), buf.String())
 	}
 
 	o, isFound := h.supportedTemplateObjects[helpers.GetObjectType(meta)]
 	if !isFound {
-		return nil, errors.Errorf("No type '%s' found for template %s/%s from %s/%s", helpers.GetObjectType(meta), t.Namespace, t.Name, h.sourceObject.GetNamespace(), h.sourceObject.GetName())
+		return nil, errors.Errorf("No type '%s' found for template %s/%s from %s/%s with template: \n%s", helpers.GetObjectType(meta), t.Namespace, t.Name, h.sourceObject.GetNamespace(), h.sourceObject.GetName(), buf.String())
 	}
 
 	newO := helpers.CloneObject(o)
 
 	if err = yaml.Unmarshal(buf.Bytes(), newO); err != nil {
-		return nil, errors.Wrapf(err, "Error when unmarshall resource template %s/%s from %s/%s", t.Namespace, t.Name, h.sourceObject.GetNamespace(), h.sourceObject.GetName())
+		return nil, errors.Wrapf(err, "Error when unmarshall resource template %s/%s from %s/%s with template: \n%s", t.Namespace, t.Name, h.sourceObject.GetNamespace(), h.sourceObject.GetName(), buf.String())
 	}
 
 	return newO, nil
