@@ -20,6 +20,7 @@ import (
 	"context"
 	"crypto/tls"
 	"flag"
+	"fmt"
 	"os"
 
 	// Import all Kubernetes client auth plugins (e.g. Azure, GCP, OIDC, etc.)
@@ -35,6 +36,7 @@ import (
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/cache"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/healthz"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 	"sigs.k8s.io/controller-runtime/pkg/metrics/filters"
@@ -220,7 +222,12 @@ func main() {
 
 	// Get platforms
 	// Not block if errors, maybee not yet platform available
-	platforms, err := platformcontroller.ComputedPlatformList(context.Background(), mgr.GetClient(), logrus.NewEntry(log))
+	cl, err := client.New(cfg, client.Options{})
+	if err != nil {
+		fmt.Println("failed to create client")
+		os.Exit(1)
+	}
+	platforms, err := platformcontroller.ComputedPlatformList(context.Background(), cl, logrus.NewEntry(log))
 	if err != nil {
 		log.Errorf("Error when get platforms, we start controller with empty platform list: %s", err.Error())
 		platforms = map[string]*platformcontroller.ComputedPlatform{}
