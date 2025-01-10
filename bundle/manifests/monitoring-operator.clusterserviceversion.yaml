@@ -61,14 +61,14 @@ metadata:
     capabilities: Basic Install
     categories: Monitoring
     containerImage: quay.io/webcenter/monitoring-operator:v1.0.1
-    createdAt: "2025-01-10T13:13:04Z"
+    createdAt: "2025-01-10T13:54:07Z"
     description: A Kubernetes operator based on the Operator SDK for creating and
       managing monitoring resources on Centreon
     operators.operatorframework.io/builder: operator-sdk-v1.38.0
     operators.operatorframework.io/project_layout: go.kubebuilder.io/v4
     repository: https://github.com/disaster37/monitoring-operator
     support: None
-  name: monitoring-operator.v1.0.1
+  name: monitoring-operator.v1.0.2-rc.220
   namespace: placeholder
 spec:
   apiservicedefinitions: {}
@@ -451,7 +451,7 @@ spec:
                   value: INFO
                 - name: LOG_FORMATTER
                   value: json
-                image: quay.io/webcenter/monitoring-operator:1.0.1
+                image: quay.io/webcenter/monitoring-operator:1.0.2-rc.220
                 livenessProbe:
                   httpGet:
                     path: /healthz
@@ -539,7 +539,7 @@ spec:
   provider:
     name: webcenter.fr
     url: https://github.com/disaster37/monitoring-operator
-  version: 1.0.1
+  version: 1.0.2-rc.220
   webhookdefinitions:
   - admissionReviewVersions:
     - v1
