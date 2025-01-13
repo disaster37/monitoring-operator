@@ -472,4 +472,5 @@ spec:
   provider:
     name: webcenter.fr
     url: https://github.com/disaster37/monitoring-operator
+  replaces: monitoring-operator.v1.0.1
   version: 1.0.1
