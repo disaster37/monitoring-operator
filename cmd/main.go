@@ -222,7 +222,7 @@ func main() {
 
 	// Get platforms
 	// Not block if errors, maybee not yet platform available
-	cl, err := client.New(cfg, client.Options{})
+	cl, err := client.New(cfg, client.Options{Scheme: scheme})
 	if err != nil {
 		fmt.Println("failed to create client")
 		os.Exit(1)
