@@ -64,7 +64,7 @@ func CreateNetworkPolicyForWebhook(c client.Client, logger *logrus.Entry) error 
 
 	if !cmp.Equal(networkPolicy.Spec, expectedNetworkPolicy.Spec) {
 		networkPolicy.Spec = expectedNetworkPolicy.Spec
-		if c.Update(context.Background(), networkPolicy); err != nil {
+		if err = c.Update(context.Background(), networkPolicy); err != nil {
 			return errors.Wrap(err, "Error when update NetworkPolicy for webhook")
 		}
 		logger.Info("Successfully update networkPolicy for webhook")
