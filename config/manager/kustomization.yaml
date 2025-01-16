@@ -5,4 +5,4 @@ kind: Kustomization
 images:
 - name: controller
   newName: quay.io/webcenter/monitoring-operator
-  newTag: 1.0.3-rc.223
+  newTag: 1.0.3-pr.33

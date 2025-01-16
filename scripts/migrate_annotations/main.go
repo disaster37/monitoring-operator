@@ -10,6 +10,7 @@ import (
 	"emperror.dev/errors"
 	centreoncrd "github.com/disaster37/monitoring-operator/api/v1"
 	"github.com/disaster37/monitoring-operator/pkg/helpers"
+	"github.com/disaster37/operator-sdk-extra/pkg/helper"
 	"github.com/google/go-cmp/cmp"
 	routev1 "github.com/openshift/api/route/v1"
 	"github.com/sirupsen/logrus"
@@ -22,6 +23,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
+	"k8s.io/client-go/kubernetes"
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/tools/clientcmd"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -128,10 +130,8 @@ func main() {
 }
 
 func migrateAnnotations(c *cli.Context) error {
-	var (
-		old *types.NamespacedName
-		new *types.NamespacedName
-	)
+	old := &types.NamespacedName{}
+	new := &types.NamespacedName{}
 
 	scheme := runtime.NewScheme()
 	utilruntime.Must(clientgoscheme.AddToScheme(scheme))
@@ -149,13 +149,17 @@ func migrateAnnotations(c *cli.Context) error {
 		fmt.Println("failed to create client")
 		os.Exit(1)
 	}
+	clientStd, err := kubernetes.NewForConfig(cfg)
+	if err != nil {
+		panic(err)
+	}
 
 	// Pasre params
 	if err := json.Unmarshal([]byte(c.String("old")), old); err != nil {
-		return errors.Wrap(err, "Error when unmarhall old typedNamespace")
+		return errors.Wrapf(err, "Error when unmarhall old typedNamespace: %s", c.String("old"))
 	}
 	if err := json.Unmarshal([]byte(c.String("new")), new); err != nil {
-		return errors.Wrap(err, "Error when unmarhall new typedNamespace")
+		return errors.Wrapf(err, "Error when unmarhall new typedNamespace: %s", c.String("new"))
 	}
 
 	// Namespaces
@@ -199,13 +203,15 @@ func migrateAnnotations(c *cli.Context) error {
 	}
 
 	// Routes
-	logger.Info("Start migrate resources of kind Ingress")
-	routes := &routev1.RouteList{}
-	if err := client.List(c.Context, routes); err != nil {
-		return errors.Wrap(err, "Error when list all routes")
-	}
-	if err := doMigrateAnnotations(c.Context, *old, *new, routes, client, logger); err != nil {
-		return err
+	if helper.HasCRD(clientStd, routev1.SchemeGroupVersion) {
+		logger.Info("Start migrate resources of kind Ingress")
+		routes := &routev1.RouteList{}
+		if err := client.List(c.Context, routes); err != nil {
+			return errors.Wrap(err, "Error when list all routes")
+		}
+		if err := doMigrateAnnotations(c.Context, *old, *new, routes, client, logger); err != nil {
+			return err
+		}
 	}
 
 	return nil
@@ -220,7 +226,7 @@ func doMigrateAnnotations(ctx context.Context, old types.NamespacedName, new typ
 			"namespace": o.GetNamespace(),
 			"name":      o.GetName(),
 		})
-		log.Debug("Start process resource")
+		logger.Debug("Start process resource")
 
 		targetTemplates := o.GetAnnotations()[fmt.Sprintf("%s/templates", centreoncrd.MonitoringAnnotationKey)]
 		if targetTemplates != "" {
@@ -239,7 +245,6 @@ func doMigrateAnnotations(ctx context.Context, old types.NamespacedName, new typ
 			}
 		}
 		if needUpdate {
-
 			b, err := json.Marshal(listNamespacedName)
 			if err != nil {
 				return errors.Wrap(err, "Error when marshall annotations")
@@ -252,6 +257,8 @@ func doMigrateAnnotations(ctx context.Context, old types.NamespacedName, new typ
 			if err := client.Update(ctx, o); err != nil {
 				return errors.Wrap(err, "Error when update object")
 			}
+
+			logger.Info("Sucessfully update annotations")
 		}
 	}
 

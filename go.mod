@@ -6,8 +6,9 @@ require (
 	dario.cat/mergo v1.0.1
 	emperror.dev/errors v0.8.1
 	github.com/disaster37/generic-objectmatcher v1.0.2
-	github.com/disaster37/go-centreon-rest/v21 v21.0.7
-	github.com/disaster37/operator-sdk-extra v0.1.10-0.20250103142305-ad97c66319ba
+	github.com/disaster37/go-centreon-rest/v21 v21.0.8
+	github.com/disaster37/k8s-objectmatcher v1.8.2
+	github.com/disaster37/operator-sdk-extra v0.1.10-0.20250115085608-99475c0e4b97
 	github.com/go-task/slim-sprig v2.20.0+incompatible
 	github.com/golang/mock v1.6.0
 	github.com/google/go-cmp v0.6.0
@@ -43,7 +44,6 @@ require (
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
 	github.com/cpuguy83/go-md2man/v2 v2.0.5 // indirect
 	github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc // indirect
-	github.com/disaster37/k8s-objectmatcher v1.8.2 // indirect
 	github.com/emicklei/go-restful/v3 v3.11.0 // indirect
 	github.com/evanphx/json-patch v5.6.0+incompatible // indirect
 	github.com/evanphx/json-patch/v5 v5.9.0 // indirect

@@ -51,6 +51,7 @@ import (
 	certificatecontroller "github.com/disaster37/monitoring-operator/internal/controller/certificate"
 	ingresscontroller "github.com/disaster37/monitoring-operator/internal/controller/ingress"
 	namespacecontroller "github.com/disaster37/monitoring-operator/internal/controller/namespace"
+	"github.com/disaster37/monitoring-operator/internal/controller/network"
 	nodecontroller "github.com/disaster37/monitoring-operator/internal/controller/node"
 	platformcontroller "github.com/disaster37/monitoring-operator/internal/controller/platform"
 	routecontroller "github.com/disaster37/monitoring-operator/internal/controller/route"
@@ -220,13 +221,20 @@ func main() {
 		}
 	}
 
-	// Get platforms
-	// Not block if errors, maybee not yet platform available
 	cl, err := client.New(cfg, client.Options{Scheme: scheme})
 	if err != nil {
 		fmt.Println("failed to create client")
 		os.Exit(1)
 	}
+
+	// Add NetworPolicy for webhook
+	if err = network.CreateNetworkPolicyForWebhook(cl, logrus.NewEntry(log)); err != nil {
+		setupLog.Error(err, "unable to create networkPolicy", "controller", "core")
+		os.Exit(1)
+	}
+
+	// Get platforms
+	// Not block if errors, maybee not yet platform available
 	platforms, err := platformcontroller.ComputedPlatformList(context.Background(), cl, logrus.NewEntry(log))
 	if err != nil {
 		log.Errorf("Error when get platforms, we start controller with empty platform list: %s", err.Error())
