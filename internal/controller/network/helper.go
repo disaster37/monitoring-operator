@@ -4,8 +4,9 @@ import (
 	"context"
 
 	"emperror.dev/errors"
+	"github.com/disaster37/k8s-objectmatcher/patch"
 	"github.com/disaster37/monitoring-operator/pkg/helpers"
-	"github.com/google/go-cmp/cmp"
+	"github.com/disaster37/operator-sdk-extra/pkg/controller"
 	"github.com/sirupsen/logrus"
 	v1 "k8s.io/api/core/v1"
 	networkv1 "k8s.io/api/networking/v1"
@@ -31,6 +32,9 @@ func CreateNetworkPolicyForWebhook(c client.Client, logger *logrus.Entry) error 
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace: namespace,
 			Name:      "allow-webhook-access-from-any",
+			Labels: map[string]string{
+				"app.kubernetes.io/name": "monitoring-operator",
+			},
 		},
 		Spec: networkv1.NetworkPolicySpec{
 			PodSelector: metav1.LabelSelector{
@@ -53,7 +57,12 @@ func CreateNetworkPolicyForWebhook(c client.Client, logger *logrus.Entry) error 
 	}
 
 	if err = c.Get(context.Background(), types.NamespacedName{Namespace: expectedNetworkPolicy.GetNamespace(), Name: expectedNetworkPolicy.GetName()}, networkPolicy); err != nil {
+		// Create
 		if k8serrors.IsNotFound(err) {
+			// Set diff 3-way annotations
+			if err := patch.DefaultAnnotator.SetLastAppliedAnnotation(networkPolicy); err != nil {
+				return errors.Wrap(err, "Error when set annotation for 3-way diff on NetworkPolicy for webhook")
+			}
 			if err = c.Create(context.Background(), expectedNetworkPolicy); err != nil {
 				return errors.Wrap(err, "Error when create NetworkPolicy for webhook")
 			}
@@ -64,8 +73,16 @@ func CreateNetworkPolicyForWebhook(c client.Client, logger *logrus.Entry) error 
 		return errors.Wrap(err, "Error when get NetworkPolicy for webhook")
 	}
 
-	if !cmp.Equal(networkPolicy.Spec, expectedNetworkPolicy.Spec) {
-		networkPolicy.Spec = expectedNetworkPolicy.Spec
+	// Diff
+	controller.MustInjectTypeMeta(networkPolicy, expectedNetworkPolicy)
+	patchResult, err := patch.DefaultPatchMaker.Calculate(networkPolicy, expectedNetworkPolicy)
+	if err != nil {
+		return errors.Wrap(err, "Error when diffing NetworkPolicy for webhook")
+	}
+
+	// Update
+	if !patchResult.IsEmpty() {
+		networkPolicy = patchResult.Patched.(*networkv1.NetworkPolicy)
 		if err = c.Update(context.Background(), networkPolicy); err != nil {
 			return errors.Wrap(err, "Error when update NetworkPolicy for webhook")
 		}
