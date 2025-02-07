@@ -6,12 +6,15 @@ import (
 	centreoncrd "github.com/disaster37/monitoring-operator/api/v1"
 	"github.com/disaster37/monitoring-operator/internal/controller/template"
 	"github.com/disaster37/operator-sdk-extra/pkg/controller"
+	"github.com/disaster37/operator-sdk-extra/pkg/helper"
 	"github.com/sirupsen/logrus"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/client-go/tools/record"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	k8scontroller "sigs.k8s.io/controller-runtime/pkg/controller"
 	"sigs.k8s.io/controller-runtime/pkg/handler"
+	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 )
 
 const (
@@ -76,6 +79,9 @@ func (r *NodeReconciler) SetupWithManager(mgr ctrl.Manager) error {
 		For(&corev1.Node{}).
 		Owns(&centreoncrd.CentreonService{}).
 		Owns(&centreoncrd.CentreonServiceGroup{}).
+		WithOptions(k8scontroller.Options{
+			RateLimiter: helper.DefaultControllerRateLimiter[reconcile.Request](),
+		}).
 		WithEventFilter(template.ViewResourceWithMonitoringTemplate()).
 		Watches(&centreoncrd.Template{}, handler.EnqueueRequestsFromMapFunc(template.WatchTemplate(r.Client(), &corev1.NodeList{}))).
 		Complete(r)

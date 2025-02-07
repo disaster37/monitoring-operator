@@ -178,7 +178,15 @@ func (h *CentreonHandlerImpl) UpdateService(serviceDiff *CentreonServiceDiff) (e
 
 // DeleteService permit to delete an existing service on Centreon
 func (h *CentreonHandlerImpl) DeleteService(host, name string) (err error) {
-	return h.client.API.Service().Delete(host, name)
+	err = h.client.API.Service().Delete(host, name)
+
+	if err != nil && IsErrorNotFound(err) {
+		return nil
+
+	}
+
+	return err
+
 }
 
 // DiffService permit to compare actual and expected service to compute what is modified

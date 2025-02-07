@@ -77,7 +77,12 @@ func (h *CentreonHandlerImpl) UpdateServiceGroup(serviceGroupDiff *CentreonServi
 
 // DeleteServiceGroup permit to delete an existing serviceGroup on Centreon
 func (h *CentreonHandlerImpl) DeleteServiceGroup(name string) (err error) {
-	return h.client.API.ServiceGroup().Delete(name)
+	err = h.client.API.ServiceGroup().Delete(name)
+	if err != nil &&  IsErrorNotFound(err) {
+		return nil
+	}
+
+	return err
 }
 
 // DiffServiceGroup permit to diff actual and expected serviceGroup to know what it need to modify
