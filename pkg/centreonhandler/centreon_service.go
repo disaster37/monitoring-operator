@@ -182,11 +182,9 @@ func (h *CentreonHandlerImpl) DeleteService(host, name string) (err error) {
 
 	if err != nil && IsErrorNotFound(err) {
 		return nil
-
 	}
 
 	return err
-
 }
 
 // DiffService permit to compare actual and expected service to compute what is modified

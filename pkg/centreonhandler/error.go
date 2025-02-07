@@ -3,7 +3,6 @@ package centreonhandler
 import "regexp"
 
 func IsErrorNotFound(providedErr error) bool {
-
 	r, err := regexp.Compile(`Object not found`)
 	if err != nil {
 		panic(err)
