@@ -108,7 +108,7 @@ func getComputedCentreonPlatform(p *monitorapi.Platform, s *corev1.Secret, log *
 		Password:         password,
 		DisableVerifySSL: p.Spec.CentreonSettings.SelfSignedCertificate,
 	}
-	if log.Level == logrus.DebugLevel {
+	if logrus.IsLevelEnabled(logrus.DebugLevel) {
 		cfg.Debug = true
 	}
 	client, err := centreon.NewClient(cfg)
