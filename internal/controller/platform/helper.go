@@ -5,10 +5,12 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
+	"os"
 
 	"emperror.dev/errors"
 	"github.com/disaster37/go-centreon-rest/v21"
 	"github.com/disaster37/go-centreon-rest/v21/models"
+	"github.com/disaster37/logredact"
 	monitorapi "github.com/disaster37/monitoring-operator/api/v1"
 	"github.com/disaster37/monitoring-operator/pkg/centreonhandler"
 	"github.com/disaster37/monitoring-operator/pkg/helpers"
@@ -73,6 +75,14 @@ func ComputedPlatformList(ctx context.Context, c client.Client, logger *logrus.E
 			if err != nil {
 				return nil, errors.Wrapf(err, "Error when compute platform %s", p.Name)
 			}
+			// Test authentification
+			if os.Getenv("TEST") != "true" {
+				if err = cp.Client.(centreonhandler.CentreonHandler).Auth(); err != nil {
+					logger.Errorf("Error when authentificate on platform %s, we skip it", p.Name)
+					continue
+				}
+			}
+
 			platforms[p.Name] = cp
 			if p.Spec.IsDefault {
 				platforms["default"] = cp
@@ -80,7 +90,6 @@ func ComputedPlatformList(ctx context.Context, c client.Client, logger *logrus.E
 
 		default:
 			return nil, errors.Errorf("Platform %s of type %s is not supported", p.Name, p.Spec.PlatformType)
-
 		}
 	}
 
@@ -102,19 +111,26 @@ func getComputedCentreonPlatform(p *monitorapi.Platform, s *corev1.Secret, log *
 	}
 
 	// Create client
+	secretHook := logredact.New([]string{`password=.*`}, "***")
+	logger := log.WithField("component", "centreon-client")
+	logger.Logger.Hooks.Add(secretHook)
+	if p.IsDebug() {
+		logger.Logger.SetLevel(logrus.DebugLevel)
+	}
 	cfg := &models.Config{
 		Address:          p.Spec.CentreonSettings.URL,
 		Username:         username,
 		Password:         password,
 		DisableVerifySSL: p.Spec.CentreonSettings.SelfSignedCertificate,
+		Debug:            p.IsDebug(),
+		Logger:           log.WithField("component", "centreon-client"),
 	}
-	if logrus.IsLevelEnabled(logrus.DebugLevel) {
-		cfg.Debug = true
-	}
+
 	client, err := centreon.NewClient(cfg)
 	if err != nil {
 		return nil, errors.Wrap(err, "Error when create Centreon client")
 	}
+
 	shaByte, err := json.Marshal(cfg)
 	if err != nil {
 		return nil, err

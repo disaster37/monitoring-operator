@@ -35,6 +35,20 @@ func (m *MockCentreonHandler) EXPECT() *MockCentreonHandlerMockRecorder {
 	return m.recorder
 }
 
+// Auth mocks base method.
+func (m *MockCentreonHandler) Auth() error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Auth")
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// Auth indicates an expected call of Auth.
+func (mr *MockCentreonHandlerMockRecorder) Auth() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Auth", reflect.TypeOf((*MockCentreonHandler)(nil).Auth))
+}
+
 // CreateService mocks base method.
 func (m *MockCentreonHandler) CreateService(arg0 *centreonhandler.CentreonService) error {
 	m.ctrl.T.Helper()

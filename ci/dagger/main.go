@@ -55,7 +55,7 @@ func New(
 ) *MonitoringOperator {
 	return &MonitoringOperator{
 		Src:         src,
-		OperatorSDK: dag.OperatorSDK(src.WithoutDirectory("ci")),
+		OperatorSDK: dag.OperatorSDK(src.WithoutDirectory("ci"), name),
 	}
 }
 
@@ -139,9 +139,10 @@ func (h *MonitoringOperator) CI(
 	// +optional
 	isPullRequest bool,
 
-	// Set the current branch name. It's needed because of CI overwrite the branch name by PR
+	// The git branch where you should to push
+	// You need to provide it when you are on PullRequest or on Tag
 	// +optional
-	branchName string,
+	gitBranch string,
 
 	// Set true to skip test
 	// +optional
@@ -220,8 +221,7 @@ func (h *MonitoringOperator) CI(
 			dir,
 			codeCoveToken,
 			dagger.CodecovUploadOpts{
-				Files:   []string{"coverage.out"},
-				Verbose: true,
+				Files: []string{"coverage.out"},
 			},
 		); err != nil {
 			return nil, errors.Wrap(err, "Error when upload report on CodeCov")
@@ -279,11 +279,6 @@ func (h *MonitoringOperator) CI(
 			}
 		}
 
-		// Compute the branch and directory
-		var branch string
-		git := dag.Git().
-			SetConfig(gitUsername, gitEmail, dagger.GitSetConfigOpts{BaseRepoURL: "github.com", Token: gitToken})
-
 		if !isTag {
 			// keep original version file
 			versionFile, err := h.Src.File("VERSION").Sync(ctx)
@@ -292,30 +287,22 @@ func (h *MonitoringOperator) CI(
 			} else {
 				dir = dir.WithoutFile("VERSION")
 			}
-
-			if branchName == "" {
-				return nil, errors.New("You need to provide the branch name")
-			}
-			branch = branchName
-		} else {
-			branch = defaultBranch
 		}
-
-		if isPullRequest {
-			git = git.With(func(r *dagger.Git) *dagger.Git {
-				ctr := r.BaseContainer().
-					WithDirectory("/project", dir).
-					WithWorkdir("/project").
-					WithExec(helper.ForgeCommand("git remote -v")).
-					WithExec(helper.ForgeCommandf("git fetch origin %s:%s", branch, branch)).
-					WithExec(helper.ForgeCommandf("git checkout %s", branch))
-
-				return r.WithCustomContainer(ctr)
+		git := dag.GitModule(dir, dagger.GitModuleOpts{Ci: "github"}).
+			SetConfig(dagger.GitModuleSetConfigOpts{
+				Username: gitUsername,
+				Email:    gitEmail,
 			})
-		} else {
-			git = git.SetRepo(h.Src.WithDirectory(".", dir), dagger.GitSetRepoOpts{Branch: branch})
-		}
-		if _, err = git.CommitAndPush(ctx, "Commit from CI pipeline"); err != nil {
+
+		if _, err = git.CommitAndPush(
+			ctx,
+			gitToken,
+			dagger.GitModuleCommitAndPushOpts{
+				BranchName: gitBranch,
+				GitRepoURL: "https://github.com/webcenter-fr/elasticsearch-operator.git",
+				Message:    "Commit from CI",
+			},
+		); err != nil {
 			return nil, errors.Wrap(err, "Error when commit and push files change")
 		}
 

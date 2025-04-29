@@ -6,6 +6,7 @@ import (
 	"github.com/disaster37/operator-sdk-extra/pkg/apis"
 	"github.com/stretchr/testify/assert"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/utils/ptr"
 )
 
 func TestPlaformGetStatus(t *testing.T) {
@@ -36,4 +37,26 @@ func TestPlatformGetExternalName(t *testing.T) {
 	}
 
 	assert.Equal(t, "test", o.GetExternalName())
+}
+
+func TestPlateformIsDebug(t *testing.T) {
+	// With default value
+	o := &Platform{
+		ObjectMeta: metav1.ObjectMeta{
+			Namespace: "default",
+			Name:      "test",
+		},
+		Spec: PlatformSpec{},
+	}
+
+	assert.False(t, o.IsDebug())
+
+	// When debug is enable
+	o.Spec.Debug = ptr.To(true)
+	assert.True(t, o.IsDebug())
+
+	// When debug is disable
+	o.Spec.Debug = ptr.To(false)
+	assert.False(t, o.IsDebug())
+
 }

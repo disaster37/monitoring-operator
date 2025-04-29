@@ -44,6 +44,11 @@ type PlatformSpec struct {
 	// +operator-sdk:csv:customresourcedefinitions:type=spec
 	// +optional
 	CentreonSettings *PlatformSpecCentreonSettings `json:"centreonSettings,omitempty"`
+
+	// Debug permit to enable debug log on client that call the plateform API
+	// +operator-sdk:csv:customresourcedefinitions:type=spec
+	// +optional
+	Debug *bool `json:"debug,omitempty"`
 }
 
 type PlatformSpecCentreonSettings struct {

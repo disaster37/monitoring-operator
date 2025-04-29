@@ -18,6 +18,7 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/kubernetes"
+	"k8s.io/utils/ptr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
@@ -80,6 +81,7 @@ func doCreatePlatformStep() test.TestStep {
 						SelfSignedCertificate: true,
 						Secret:                key.Name,
 					},
+					Debug: ptr.To(true),
 				},
 			}
 

@@ -1,13 +1,16 @@
 module github.com/disaster37/monitoring-operator
 
-go 1.23.6
+go 1.24
+
+toolchain go1.24.0
 
 require (
 	dario.cat/mergo v1.0.1
 	emperror.dev/errors v0.8.1
 	github.com/disaster37/generic-objectmatcher v1.0.2
-	github.com/disaster37/go-centreon-rest/v21 v21.0.8
+	github.com/disaster37/go-centreon-rest/v21 v21.0.10
 	github.com/disaster37/k8s-objectmatcher v1.8.2
+	github.com/disaster37/logredact v1.0.1
 	github.com/disaster37/operator-sdk-extra v0.1.10-0.20250115085608-99475c0e4b97
 	github.com/go-task/slim-sprig v2.20.0+incompatible
 	github.com/golang/mock v1.6.0
@@ -56,7 +59,7 @@ require (
 	github.com/go-openapi/jsonpointer v0.21.0 // indirect
 	github.com/go-openapi/jsonreference v0.20.2 // indirect
 	github.com/go-openapi/swag v0.23.0 // indirect
-	github.com/go-resty/resty/v2 v2.7.0 // indirect
+	github.com/go-resty/resty/v2 v2.16.5 // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/golang/protobuf v1.5.4 // indirect
 	github.com/google/cel-go v0.22.0 // indirect
