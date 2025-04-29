@@ -1,4 +1,9 @@
-issues:
-  exclude:
-    - "SA1019: .+.Spec.Name is deprecated.*"
-    - "SA1019: .+.Spec.Type is deprecated.*"
+version: "2"
+
+linters:
+  exclusions:
+    rules:
+      - path:  '(.+)\.go$'
+        text: "SA1019: .+.Spec.Name is deprecated.*"
+      - path:  '(.+)\.go$'
+        text: "SA1019: .+.Spec.Type is deprecated.*"

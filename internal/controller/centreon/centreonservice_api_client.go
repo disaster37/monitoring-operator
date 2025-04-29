@@ -53,7 +53,7 @@ func (h *centreonServiceApiClient) Build(o *centreoncrd.CentreonService) (cs *Ce
 			Value:      value,
 			IsPassword: "0",
 		}
-		cs.CentreonService.Macros = append(cs.CentreonService.Macros, macro)
+		cs.Macros = append(cs.Macros, macro)
 	}
 
 	return cs, nil

@@ -64,7 +64,7 @@ func (t *CentreonControllerTestSuite) SetupSuite() {
 		DisableQuote: true,
 	})
 
-	os.Setenv("POD_NAMESPACE", "default")
+	_ = os.Setenv("POD_NAMESPACE", "default")
 
 	// Setup testenv
 	testEnv = &envtest.Environment{

@@ -14,7 +14,6 @@ import (
 	"github.com/google/go-cmp/cmp"
 	routev1 "github.com/openshift/api/route/v1"
 	"github.com/sirupsen/logrus"
-	log "github.com/sirupsen/logrus"
 	"github.com/urfave/cli/v2"
 	"github.com/urfave/cli/v2/altsrc"
 	prefixed "github.com/x-cray/logrus-prefixed-formatter"
@@ -39,13 +38,13 @@ func run(args []string) error {
 	formatter := new(prefixed.TextFormatter)
 	formatter.FullTimestamp = true
 	formatter.ForceFormatting = true
-	log.SetFormatter(formatter)
-	log.SetOutput(os.Stdout)
+	logrus.SetFormatter(formatter)
+	logrus.SetOutput(os.Stdout)
 
 	// Get home directory
 	homePath, err := os.UserHomeDir()
 	if err != nil {
-		log.Warnf("Can't get home directory: %s", err.Error())
+		logrus.Warnf("Can't get home directory: %s", err.Error())
 		homePath = "/root"
 	}
 
@@ -100,14 +99,14 @@ func run(args []string) error {
 
 	app.Before = func(c *cli.Context) error {
 		if c.Bool("debug") {
-			log.SetLevel(log.DebugLevel)
+			logrus.SetLevel(logrus.DebugLevel)
 		}
 
 		if !c.Bool("no-color") {
 			formatter := new(prefixed.TextFormatter)
 			formatter.FullTimestamp = true
 			formatter.ForceFormatting = true
-			log.SetFormatter(formatter)
+			logrus.SetFormatter(formatter)
 		}
 
 		if c.String("config") != "" {
@@ -125,7 +124,7 @@ func run(args []string) error {
 func main() {
 	err := run(os.Args)
 	if err != nil {
-		log.Fatal(err)
+		logrus.Fatal(err)
 	}
 }
 
@@ -138,7 +137,7 @@ func migrateAnnotations(c *cli.Context) error {
 	utilruntime.Must(centreoncrd.AddToScheme(scheme))
 	utilruntime.Must(routev1.AddToScheme(scheme))
 
-	logger := log.NewEntry(log.New())
+	logger := logrus.NewEntry(logrus.New())
 
 	cfg, err := clientcmd.BuildConfigFromFlags("", c.String("kubeconfig"))
 	if err != nil {
@@ -221,7 +220,7 @@ func doMigrateAnnotations(ctx context.Context, old types.NamespacedName, new typ
 	listNamespacedName := make([]types.NamespacedName, 0)
 
 	for _, o := range helpers.GetItems(list) {
-		logger = logger.WithFields(log.Fields{
+		logger = logger.WithFields(logrus.Fields{
 			"kind":      o.GetObjectKind().GroupVersionKind().Kind,
 			"namespace": o.GetNamespace(),
 			"name":      o.GetName(),

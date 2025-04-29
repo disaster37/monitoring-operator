@@ -44,7 +44,7 @@ func (t *PlatformControllerTestSuite) SetupSuite() {
 	})
 
 	// Init controllers
-	os.Setenv("POD_NAMESPACE", "default")
+	_ = os.Setenv("POD_NAMESPACE", "default")
 
 	// Setup testenv
 	testEnv = &envtest.Environment{

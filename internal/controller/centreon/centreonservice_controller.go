@@ -20,7 +20,6 @@ import (
 	"context"
 
 	centreoncrd "github.com/disaster37/monitoring-operator/api/v1"
-	monitorapi "github.com/disaster37/monitoring-operator/api/v1"
 	"github.com/disaster37/monitoring-operator/internal/controller/platform"
 	"github.com/disaster37/monitoring-operator/pkg/centreonhandler"
 	"github.com/disaster37/operator-sdk-extra/pkg/controller"
@@ -96,7 +95,7 @@ func (r *CentreonServiceReconciler) Reconcile(ctx context.Context, req ctrl.Requ
 func (r *CentreonServiceReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
 		Named(r.name).
-		For(&monitorapi.CentreonService{}).
+		For(&centreoncrd.CentreonService{}).
 		WithOptions(k8scontroller.Options{
 			RateLimiter: helper.DefaultControllerRateLimiter[reconcile.Request](),
 		}).

@@ -12,7 +12,6 @@ import (
 	"github.com/disaster37/operator-sdk-extra/pkg/test"
 	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
-	core "k8s.io/api/core/v1"
 	corev1 "k8s.io/api/core/v1"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -25,7 +24,7 @@ func (t *NodeControllerTestSuite) TestNodeCentreonController() {
 		Name:      "t-node-" + helpers.RandomString(10),
 		Namespace: "default",
 	}
-	node := &core.Node{}
+	node := &corev1.Node{}
 	data := map[string]any{}
 
 	testCase := test.NewTestCase(t.T(), t.k8sClient, key, node, 5*time.Second, data)
@@ -79,7 +78,7 @@ categories:
 			logrus.Infof("=== Add new Node %s ===", key.Name)
 
 			// Create node that refer template
-			node := &core.Node{
+			node := &corev1.Node{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: key.Name,
 					Labels: map[string]string{
@@ -173,7 +172,7 @@ categories:
 			if o == nil {
 				return errors.New("Node is null")
 			}
-			node := o.(*core.Node)
+			node := o.(*corev1.Node)
 
 			node.Annotations["test"] = "update"
 
@@ -241,7 +240,7 @@ func doDeleteNodeOldStep() test.TestStep {
 			if o == nil {
 				return errors.New("Node is null")
 			}
-			node := o.(*core.Node)
+			node := o.(*corev1.Node)
 
 			wait := int64(0)
 			if err = c.Delete(context.Background(), node, &client.DeleteOptions{GracePeriodSeconds: &wait}); err != nil {
@@ -320,7 +319,7 @@ spec:
 			logrus.Infof("=== Add new Node %s ===", key.Name)
 
 			// Create node that refer template
-			node := &core.Node{
+			node := &corev1.Node{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: key.Name,
 					Labels: map[string]string{
@@ -417,7 +416,7 @@ spec:
 			if o == nil {
 				return errors.New("Node is null")
 			}
-			node := o.(*core.Node)
+			node := o.(*corev1.Node)
 
 			node.Annotations["test"] = "update"
 
@@ -485,7 +484,7 @@ func doDeleteNodeStep() test.TestStep {
 			if o == nil {
 				return errors.New("Node is null")
 			}
-			node := o.(*core.Node)
+			node := o.(*corev1.Node)
 
 			wait := int64(0)
 			if err = c.Delete(context.Background(), node, &client.DeleteOptions{GracePeriodSeconds: &wait}); err != nil {
