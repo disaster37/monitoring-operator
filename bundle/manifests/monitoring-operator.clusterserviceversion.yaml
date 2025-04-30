@@ -61,14 +61,14 @@ metadata:
     capabilities: Basic Install
     categories: Monitoring
     containerImage: quay.io/webcenter/monitoring-operator:v1.0.1
-    createdAt: "2025-02-07T17:44:11Z"
+    createdAt: "2025-04-30T12:19:52Z"
     description: A Kubernetes operator based on the Operator SDK for creating and
       managing monitoring resources on Centreon
-    operators.operatorframework.io/builder: operator-sdk-v1.39.1
+    operators.operatorframework.io/builder: operator-sdk-v1.39.2
     operators.operatorframework.io/project_layout: go.kubebuilder.io/v4
     repository: https://github.com/disaster37/monitoring-operator
     support: None
-  name: monitoring-operator.v1.0.5
+  name: monitoring-operator.v1.0.6-rc.244
   namespace: placeholder
 spec:
   apiservicedefinitions: {}
@@ -233,6 +233,10 @@ spec:
       - description: URL is the full URL to access on Centreon API
         displayName: URL
         path: centreonSettings.url
+      - description: Debug permit to enable debug log on client that call the plateform
+          API
+        displayName: Debug
+        path: debug
       - description: IsDefault is set to tru to use this plateform when is not specify
           on resource to create
         displayName: Is Default
@@ -437,6 +441,16 @@ spec:
           template:
             metadata:
               annotations:
+                annotations: ""
+                co.elastic.logs.manager/multiline.match: after
+                co.elastic.logs.manager/multiline.negate: "true"
+                co.elastic.logs.manager/multiline.pattern: ^\{
+                co.elastic.logs.manager/multiline.timeout: 5s
+                co.elastic.logs.manager/processors.0.decode_json_fields: '{"fields":
+                  ["message"],"target": "operator", "add_error_key": true, "max_depth":
+                  10}'
+                co.elastic.logs.manager/processors.1.add_fields: '{"target": "", "fields":{"event":
+                  {"dataset": "monitoring-operator"}}}'
                 kubectl.kubernetes.io/default-container: manager
               labels:
                 control-plane: monitoring-operator
@@ -463,7 +477,7 @@ spec:
                   value: INFO
                 - name: LOG_FORMATTER
                   value: json
-                image: quay.io/webcenter/monitoring-operator:1.0.5
+                image: quay.io/webcenter/monitoring-operator:1.0.6-rc.244
                 livenessProbe:
                   httpGet:
                     path: /healthz
@@ -552,7 +566,7 @@ spec:
     name: webcenter.fr
     url: https://github.com/disaster37/monitoring-operator
   replaces: monitoring-operator.v1.0.3
-  version: 1.0.5
+  version: 1.0.6-rc.244
   webhookdefinitions:
   - admissionReviewVersions:
     - v1

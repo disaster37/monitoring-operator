@@ -58,5 +58,4 @@ func TestPlateformIsDebug(t *testing.T) {
 	// When debug is disable
 	o.Spec.Debug = ptr.To(false)
 	assert.False(t, o.IsDebug())
-
 }

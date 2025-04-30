@@ -374,6 +374,10 @@ spec:
       - description: URL is the full URL to access on Centreon API
         displayName: URL
         path: centreonSettings.url
+      - description: Debug permit to enable debug log on client that call the plateform
+          API
+        displayName: Debug
+        path: debug
       - description: IsDefault is set to tru to use this plateform when is not specify
           on resource to create
         displayName: Is Default

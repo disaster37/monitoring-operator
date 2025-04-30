@@ -19,7 +19,6 @@ func BoolToString(value *bool) (result string) {
 }
 
 func StringToBool(value string) (result *bool) {
-
 	switch value {
 	case "1":
 		return ptr.To(true)
@@ -28,7 +27,6 @@ func StringToBool(value string) (result *bool) {
 	default:
 		return ptr.To(false)
 	}
-
 }
 
 func StringToSlice(value, separator string) (result []string) {
