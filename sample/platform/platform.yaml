@@ -5,6 +5,7 @@ metadata:
 spec:
   isDefault: true
   type: centreon
+  debug: true
   centreonSettings:
     url: "http://centreon-test.default.svc/centreon/api/index.php"
     selfSignedCertificat: true
