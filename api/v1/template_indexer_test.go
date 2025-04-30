@@ -9,14 +9,13 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	networkv1 "k8s.io/api/networking/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/utils/ptr"
 )
 
 func (t *APITestSuite) TestSetupCertificateIndexer() {
 	secret := &corev1.Secret{
-		ObjectMeta: v1.ObjectMeta{
+		ObjectMeta: metav1.ObjectMeta{
 			Name:      "test",
 			Namespace: "default",
 			Annotations: map[string]string{
@@ -109,7 +108,7 @@ func (t *APITestSuite) TestSetupIngressIndexer() {
 
 func (t *APITestSuite) TestSetupNamespaceIndexer() {
 	namespace := &corev1.Namespace{
-		ObjectMeta: v1.ObjectMeta{
+		ObjectMeta: metav1.ObjectMeta{
 			Name: "test",
 			Annotations: map[string]string{
 				fmt.Sprintf("%s/templates", MonitoringAnnotationKey): `[{"namespace": "default", "name": "template1"}, {"namespace": "default", "name": "template2"}]`,
@@ -123,7 +122,7 @@ func (t *APITestSuite) TestSetupNamespaceIndexer() {
 
 func (t *APITestSuite) TestSetupNodeIndexer() {
 	node := &corev1.Node{
-		ObjectMeta: v1.ObjectMeta{
+		ObjectMeta: metav1.ObjectMeta{
 			Name: "test",
 			Annotations: map[string]string{
 				fmt.Sprintf("%s/templates", MonitoringAnnotationKey): `[{"namespace": "default", "name": "template1"}, {"namespace": "default", "name": "template2"}]`,
@@ -137,7 +136,7 @@ func (t *APITestSuite) TestSetupNodeIndexer() {
 
 func (t *APITestSuite) TestSetupRouteIndexer() {
 	route := &routev1.Route{
-		ObjectMeta: v1.ObjectMeta{
+		ObjectMeta: metav1.ObjectMeta{
 			Name:      "test",
 			Namespace: "default",
 			Annotations: map[string]string{

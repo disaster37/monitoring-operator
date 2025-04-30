@@ -80,7 +80,7 @@ func (t *NodeControllerTestSuite) SetupSuite() {
 	}
 
 	// Init controllers
-	os.Setenv("POD_NAMESPACE", "default")
+	_ = os.Setenv("POD_NAMESPACE", "default")
 
 	// Init k8smanager and k8sclient
 	webhookInstallOptions := &testEnv.WebhookInstallOptions

@@ -1,6 +1,9 @@
 package platform
 
 import (
+	"os"
+
+	"emperror.dev/errors"
 	centreoncrd "github.com/disaster37/monitoring-operator/api/v1"
 	"github.com/disaster37/monitoring-operator/pkg/centreonhandler"
 	"github.com/disaster37/operator-sdk-extra/pkg/controller"
@@ -34,6 +37,11 @@ func (h *platformApiClient) Get(o *centreoncrd.Platform) (object *ComputedPlatfo
 }
 
 func (h *platformApiClient) Create(object *ComputedPlatform, o *centreoncrd.Platform) (err error) {
+	if os.Getenv("TEST") != "true" {
+		if err = object.Client.(centreonhandler.CentreonHandler).Auth(); err != nil {
+			return errors.Wrapf(err, "Error when authentificate on platform %s", o.Name)
+		}
+	}
 	if o.Spec.IsDefault {
 		h.platforms["default"] = object
 	}

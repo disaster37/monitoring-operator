@@ -49,6 +49,7 @@ metadata:
 spec:
   isDefault: true
   type: centreon
+  debug: false
   centreonSettings:
     url: "http://localhost:9090/centreon/api/index.php"
     selfSignedCertificat: true

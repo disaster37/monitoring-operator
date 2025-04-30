@@ -3,6 +3,8 @@ package helpers
 import (
 	"fmt"
 	"strings"
+
+	"k8s.io/utils/ptr"
 )
 
 func BoolToString(value *bool) (result string) {
@@ -17,15 +19,16 @@ func BoolToString(value *bool) (result string) {
 }
 
 func StringToBool(value string) (result *bool) {
-	trueValue := true
-	falseValue := false
-	if value == "1" {
-		return &trueValue
-	} else if value == "2" {
+
+	switch value {
+	case "1":
+		return ptr.To(true)
+	case "2":
 		return nil
-	} else {
-		return &falseValue
+	default:
+		return ptr.To(false)
 	}
+
 }
 
 func StringToSlice(value, separator string) (result []string) {

@@ -48,12 +48,12 @@ First shell
 # Put the right tag of your image. It change on each CI build
 
 ```bash
-dagger call -m operator-sdk --src . test-olm-operator --catalog-image quay.io/webcenter/monitoring-operator-catalog:0.0.1-pr.31 --name monitoring-operator --channel alpha up
+dagger call -m operator-sdk --src . --cluster-name monitoring-operator install-olm-operator --catalog-image quay.io/webcenter/monitoring-operator-catalog:1.0.6-pr.36 --name monitoring-operator --channel alpha up
 ```
 
 Second shell
 ```bash
-dagger call -m operator-sdk --src . kube kubeconfig --local export --path kubeconfig
+dagger call -m operator-sdk --src . --cluster-name monitoring-operator kube kubeconfig --local export --path kubeconfig
 
 # It auto if you have direnv
 #export KUBECONFIG=kubeconfig
@@ -121,7 +121,7 @@ dagger call --src . sdk run --cmd version stdout
 ### Generate SDK manifests
 
 ```bash
-dagger call -m operator-sdk --src . sdk generate-manifests export --path .
+dagger call -m operator-sdk --src . --cluster-name monitoring-operator sdk generate-manifests export --path .
 ```
 
 

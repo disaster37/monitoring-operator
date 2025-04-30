@@ -17,6 +17,7 @@ type CentreonHandler interface {
 	GetServiceGroup(name string) (sg *CentreonServiceGroup, err error)
 	DiffServiceGroup(actual, expected *CentreonServiceGroup, ignoreFields []string) (diff *CentreonServiceGroupDiff, err error)
 
+	Auth() error
 	SetLogger(log *logrus.Entry)
 }
 
@@ -34,4 +35,8 @@ func NewCentreonHandler(client *centreon.Client, log *logrus.Entry) CentreonHand
 
 func (h *CentreonHandlerImpl) SetLogger(log *logrus.Entry) {
 	h.log = log
+}
+
+func (h *CentreonHandlerImpl) Auth() error {
+	return h.client.API.Auth()
 }

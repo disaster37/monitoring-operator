@@ -12,3 +12,14 @@ func (h *Platform) GetStatus() object.RemoteObjectStatus {
 func (o *Platform) GetExternalName() string {
 	return o.Name
 }
+
+
+// IsDebug return true if debug field is true
+// else it return false
+func (h *Platform) IsDebug() bool {
+	if h.Spec.Debug != nil && *h.Spec.Debug {
+		return true
+	}
+
+	return false
+}
