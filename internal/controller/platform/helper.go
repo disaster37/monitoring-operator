@@ -111,7 +111,8 @@ func getComputedCentreonPlatform(p *monitorapi.Platform, s *corev1.Secret, log *
 	}
 
 	// Create client
-	secretHook := logredact.New([]string{`password=.*`, `Centreon-Auth-Token: .*`, `"authToken": ".+"`}, "***")
+	//secretHook := logredact.New([]string{`password=.*`, `Centreon-Auth-Token: .*`, `"authToken": ".+"`}, "***")
+	secretHook := logredact.New([]string{}, "***")
 	logger := log.WithField("component", "centreon-client")
 	logger.Logger.Hooks.Add(secretHook)
 	if p.IsDebug() {
