@@ -60,8 +60,8 @@ type PlatformSpecCentreonSettings struct {
 	// +operator-sdk:csv:customresourcedefinitions:type=spec
 	SelfSignedCertificate bool `json:"selfSignedCertificat"`
 
-	// Secret is the secret that store the username and password to access on Centreon API
-	// It need to have `username` and `password` key
+	// Secret is the secret that store the (username and password) or permanent token to access on Centreon API
+	// It need to have ()`username` and `password`) or token key
 	// +operator-sdk:csv:customresourcedefinitions:type=spec
 	Secret string `json:"secret"`
 }
