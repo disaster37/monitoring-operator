@@ -97,6 +97,12 @@ func ComputedPlatformList(ctx context.Context, c client.Client, logger *logrus.E
 }
 
 func getComputedCentreonPlatform(p *monitorapi.Platform, s *corev1.Secret, log *logrus.Entry) (cp *ComputedPlatform, err error) {
+	var (
+		token    string
+		username string
+		password string
+	)
+
 	if p == nil {
 		return nil, errors.New("Platform can't be null")
 	}
@@ -104,10 +110,14 @@ func getComputedCentreonPlatform(p *monitorapi.Platform, s *corev1.Secret, log *
 		return nil, errors.New("Secret can't be null")
 	}
 
-	username := string(s.Data["username"])
-	password := string(s.Data["password"])
-	if username == "" || password == "" {
-		return nil, errors.Errorf("You need to set username and password on secret %s", s.Name)
+	if s.Data["token"] != nil {
+		token = string(s.Data["token"])
+	} else {
+		username = string(s.Data["username"])
+		password = string(s.Data["password"])
+		if username == "" || password == "" {
+			return nil, errors.Errorf("You need to set (username and password) or token on secret %s", s.Name)
+		}
 	}
 
 	// Create client
@@ -122,6 +132,7 @@ func getComputedCentreonPlatform(p *monitorapi.Platform, s *corev1.Secret, log *
 		Address:          p.Spec.CentreonSettings.URL,
 		Username:         username,
 		Password:         password,
+		Token:            token,
 		DisableVerifySSL: p.Spec.CentreonSettings.SelfSignedCertificate,
 		Debug:            p.IsDebug(),
 		Logger:           log.WithField("component", "centreon-client"),
