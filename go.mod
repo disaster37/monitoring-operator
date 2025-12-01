@@ -8,7 +8,7 @@ require (
 	dario.cat/mergo v1.0.1
 	emperror.dev/errors v0.8.1
 	github.com/disaster37/generic-objectmatcher v1.0.2
-	github.com/disaster37/go-centreon-rest/v21 v21.0.13
+	github.com/disaster37/go-centreon-rest/v21 v21.0.14
 	github.com/disaster37/k8s-objectmatcher v1.8.2
 	github.com/disaster37/logredact v1.0.1
 	github.com/disaster37/operator-sdk-extra v0.1.10-0.20250115085608-99475c0e4b97
