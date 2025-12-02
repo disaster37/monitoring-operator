@@ -27,11 +27,12 @@ import (
 
 const (
 	kubeVersion                 = "1.31.0"
-	sdkVersion                  = "v1.37.0"
-	controllerGenVersion        = "v0.16.1"
+	sdkVersion                  = "v1.39.2"
+	controllerGenVersion        = "v0.18.0"
 	kustomizeVersion            = "v5.4.3"
 	cleanCrdVersion             = "v0.1.9"
 	opmVersion                  = "v1.48.0"
+	dockerVersion               = "28"
 	registry                    = "quay.io"
 	repository                  = "webcenter/monitoring-operator"
 	gitUsername          string = "github"
@@ -54,8 +55,19 @@ func New(
 	src *dagger.Directory,
 ) *MonitoringOperator {
 	return &MonitoringOperator{
-		Src:         src,
-		OperatorSDK: dag.OperatorSDK(src.WithoutDirectory("ci"), name),
+		Src: src,
+		OperatorSDK: dag.OperatorSDK(
+			src.WithoutDirectory("ci"),
+			name,
+			dagger.OperatorSDKOpts{
+				SDKVersion:           sdkVersion,
+				OpmVersion:           opmVersion,
+				ControllerGenVersion: controllerGenVersion,
+				CleanCrdVersion:      cleanCrdVersion,
+				KustomizeVersion:     kustomizeVersion,
+				DockerVersion:        dockerVersion,
+			},
+		),
 	}
 }
 
@@ -277,6 +289,9 @@ func (h *MonitoringOperator) CI(
 			if _, err = h.OperatorSDK.Oci().PublishCatalog(ctx, fmt.Sprintf("%s:latest", catalogName)); err != nil {
 				return nil, errors.Wrap(err, "Error when publish the latest catalog image")
 			}
+
+			dir = dir.WithNewFile("VERSION", version)
+			gitBranch = defaultBranch
 		}
 
 		if !isTag {
