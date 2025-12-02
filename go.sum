@@ -36,8 +36,8 @@ github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc h1:U9qPSI2PIWSS1
 github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
 github.com/disaster37/generic-objectmatcher v1.0.2 h1:jjuMd0E/Q3ZsDCqbpd3nLdSI7I9SJB+xJXT9LgWoltc=
 github.com/disaster37/generic-objectmatcher v1.0.2/go.mod h1:OyAiqj4iYNgikhoOBBNphdiToKvHtfC7Ib6C4kfkm0w=
-github.com/disaster37/go-centreon-rest/v21 v21.0.15 h1:dMjtiU8xFDIBmDrATTyypJKP5GNd4H8D+qOKMzMY9Yw=
-github.com/disaster37/go-centreon-rest/v21 v21.0.15/go.mod h1:OfEguKrAMG4lTmXOEL6wFAiH6/Rn96/VW59QMA4F/Yk=
+github.com/disaster37/go-centreon-rest/v21 v21.0.16 h1:DQGYD8X9dgkTIfpR+zEG1Ex/JYGdFhrMwuFB4O5oeMg=
+github.com/disaster37/go-centreon-rest/v21 v21.0.16/go.mod h1:OfEguKrAMG4lTmXOEL6wFAiH6/Rn96/VW59QMA4F/Yk=
 github.com/disaster37/go-kibana-rest/v8 v8.5.0 h1:Wr2CMopHj0wAh7kq3p355jXctISL1LdAZ9kYN/v6abw=
 github.com/disaster37/go-kibana-rest/v8 v8.5.0/go.mod h1:wVGm1b93CSmsHYoxzqhDszv347xr+fELdigS8XLO+bg=
 github.com/disaster37/k8s-objectmatcher v1.8.2 h1:txjV3rh/h6b9AhjE1PNuCNqdthemGoE8uadIlQ2sJf4=
