@@ -2,7 +2,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.19.0
+    controller-gen.kubebuilder.io/version: v0.18.0
   creationTimestamp: null
   name: platforms.monitor.k8s.webcenter.fr
 spec:
@@ -60,8 +60,8 @@ spec:
                 properties:
                   secret:
                     description: |-
-                      Secret is the secret that store the username and password to access on Centreon API
-                      It need to have `username` and `password` key
+                      Secret is the secret that store the (username and password) or permanent token to access on Centreon API
+                      It need to have ()`username` and `password`) or token key
                     type: string
                   selfSignedCertificat:
                     description: SelfSignedCertificat is true if you shouldn't check

@@ -61,14 +61,14 @@ metadata:
     capabilities: Basic Install
     categories: Monitoring
     containerImage: quay.io/webcenter/monitoring-operator:v1.0.1
-    createdAt: "2025-09-10T09:04:09Z"
+    createdAt: "2025-12-02T13:40:23Z"
     description: A Kubernetes operator based on the Operator SDK for creating and
       managing monitoring resources on Centreon
-    operators.operatorframework.io/builder: operator-sdk-v1.41.1
+    operators.operatorframework.io/builder: operator-sdk-v1.39.2
     operators.operatorframework.io/project_layout: go.kubebuilder.io/v4
     repository: https://github.com/disaster37/monitoring-operator
     support: None
-  name: monitoring-operator.v1.0.6-rc.246
+  name: monitoring-operator.v1.0.6-rc.255
   namespace: placeholder
 spec:
   apiservicedefinitions: {}
@@ -222,8 +222,8 @@ spec:
         displayName: Centreon Settings
         path: centreonSettings
       - description: |-
-          Secret is the secret that store the username and password to access on Centreon API
-          It need to have `username` and `password` key
+          Secret is the secret that store the (username and password) or permanent token to access on Centreon API
+          It need to have ()`username` and `password`) or token key
         displayName: Secret
         path: centreonSettings.secret
       - description: SelfSignedCertificat is true if you shouldn't check Centreon
@@ -477,7 +477,7 @@ spec:
                   value: INFO
                 - name: LOG_FORMATTER
                   value: json
-                image: quay.io/webcenter/monitoring-operator:1.0.6-rc.246
+                image: quay.io/webcenter/monitoring-operator:1.0.6-rc.255
                 livenessProbe:
                   httpGet:
                     path: /healthz
@@ -566,7 +566,7 @@ spec:
     name: webcenter.fr
     url: https://github.com/disaster37/monitoring-operator
   replaces: monitoring-operator.v1.0.3
-  version: 1.0.6-rc.246
+  version: 1.0.6-rc.255
   webhookdefinitions:
   - admissionReviewVersions:
     - v1
