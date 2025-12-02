@@ -28,7 +28,7 @@ jobs:
           REGISTRY_PASSWORD: ${{ secrets.REGISTRY_PASSWORD }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
-          VERSION: ${{ github.ref_type == 'tag' && github.ref_name || github.event_name == 'pull_request' && format('pr.{0}', github.event.number) || format('rc.{0}', github.run_number) }}
+          VERSION: ${{ github.ref_type == 'tag' && github.ref_name || github.event_name == 'pull_request' && format('pr.{0}.{1}', github.event.number, github.run_number) || format('rc.{0}', github.run_number) }}
           IS_TAG: ${{ github.ref_type == 'tag' && '--is-tag' || '' }}
           IS_PR: ${{ github.event_name == 'pull_request' && '--is-pull-request' || '' }}
           BRANCH_NAME: ${{ github.event_name == 'pull_request' && github.head_ref || github.ref_type == 'tag' && 'main' || github.ref_name }}
