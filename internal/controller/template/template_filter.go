@@ -14,16 +14,21 @@ import (
 func ViewResourceWithMonitoringTemplate() predicate.Predicate {
 	return predicate.Funcs{
 		UpdateFunc: func(e event.UpdateEvent) bool {
-			return isMonitoringTemplateAnnotation(e.ObjectOld) || isMonitoringTemplateAnnotation(e.ObjectNew) || isTemplate(e.ObjectNew) || isGeneratedFromTemplate(e.ObjectNew)
+			return isMonitoringTemplateAnnotation(e.ObjectOld) || isMonitoringTemplateAnnotation(e.ObjectNew) ||
+				hasMonitoringFinalizer(e.ObjectOld, "") || hasMonitoringFinalizer(e.ObjectNew, "") ||
+				isTemplate(e.ObjectNew) || isGeneratedFromTemplate(e.ObjectNew)
 		},
 		DeleteFunc: func(e event.DeleteEvent) bool {
-			return isMonitoringTemplateAnnotation(e.Object) || isTemplate(e.Object) || isGeneratedFromTemplate(e.Object)
+			return isMonitoringTemplateAnnotation(e.Object) || hasMonitoringFinalizer(e.Object, "") ||
+				isTemplate(e.Object) || isGeneratedFromTemplate(e.Object)
 		},
 		CreateFunc: func(e event.CreateEvent) bool {
-			return isMonitoringTemplateAnnotation(e.Object) || isTemplate(e.Object) || isGeneratedFromTemplate(e.Object)
+			return isMonitoringTemplateAnnotation(e.Object) || hasMonitoringFinalizer(e.Object, "") ||
+				isTemplate(e.Object) || isGeneratedFromTemplate(e.Object)
 		},
 		GenericFunc: func(e event.GenericEvent) bool {
-			return isMonitoringTemplateAnnotation(e.Object) || isTemplate(e.Object) || isGeneratedFromTemplate(e.Object)
+			return isMonitoringTemplateAnnotation(e.Object) || hasMonitoringFinalizer(e.Object, "") ||
+				isTemplate(e.Object) || isGeneratedFromTemplate(e.Object)
 		},
 	}
 }

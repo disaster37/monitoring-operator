@@ -32,9 +32,10 @@ type RouteReconciler struct {
 func NewRouteReconciler(client client.Client, logger *logrus.Entry, recorder record.EventRecorder) (sentienelReconciler controller.Controller) {
 	return &RouteReconciler{
 		Controller: controller.NewBasicController(),
-		SentinelReconciler: controller.NewBasicSentinelReconciler(
+		SentinelReconciler: template.NewSentinelReconciler(
 			client,
 			name,
+			template.RouteFinalizer,
 			logger,
 			recorder,
 		),

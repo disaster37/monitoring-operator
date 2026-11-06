@@ -32,9 +32,10 @@ type NodeReconciler struct {
 func NewNodeReconciler(client client.Client, logger *logrus.Entry, recorder record.EventRecorder) (sentienelReconciler controller.Controller) {
 	return &NodeReconciler{
 		Controller: controller.NewBasicController(),
-		SentinelReconciler: controller.NewBasicSentinelReconciler(
+		SentinelReconciler: template.NewSentinelReconciler(
 			client,
 			name,
+			template.NodeFinalizer,
 			logger,
 			recorder,
 		),

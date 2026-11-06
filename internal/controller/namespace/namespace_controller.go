@@ -32,9 +32,10 @@ type NamespaceReconciler struct {
 func NewNamespaceReconciler(client client.Client, logger *logrus.Entry, recorder record.EventRecorder) (sentienelReconciler controller.Controller) {
 	return &NamespaceReconciler{
 		Controller: controller.NewBasicController(),
-		SentinelReconciler: controller.NewBasicSentinelReconciler(
+		SentinelReconciler: template.NewSentinelReconciler(
 			client,
 			name,
+			template.NamespaceFinalizer,
 			logger,
 			recorder,
 		),

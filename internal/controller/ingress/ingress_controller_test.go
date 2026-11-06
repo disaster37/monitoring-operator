@@ -8,6 +8,7 @@ import (
 	"time"
 
 	monitorapi "github.com/disaster37/monitoring-operator/api/v1"
+	"github.com/disaster37/monitoring-operator/internal/controller/template"
 	"github.com/disaster37/monitoring-operator/pkg/helpers"
 	"github.com/disaster37/operator-sdk-extra/pkg/test"
 	"github.com/sirupsen/logrus"
@@ -253,6 +254,9 @@ categories:
 			assert.Equal(t, fmt.Sprintf("%s.%s", key.Namespace, key.Name), cs.Labels["monitor.k8s.webcenter.fr/parent"])
 			assert.Equal(t, expectedCSSpec, cs.Spec)
 			assert.NotEmpty(t, cs.OwnerReferences)
+			parent := &networkv1.Ingress{}
+			assert.NoError(t, c.Get(context.Background(), key, parent))
+			assert.Contains(t, parent.GetFinalizers(), template.IngressFinalizer.String())
 			return nil
 		},
 	}
@@ -378,10 +382,7 @@ func doDeleteIngressOldStep() test.TestStep {
 			ingress := &networkv1.Ingress{}
 			isDeleted := false
 
-			// We can't test in envtest that the children is deleted
-			// https://stackoverflow.com/questions/64821970/operator-controller-could-not-delete-correlated-resources
-
-			// Object can be deleted or marked as deleted
+			// Object must be completely deleted, which proves the finalizer was removed
 			isTimeout, err := test.RunWithTimeout(func() error {
 				if err = c.Get(context.Background(), key, ingress); err != nil {
 					if k8serrors.IsNotFound(err) {
@@ -398,6 +399,11 @@ func doDeleteIngressOldStep() test.TestStep {
 				t.Fatalf("Ingress not deleted: %s", err.Error())
 			}
 			assert.True(t, isDeleted)
+
+			// Children must be explicitly deleted by the controller before the finalizer is removed
+			for _, childName := range []string{"template-ingress1", "template-ingress2"} {
+				assert.True(t, k8serrors.IsNotFound(c.Get(context.Background(), types.NamespacedName{Namespace: key.Namespace, Name: childName}, &monitorapi.CentreonService{})), "child %s should be deleted", childName)
+			}
 
 			return nil
 		},
@@ -621,6 +627,9 @@ spec:
 			assert.Equal(t, fmt.Sprintf("%s.%s", key.Namespace, key.Name), cs.Labels["monitor.k8s.webcenter.fr/parent"])
 			assert.Equal(t, expectedCSSpec, cs.Spec)
 			assert.NotEmpty(t, cs.OwnerReferences)
+			parent := &networkv1.Ingress{}
+			assert.NoError(t, c.Get(context.Background(), key, parent))
+			assert.Contains(t, parent.GetFinalizers(), template.IngressFinalizer.String())
 			return nil
 		},
 	}
@@ -749,10 +758,7 @@ func doDeleteIngressStep() test.TestStep {
 			ingress := &networkv1.Ingress{}
 			isDeleted := false
 
-			// We can't test in envtest that the children is deleted
-			// https://stackoverflow.com/questions/64821970/operator-controller-could-not-delete-correlated-resources
-
-			// Object can be deleted or marked as deleted
+			// Object must be completely deleted, which proves the finalizer was removed
 			isTimeout, err := test.RunWithTimeout(func() error {
 				if err = c.Get(context.Background(), key, ingress); err != nil {
 					if k8serrors.IsNotFound(err) {
@@ -769,6 +775,11 @@ func doDeleteIngressStep() test.TestStep {
 				t.Fatalf("Ingress not deleted: %s", err.Error())
 			}
 			assert.True(t, isDeleted)
+
+			// Children must be explicitly deleted by the controller before the finalizer is removed
+			for _, childName := range []string{"template-ingress3", "template-ingress4"} {
+				assert.True(t, k8serrors.IsNotFound(c.Get(context.Background(), types.NamespacedName{Namespace: key.Namespace, Name: childName}, &monitorapi.CentreonService{})), "child %s should be deleted", childName)
+			}
 
 			return nil
 		},

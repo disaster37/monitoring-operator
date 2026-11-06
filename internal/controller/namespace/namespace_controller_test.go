@@ -8,6 +8,7 @@ import (
 	"time"
 
 	monitorapi "github.com/disaster37/monitoring-operator/api/v1"
+	"github.com/disaster37/monitoring-operator/internal/controller/template"
 	"github.com/disaster37/monitoring-operator/pkg/helpers"
 	"github.com/disaster37/operator-sdk-extra/pkg/test"
 	"github.com/sirupsen/logrus"
@@ -194,6 +195,9 @@ categories:
 			assert.Equal(t, fmt.Sprintf("%s.%s", key.Name, key.Name), cs.Labels["monitor.k8s.webcenter.fr/parent"])
 			assert.Equal(t, expectedCSSpec, cs.Spec)
 			assert.NotEmpty(t, cs.OwnerReferences)
+			parent := &core.Namespace{}
+			assert.NoError(t, c.Get(context.Background(), key, parent))
+			assert.Contains(t, parent.GetFinalizers(), template.NamespaceFinalizer.String())
 			return nil
 		},
 	}
@@ -316,9 +320,32 @@ func doDeleteNamespaceOldStep() test.TestStep {
 			return nil
 		},
 		Check: func(t *testing.T, c client.Client, key types.NamespacedName, o client.Object, data map[string]any) (err error) {
-			// We can't test in envtest that the children is deleted
-			// https://stackoverflow.com/questions/64821970/operator-controller-could-not-delete-correlated-resources
-			// Namespace seems can't be deleted in envtest. Block on kubernetes finalizer
+			nsName := key.Name
+			isTimeout, err := test.RunWithTimeout(func() error {
+				ns := &core.Namespace{}
+				if err := c.Get(context.Background(), types.NamespacedName{Name: nsName}, ns); err != nil {
+					if k8serrors.IsNotFound(err) {
+						return nil
+					}
+					return err
+				}
+				for _, f := range ns.GetFinalizers() {
+					if f == template.NamespaceFinalizer.String() {
+						return errors.New("finalizer not yet removed")
+					}
+				}
+				for _, childName := range []string{"template-namespace1", "template-namespace2"} {
+					if err := c.Get(context.Background(), types.NamespacedName{Namespace: nsName, Name: childName}, &monitorapi.CentreonService{}); err == nil {
+						return errors.New("child not yet deleted")
+					} else if !k8serrors.IsNotFound(err) {
+						return err
+					}
+				}
+				return nil
+			}, time.Second*30, time.Second*1)
+			if err != nil || isTimeout {
+				t.Fatalf("Namespace cleanup not completed: %v", err)
+			}
 
 			return nil
 		},
@@ -485,6 +512,9 @@ spec:
 			assert.Equal(t, fmt.Sprintf("%s.%s", key.Name, key.Name), cs.Labels["monitor.k8s.webcenter.fr/parent"])
 			assert.Equal(t, expectedCSSpec, cs.Spec)
 			assert.NotEmpty(t, cs.OwnerReferences)
+			parent := &core.Namespace{}
+			assert.NoError(t, c.Get(context.Background(), key, parent))
+			assert.Contains(t, parent.GetFinalizers(), template.NamespaceFinalizer.String())
 			return nil
 		},
 	}
@@ -605,10 +635,10 @@ func doDeleteNamespaceStep() test.TestStep {
 		Do: func(c client.Client, key types.NamespacedName, o client.Object, data map[string]any) (err error) {
 			key.Name = fmt.Sprintf("%s2", key.Name)
 			logrus.Infof("=== Delete Namespace %s ===", key.Name)
-			if o == nil {
-				return errors.New("Namespace is null")
+			ns := &core.Namespace{}
+			if err = c.Get(context.Background(), types.NamespacedName{Name: key.Name}, ns); err != nil {
+				return err
 			}
-			ns := o.(*core.Namespace)
 
 			wait := int64(0)
 			if err = c.Delete(context.Background(), ns, &client.DeleteOptions{GracePeriodSeconds: &wait}); err != nil {
@@ -618,9 +648,32 @@ func doDeleteNamespaceStep() test.TestStep {
 			return nil
 		},
 		Check: func(t *testing.T, c client.Client, key types.NamespacedName, o client.Object, data map[string]any) (err error) {
-			// We can't test in envtest that the children is deleted
-			// https://stackoverflow.com/questions/64821970/operator-controller-could-not-delete-correlated-resources
-			// Namespace seems can't be deleted in envtest. Block on kubernetes finalizer
+			nsName := fmt.Sprintf("%s2", key.Name)
+			isTimeout, err := test.RunWithTimeout(func() error {
+				ns := &core.Namespace{}
+				if err := c.Get(context.Background(), types.NamespacedName{Name: nsName}, ns); err != nil {
+					if k8serrors.IsNotFound(err) {
+						return nil
+					}
+					return err
+				}
+				for _, f := range ns.GetFinalizers() {
+					if f == template.NamespaceFinalizer.String() {
+						return errors.New("finalizer not yet removed")
+					}
+				}
+				for _, childName := range []string{"template-namespace3", "template-namespace4"} {
+					if err := c.Get(context.Background(), types.NamespacedName{Namespace: nsName, Name: childName}, &monitorapi.CentreonService{}); err == nil {
+						return errors.New("child not yet deleted")
+					} else if !k8serrors.IsNotFound(err) {
+						return err
+					}
+				}
+				return nil
+			}, time.Second*30, time.Second*1)
+			if err != nil || isTimeout {
+				t.Fatalf("Namespace cleanup not completed: %v", err)
+			}
 
 			return nil
 		},

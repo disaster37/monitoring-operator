@@ -8,6 +8,7 @@ import (
 	"time"
 
 	centreoncrd "github.com/disaster37/monitoring-operator/api/v1"
+	"github.com/disaster37/monitoring-operator/internal/controller/template"
 	"github.com/disaster37/monitoring-operator/pkg/helpers"
 	"github.com/disaster37/operator-sdk-extra/pkg/test"
 	"github.com/sirupsen/logrus"
@@ -175,6 +176,9 @@ t92lHyOldNtNHZtcJSRqLQNZo7MixgHDJ/jLAio=
 			assert.Equal(t, expectedCSSpec, cs.Spec)
 			assert.NotEmpty(t, cs.OwnerReferences)
 
+			parent := &corev1.Secret{}
+			assert.NoError(t, c.Get(context.Background(), key, parent))
+			assert.Contains(t, parent.GetFinalizers(), template.CertificateFinalizer.String())
 			return nil
 		},
 	}
@@ -297,10 +301,7 @@ func doDeleteCertificateOldStep() test.TestStep {
 			certificate := &corev1.Secret{}
 			isDeleted := false
 
-			// We can't test in envtest that the children is deleted
-			// https://stackoverflow.com/questions/64821970/operator-controller-could-not-delete-correlated-resources
-
-			// Object can be deleted or marked as deleted
+			// Object must be completely deleted, which proves the finalizer was removed
 			isTimeout, err := test.RunWithTimeout(func() error {
 				if err = c.Get(context.Background(), key, certificate); err != nil {
 					if k8serrors.IsNotFound(err) {
@@ -317,6 +318,11 @@ func doDeleteCertificateOldStep() test.TestStep {
 				t.Fatalf("Certificate not deleted: %s", err.Error())
 			}
 			assert.True(t, isDeleted)
+
+			// Children must be explicitly deleted by the controller before the finalizer is removed
+			for _, childName := range []string{"template-certificate"} {
+				assert.True(t, k8serrors.IsNotFound(c.Get(context.Background(), types.NamespacedName{Namespace: key.Namespace, Name: childName}, &centreoncrd.CentreonService{})), "child %s should be deleted", childName)
+			}
 
 			return nil
 		},
@@ -460,6 +466,9 @@ t92lHyOldNtNHZtcJSRqLQNZo7MixgHDJ/jLAio=
 			assert.Equal(t, expectedCSSpec, cs.Spec)
 			assert.NotEmpty(t, cs.OwnerReferences)
 
+			parent := &corev1.Secret{}
+			assert.NoError(t, c.Get(context.Background(), key, parent))
+			assert.Contains(t, parent.GetFinalizers(), template.CertificateFinalizer.String())
 			return nil
 		},
 	}
@@ -585,10 +594,7 @@ func doDeleteCertificateStep() test.TestStep {
 			certificate := &corev1.Secret{}
 			isDeleted := false
 
-			// We can't test in envtest that the children is deleted
-			// https://stackoverflow.com/questions/64821970/operator-controller-could-not-delete-correlated-resources
-
-			// Object can be deleted or marked as deleted
+			// Object must be completely deleted, which proves the finalizer was removed
 			isTimeout, err := test.RunWithTimeout(func() error {
 				if err = c.Get(context.Background(), key, certificate); err != nil {
 					if k8serrors.IsNotFound(err) {
@@ -605,6 +611,11 @@ func doDeleteCertificateStep() test.TestStep {
 				t.Fatalf("Certificate not deleted: %s", err.Error())
 			}
 			assert.True(t, isDeleted)
+
+			// Children must be explicitly deleted by the controller before the finalizer is removed
+			for _, childName := range []string{"template-certificate2"} {
+				assert.True(t, k8serrors.IsNotFound(c.Get(context.Background(), types.NamespacedName{Namespace: key.Namespace, Name: childName}, &centreoncrd.CentreonService{})), "child %s should be deleted", childName)
+			}
 
 			return nil
 		},

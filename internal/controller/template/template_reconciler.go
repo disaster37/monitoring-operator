@@ -12,6 +12,7 @@ import (
 	"github.com/disaster37/operator-sdk-extra/pkg/helper"
 	"github.com/sirupsen/logrus"
 	"github.com/thoas/go-funk"
+	corev1 "k8s.io/api/core/v1"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/types"
@@ -58,17 +59,12 @@ func (r *TemplateReconciler) Read(ctx context.Context, resource client.Object, d
 	}
 
 	// Add a special workground for Namespace object that are cluster wide, so not namespace concept
-	switch resource.GetObjectKind().GroupVersionKind().Kind {
-	case "Namespace":
-		namespace = resource.GetName()
+	namespace, err = resolveChildNamespace(resource)
+	if err != nil {
+		return nil, res, err
+	}
+	if _, ok := resource.(*corev1.Namespace); ok {
 		placeholders["namespace"] = namespace
-	case "Node":
-		namespace, err = helpers.GetOperatorNamespace()
-		if err != nil {
-			return nil, res, errors.Wrap(err, "Error when get operator namespace")
-		}
-	default:
-		namespace = resource.GetNamespace()
 	}
 
 	templateBuilder := newBuilder(resource, r.Client().Scheme()).
@@ -175,4 +171,20 @@ func (r *TemplateReconciler) Read(ctx context.Context, resource client.Object, d
 	}
 
 	return read, res, nil
+}
+
+// Delete deletes child objects, ignoring NotFound errors for idempotency
+func (r *TemplateReconciler) Delete(ctx context.Context, o client.Object, data map[string]any, objects []client.Object, logger *logrus.Entry) error {
+	for _, oChild := range objects {
+		if err := r.Client().Delete(ctx, oChild); err != nil {
+			if k8serrors.IsNotFound(err) {
+				continue
+			}
+			return errors.Wrapf(err, "Error when delete object '%s'", oChild.GetName())
+		}
+		logger.Debugf("Delete object '%s' successfully", oChild.GetName())
+		r.Recorder().Eventf(o, corev1.EventTypeNormal, "DeleteCompleted", "Object '%s' successfully deleted", oChild.GetName())
+	}
+
+	return nil
 }
