@@ -32,9 +32,10 @@ type IngressReconciler struct {
 func NewIngressReconciler(client client.Client, logger *logrus.Entry, recorder record.EventRecorder) (sentienelReconciler controller.Controller) {
 	return &IngressReconciler{
 		Controller: controller.NewBasicController(),
-		SentinelReconciler: controller.NewBasicSentinelReconciler(
+		SentinelReconciler: template.NewSentinelReconciler(
 			client,
 			name,
+			template.IngressFinalizer,
 			logger,
 			recorder,
 		),

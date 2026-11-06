@@ -36,9 +36,10 @@ type CertificateReconciler struct {
 func NewCertificateReconciler(client client.Client, logger *logrus.Entry, recorder record.EventRecorder) (sentienelReconciler controller.Controller) {
 	return &CertificateReconciler{
 		Controller: controller.NewBasicController(),
-		SentinelReconciler: controller.NewBasicSentinelReconciler(
+		SentinelReconciler: template.NewSentinelReconciler(
 			client,
 			name,
+			template.CertificateFinalizer,
 			logger,
 			recorder,
 		),
